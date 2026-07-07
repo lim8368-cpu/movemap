@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>무브맵 센터 등록</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="registration-shell">
+      <section class="intro-section">
+        <p class="eyebrow">Movemap Partner</p>
+        <h1>물리치료사가 운영하는 운동센터를 무브맵에 등록하세요</h1>
+        <p>
+          제출된 정보는 운영자 확인 후 지도와 앱에 반영됩니다.
+          초기 등록 센터는 기본 노출 테스트에 우선 포함됩니다.
+        </p>
+      </section>
+
+      <section class="form-section">
+        <form id="registrationForm">
+          <div class="field-grid">
+            <label>
+              센터명
+              <input name="centerName" placeholder="예: 코어핏 무브센터" required />
+            </label>
+            <label>
+              대표자명
+              <input name="ownerName" placeholder="예: 임석준" required />
+            </label>
+            <label>
+              연락처
+              <input name="phone" inputmode="tel" placeholder="예: 010-0000-0000" required />
+            </label>
+            <label>
+              지역
+              <input name="area" placeholder="예: 서울 강남구" required />
+            </label>
+          </div>
+
+          <label>
+            상세 주소
+            <input id="addressInput" name="address" placeholder="도로명 주소를 입력해 주세요" required />
+          </label>
+          <div class="map-link-row">
+            <a id="naverMapLink" class="map-link disabled" href="#" target="_blank" rel="noreferrer">
+              네이버 지도에서 확인
+            </a>
+            <span id="mapLinkHint">주소를 입력하면 지도 링크가 자동으로 준비됩니다.</span>
+          </div>
+          <input id="naverMapUrlInput" name="naverMapUrl" type="hidden" />
+          <input id="latInput" name="lat" type="hidden" />
+          <input id="lngInput" name="lng" type="hidden" />
+
+          <label>
+            홈페이지 또는 인스타그램
+            <input name="website" placeholder="선택 입력" />
+          </label>
+
+          <div class="field-grid">
+            <label>
+              대표 사진 링크
+              <input name="photoUrl" placeholder="선택 입력: 이미지 URL" />
+            </label>
+            <label>
+              대표 사진 파일
+              <input id="photoFileInput" name="photoFile" type="file" accept="image/*" />
+            </label>
+          </div>
+          <div id="photoPreview" class="image-preview" hidden></div>
+          <input id="photoDataUrlInput" name="photoDataUrl" type="hidden" />
+
+          <section class="verification-section">
+            <div>
+              <p class="section-kicker">면허 인증</p>
+              <h2>물리치료사 면허 확인</h2>
+              <p>관리자 검토용으로만 사용됩니다. 주민등록번호 등 민감정보는 가리고 올려주세요.</p>
+            </div>
+            <div class="field-grid">
+              <label>
+                면허자 이름
+                <input name="licenseHolderName" placeholder="예: 임석준" required />
+              </label>
+              <label>
+                면허번호
+                <input name="licenseNumber" placeholder="예: 제00000호" required />
+              </label>
+            </div>
+            <label>
+              면허증 또는 증빙 사진
+              <input id="licenseFileInput" name="licenseFile" type="file" accept="image/*" required />
+            </label>
+            <div id="licensePreview" class="image-preview" hidden></div>
+            <input id="licenseImageDataUrlInput" name="licenseImageDataUrl" type="hidden" />
+          </section>
+
+          <label>
+            주요 프로그램
+            <textarea name="services" placeholder="예: 체형 평가, 통증 이후 운동 관리, 수술 후 운동, 필라테스"></textarea>
+          </label>
+
+          <label>
+            운영자에게 남길 말
+            <textarea name="memo" placeholder="센터 소개, 물리치료사 경력, 등록 희망 플랜 등을 적어주세요"></textarea>
+          </label>
+
+          <label class="consent-row">
+            <input name="consent" type="checkbox" required />
+            <span>등록 검토와 연락을 위해 위 정보를 무브맵 운영자가 확인하는 것에 동의합니다.</span>
+          </label>
+
+          <button id="submitButton" type="submit">등록 신청하기</button>
+          <p id="formMessage" class="message" role="status"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

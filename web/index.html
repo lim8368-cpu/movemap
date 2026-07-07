@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>무브맵 | 물리치료사 운동센터 찾기</title>
+    <link rel="stylesheet" href="./styles.css?v=20260707-detail-scroll-room" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar" aria-label="상단 메뉴">
+        <a class="brand" href="#">
+          <span class="brand-mark">M</span>
+          <span>
+            <strong>무브맵</strong>
+            <small>물리치료사가 운영하는 운동센터 지도</small>
+          </span>
+        </a>
+        <nav class="top-actions">
+          <button class="ghost-button" type="button">센터 등록</button>
+          <button class="primary-button" type="button">상담 요청</button>
+        </nav>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar" aria-label="센터 검색">
+          <section class="search-panel">
+            <p class="eyebrow">근처 전문가 찾기</p>
+            <h1>통증 이후 운동을 이어갈 센터를 지도에서 찾으세요</h1>
+            <p class="intro">
+              자격을 확인한 물리치료사 기반 운동센터를 지역, 목적, 프로그램으로 비교합니다.
+            </p>
+
+            <label class="search-box">
+              <span>검색</span>
+              <input id="searchInput" type="search" placeholder="지역, 센터명, 증상 검색" />
+            </label>
+
+            <div class="filter-row" aria-label="지역 필터">
+              <button class="chip active" type="button" data-region="all">전체</button>
+              <button class="chip" type="button" data-region="gangnam">강남</button>
+              <button class="chip" type="button" data-region="mapo">마포</button>
+              <button class="chip" type="button" data-region="bundang">분당</button>
+            </div>
+
+            <div class="filter-grid" aria-label="목적 필터">
+              <label><input type="checkbox" value="허리" /> 허리</label>
+              <label><input type="checkbox" value="어깨" /> 어깨</label>
+              <label><input type="checkbox" value="수술 후" /> 수술 후</label>
+              <label><input type="checkbox" value="골프" /> 골프</label>
+            </div>
+          </section>
+
+          <section class="results-panel">
+            <div class="section-heading">
+              <h2>추천 센터</h2>
+              <span id="resultCount">0곳</span>
+            </div>
+            <div id="centerList" class="center-list"></div>
+          </section>
+        </aside>
+
+        <section class="map-area" aria-label="센터 지도">
+          <div class="map-toolbar">
+            <button id="locateButton" class="icon-button" type="button" aria-label="현재 위치">⌖</button>
+            <button id="zoomInButton" class="icon-button" type="button" aria-label="확대">+</button>
+            <button id="zoomOutButton" class="icon-button" type="button" aria-label="축소">−</button>
+          </div>
+          <div id="naverMap" class="naver-map" aria-label="네이버 지도"></div>
+          <div id="mapStatus" class="map-status">네이버 지도 불러오는 중</div>
+          <div id="mapFallback" class="map-canvas" hidden>
+            <div class="map-notice">
+              네이버 지도를 불러오지 못해 임시 지도를 표시합니다.
+            </div>
+            <div class="map-label label-1">마포구</div>
+            <div class="map-label label-2">강남구</div>
+            <div class="map-label label-3">분당</div>
+            <div class="river"></div>
+          </div>
+
+          <article id="detailPanel" class="detail-panel" aria-live="polite"></article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js?v=20260707-detail-scroll-room"></script>
+  </body>
+</html>

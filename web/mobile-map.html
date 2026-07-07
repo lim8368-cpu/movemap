@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>무브맵 모바일 지도</title>
+    <style>
+      html,
+      body,
+      #map {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+        background: #eef4ef;
+        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      }
+
+      .marker {
+        min-width: 108px;
+        min-height: 40px;
+        border: 0;
+        border-radius: 999px 999px 999px 4px;
+        padding: 6px 10px;
+        background: #2f9b76;
+        color: white;
+        font-size: 12px;
+        font-weight: 900;
+        text-align: left;
+        box-shadow: 0 12px 24px rgba(22, 115, 84, 0.28);
+      }
+
+      .marker strong,
+      .marker span {
+        display: block;
+        max-width: 88px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        line-height: 1.15;
+      }
+
+      .marker span {
+        margin-top: 2px;
+        color: #fff4bf;
+        font-size: 11px;
+      }
+
+      .cluster {
+        width: 52px;
+        height: 52px;
+        border: 4px solid rgba(255, 255, 255, 0.96);
+        border-radius: 999px;
+        background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        font-size: 17px;
+        font-weight: 900;
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.16),
+          0 14px 32px rgba(29, 78, 216, 0.28);
+      }
+
+      .notice {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        z-index: 10;
+        border: 1px solid #d9e3de;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #607069;
+        font-size: 13px;
+        font-weight: 800;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="notice" class="notice">네이버 지도 인증을 확인해주세요.</div>
+
+    <script>
+      const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
+      const API_BASE =
+        new URLSearchParams(window.location.search).get("apiBase") || "http://192.168.150.139:8090";
+      let centers = [
+        { id: "core", name: "코어핏", rating: "4.9", lat: 37.4979, lng: 127.0276 },
+        { id: "reform", name: "리폼무브", rating: "4.8", lat: 37.5557, lng: 126.9236 },
+        { id: "posture", name: "포스처랩", rating: "4.7", lat: 37.3827, lng: 127.1189 },
+        { id: "shoulder", name: "숄더워크", rating: "4.9", lat: 37.5243, lng: 127.0399 },
+      ];
+      let map;
+      let centerMarkers = [];
+      let clusterMarkers = [];
+      let centerFocusTimers = [];
+      const CENTER_MARKER_MIN_ZOOM = 13;
+
+      function showNotice() {
+        document.querySelector("#notice").style.display = "block";
+      }
+
+      function loadMapSdk() {
+        const script = document.createElement("script");
+        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_MAP_NCP_KEY_ID}&v=${Date.now()}`;
+        script.onload = initMap;
+        script.onerror = showNotice;
+        document.head.appendChild(script);
+      }
+
+      async function loadCenters() {
+        try {
+          const response = await fetch(`${API_BASE}/api/centers`);
+          if (!response.ok) throw new Error("centers unavailable");
+          const data = await response.json();
+          const approvedCenters = (data.centers || [])
+            .map((center) => ({
+              id: center.id,
+              name: center.name,
+              rating: center.rating || "신규",
+              lat: Number(center.lat),
+              lng: Number(center.lng),
+            }))
+            .filter((center) => center.name && center.lat && center.lng);
+
+          if (approvedCenters.length) centers = approvedCenters;
+        } catch {
+          showNotice();
+        }
+      }
+
+      function initMap() {
+        if (!window.naver?.maps) {
+          showNotice();
+          return;
+        }
+
+        map = new naver.maps.Map("map", {
+          center: new naver.maps.LatLng(37.5036, 127.0247),
+          zoom: 10,
+          minZoom: 7,
+          scaleControl: false,
+          logoControl: true,
+          mapDataControl: false,
+          zoomControl: false,
+        });
+
+        rebuildMarkers();
+        naver.maps.Event.addListener(map, "zoom_changed", handleZoomChanged);
+        naver.maps.Event.addListener(map, "click", () => {
+          window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "clear_selection" }));
+        });
+      }
+
+      function markerContent(center) {
+        const rating = center.rating && center.rating !== "신규" ? center.rating : "신규";
+        return `<button class="marker" type="button"><strong>${center.name.slice(0, 7)}</strong><span>★ ${rating}</span></button>`;
+      }
+
+      function rebuildMarkers() {
+        centerMarkers.forEach((marker) => marker.setMap(null));
+        clusterMarkers.forEach((marker) => marker.setMap(null));
+        centerMarkers = centers.map((center) => {
+          const marker = new naver.maps.Marker({
+            position: new naver.maps.LatLng(center.lat, center.lng),
+            map,
+            title: center.name,
+            icon: {
+              content: markerContent(center),
+              size: new naver.maps.Size(108, 42),
+              anchor: new naver.maps.Point(54, 10),
+            },
+          });
+
+          naver.maps.Event.addListener(marker, "click", (event) => {
+            window.ReactNativeWebView?.postMessage(
+              JSON.stringify({ type: "center_select", id: center.id })
+            );
+            event?.domEvent?.stopPropagation?.();
+          });
+          return marker;
+        });
+
+        syncMarkerMode();
+      }
+
+      function clearCenterFocusTimers() {
+        centerFocusTimers.forEach((timer) => window.clearTimeout(timer));
+        centerFocusTimers = [];
+      }
+
+      function queueCenterFocusStep(callback, delay) {
+        const timer = window.setTimeout(() => {
+          centerFocusTimers = centerFocusTimers.filter((item) => item !== timer);
+          callback();
+        }, delay);
+        centerFocusTimers.push(timer);
+      }
+
+      function focusCenterById(id) {
+        const center = centers.find((item) => item.id === id);
+        if (!center || !map) return;
+
+        const position = new naver.maps.LatLng(center.lat, center.lng);
+        clearCenterFocusTimers();
+        map.__forceIndividualMarkers = true;
+        map.__clusterAnimating = true;
+        clusterMarkers.forEach((marker) => marker.setMap(null));
+        clusterMarkers = [];
+        map.setZoom(Math.max(map.getZoom(), CENTER_MARKER_MIN_ZOOM + 2), true);
+        map.setCenter(position);
+        queueCenterFocusStep(() => {
+          map.setCenter(position);
+        }, 120);
+        queueCenterFocusStep(() => {
+          map.setCenter(position);
+          map.__clusterAnimating = false;
+          map.__forceIndividualMarkers = true;
+          syncMarkerMode();
+        }, 360);
+      }
+
+      function handleNativeMessage(event) {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === "focus_center" && message.id) {
+            focusCenterById(message.id);
+          }
+        } catch {}
+      }
+
+      function shouldShowIndividuals() {
+        return map.getZoom() >= CENTER_MARKER_MIN_ZOOM || map.__forceIndividualMarkers;
+      }
+
+      function markerCellSizeForZoom(zoom) {
+        if (zoom <= 8) return 2.2;
+        if (zoom <= 10) return 1.0;
+        if (zoom <= 12) return 0.35;
+        return 0.12;
+      }
+
+      function centerForGroup(group) {
+        const lat = group.reduce((sum, center) => sum + center.lat, 0) / group.length;
+        const lng = group.reduce((sum, center) => sum + center.lng, 0) / group.length;
+        return new naver.maps.LatLng(lat, lng);
+      }
+
+      function targetZoomForGroup(group) {
+        const latValues = group.map((center) => center.lat);
+        const lngValues = group.map((center) => center.lng);
+        const span = Math.max(
+          Math.max(...latValues) - Math.min(...latValues),
+          Math.max(...lngValues) - Math.min(...lngValues)
+        );
+        if (span > 1.2) return 8;
+        if (span > 0.45) return 10;
+        if (span > 0.16) return 11;
+        if (span > 0.06) return 12;
+        return CENTER_MARKER_MIN_ZOOM;
+      }
+
+      function boundsForGroup(group) {
+        const bounds = new naver.maps.LatLngBounds();
+        group.forEach((center) => {
+          bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
+        });
+        return bounds;
+      }
+
+      function zoomToGroup(group) {
+        const targetCenter = centerForGroup(group);
+        const targetZoom = targetZoomForGroup(group);
+        const currentZoom = map.getZoom();
+        const midZoom = Math.min(Math.max(currentZoom + 1, targetZoom - 1), targetZoom);
+
+        map.__forceIndividualMarkers = true;
+        map.__clusterAnimating = true;
+        map.panTo(targetCenter);
+
+        window.setTimeout(() => {
+          map.setZoom(midZoom, true);
+        }, 150);
+
+        window.setTimeout(() => {
+          map.setZoom(targetZoom, true);
+          map.panTo(targetCenter);
+        }, 380);
+
+        window.setTimeout(() => {
+          if (group.length > 1) {
+            map.fitBounds(boundsForGroup(group), {
+              top: 78,
+              right: 70,
+              bottom: 114,
+              left: 70,
+            });
+          }
+        }, 650);
+
+        window.setTimeout(() => {
+          map.__clusterAnimating = false;
+          syncMarkerMode();
+        }, 940);
+      }
+
+      function groupedCenters() {
+        const size = markerCellSizeForZoom(map.getZoom());
+        const groups = new Map();
+        centers.forEach((center) => {
+          const key = `${Math.floor(center.lat / size)}:${Math.floor(center.lng / size)}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(center);
+        });
+        return [...groups.values()];
+      }
+
+      function rebuildClusters() {
+        clusterMarkers.forEach((marker) => marker.setMap(null));
+        clusterMarkers = groupedCenters().map((group) => {
+          const position = centerForGroup(group);
+          const marker = new naver.maps.Marker({
+            position,
+            map,
+            title: `${group.length}개 센터`,
+            icon: {
+              content: `<button class="cluster" type="button">${group.length}</button>`,
+              size: new naver.maps.Size(52, 52),
+              anchor: new naver.maps.Point(26, 26),
+            },
+          });
+          naver.maps.Event.addListener(marker, "click", () => {
+            zoomToGroup(group);
+          });
+          return marker;
+        });
+      }
+
+      function syncMarkerMode() {
+        const showIndividuals = shouldShowIndividuals();
+        centerMarkers.forEach((marker) => marker.setMap(showIndividuals ? map : null));
+        if (showIndividuals) {
+          clusterMarkers.forEach((marker) => marker.setMap(null));
+          clusterMarkers = [];
+        } else {
+          rebuildClusters();
+        }
+      }
+
+      function handleZoomChanged() {
+        if (map.__clusterAnimating) {
+          syncMarkerMode();
+          return;
+        }
+
+        if (map.getZoom() < CENTER_MARKER_MIN_ZOOM) {
+          map.__forceIndividualMarkers = false;
+          window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "clear_selection" }));
+        }
+
+        syncMarkerMode();
+      }
+
+      function fitInitialBounds() {
+        const bounds = new naver.maps.LatLngBounds();
+        centers.forEach((center) => {
+          bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
+        });
+        if (centers.length > 1) {
+          map.fitBounds(bounds, { top: 36, right: 36, bottom: 36, left: 36 });
+        }
+      }
+
+      document.addEventListener("message", handleNativeMessage);
+      window.addEventListener("message", handleNativeMessage);
+      loadCenters().finally(loadMapSdk);
+    </script>
+  </body>
+</html>

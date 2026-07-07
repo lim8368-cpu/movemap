@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>무브맵 관리자</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="login-panel" id="loginPanel">
+        <p class="eyebrow">Movemap Admin</p>
+        <h1>센터 조회와 상담 클릭을 확인합니다</h1>
+        <p class="intro">초기 MVP용 운영자 관리자입니다.</p>
+        <label>
+          아이디
+          <input id="loginId" value="admin" autocomplete="username" />
+        </label>
+        <label>
+          비밀번호
+          <input id="loginPassword" type="password" value="movemap2026" autocomplete="current-password" />
+        </label>
+        <button id="loginButton" type="button">로그인</button>
+        <p id="loginMessage" class="message"></p>
+      </section>
+
+      <section class="dashboard" id="dashboard" hidden>
+        <header class="dashboard-header">
+          <div>
+            <p class="eyebrow">Movemap Admin</p>
+            <h1>운영 대시보드</h1>
+          </div>
+          <button id="refreshButton" type="button">새로고침</button>
+        </header>
+
+        <div class="summary-grid">
+          <article>
+            <span>등록 센터</span>
+            <strong id="totalCenters">0</strong>
+          </article>
+          <article>
+            <span>승인 대기</span>
+            <strong id="totalPending">0</strong>
+          </article>
+          <article>
+            <span>상세 조회</span>
+            <strong id="totalViews">0</strong>
+          </article>
+          <article>
+            <span>상담 클릭</span>
+            <strong id="totalContacts">0</strong>
+          </article>
+          <article>
+            <span>전체 이벤트</span>
+            <strong id="totalEvents">0</strong>
+          </article>
+        </div>
+
+        <section class="table-section">
+          <h2>센터 등록 신청</h2>
+          <div id="centerApplications" class="application-list"></div>
+        </section>
+
+        <section class="table-section">
+          <h2>센터별 성과</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>센터</th>
+                  <th>지역</th>
+                  <th>주소</th>
+                  <th>좌표 수정</th>
+                  <th>플랜</th>
+                  <th>조회</th>
+                  <th>상담 클릭</th>
+                  <th>최근 이벤트</th>
+                </tr>
+              </thead>
+              <tbody id="centerStats"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="table-section">
+          <h2>최근 이벤트</h2>
+          <div id="recentEvents" class="event-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
