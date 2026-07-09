@@ -97,6 +97,12 @@ export default function App() {
   const [goal, setGoal] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [mapWebFailed, setMapWebFailed] = useState(false);
+  const [adminVisible, setAdminVisible] = useState(false);
+  const [adminId, setAdminId] = useState("admin");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminToken, setAdminToken] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
+  const [accessLogs, setAccessLogs] = useState([]);
   const mapRef = useRef(null);
   const scrollRef = useRef(null);
   const mapCardY = useRef(0);
@@ -213,6 +219,66 @@ export default function App() {
     } catch {}
   }
 
+  function formatAccessTime(value) {
+    if (!value) return "-";
+    return new Intl.DateTimeFormat("ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  }
+
+  function shortUserAgent(value) {
+    const userAgent = String(value || "");
+    if (userAgent.includes("Expo")) return "Expo";
+    if (userAgent.includes("iPhone")) return "iPhone";
+    if (userAgent.includes("Android")) return "Android";
+    if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return "Safari";
+    if (userAgent.includes("Chrome")) return "Chrome";
+    return userAgent.slice(0, 26) || "-";
+  }
+
+  async function loadAccessLogs(tokenValue = adminToken) {
+    if (!tokenValue) return;
+    const response = await fetch(`${API_BASE}/api/access-logs`, {
+      headers: {
+        Authorization: `Bearer ${tokenValue}`,
+        "X-Movemap-Client": "mobile-app",
+      },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setAdminMessage(data.error || "접속기록을 불러오지 못했습니다.");
+      return;
+    }
+    setAccessLogs(data.accessLogs || []);
+    setAdminMessage(`접속기록 ${data.totals?.accessLogs || 0}건`);
+  }
+
+  async function loginAdmin() {
+    setAdminMessage("");
+    const response = await fetch(`${API_BASE}/api/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Movemap-Client": "mobile-app",
+      },
+      body: JSON.stringify({
+        id: adminId.trim(),
+        password: adminPassword,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setAdminMessage(data.error || "로그인에 실패했습니다.");
+      return;
+    }
+    setAdminToken(data.token);
+    setAdminPassword("");
+    await loadAccessLogs(data.token);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -224,8 +290,12 @@ export default function App() {
           <Text style={styles.appName}>무브맵</Text>
           <Text style={styles.caption}>물리치료사 운동센터 지도</Text>
         </View>
-        <TouchableOpacity style={styles.outlineButton} activeOpacity={0.82}>
-          <Text style={styles.outlineButtonText}>등록</Text>
+        <TouchableOpacity
+          style={styles.outlineButton}
+          onPress={() => setAdminVisible((value) => !value)}
+          activeOpacity={0.82}
+        >
+          <Text style={styles.outlineButtonText}>관리</Text>
         </TouchableOpacity>
       </View>
 
@@ -363,6 +433,71 @@ export default function App() {
             </Text>
           </TouchableOpacity>
         ))}
+
+        {adminVisible ? (
+          <View style={styles.adminPanel}>
+            <View style={styles.adminHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>최고관리자 접속기록</Text>
+                <Text style={styles.adminCaption}>웹과 앱 접속 흐름을 함께 확인합니다</Text>
+              </View>
+              {adminToken ? (
+                <TouchableOpacity
+                  style={styles.refreshSmallButton}
+                  onPress={() => loadAccessLogs()}
+                  activeOpacity={0.82}
+                >
+                  <Text style={styles.refreshSmallButtonText}>새로고침</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {!adminToken ? (
+              <>
+                <TextInput
+                  value={adminId}
+                  onChangeText={setAdminId}
+                  placeholder="관리자 아이디"
+                  placeholderTextColor="#8a9992"
+                  style={styles.input}
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  value={adminPassword}
+                  onChangeText={setAdminPassword}
+                  placeholder="비밀번호"
+                  placeholderTextColor="#8a9992"
+                  style={[styles.input, styles.adminPasswordInput]}
+                  secureTextEntry
+                />
+                <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={loginAdmin}
+                  activeOpacity={0.86}
+                >
+                  <Text style={styles.primaryButtonText}>최고관리자 로그인</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.accessLogList}>
+                {accessLogs.slice(0, 20).map((log) => (
+                  <View key={log.id} style={styles.accessLogItem}>
+                    <View style={styles.accessLogTop}>
+                      <Text style={styles.accessLogSource}>{log.source}</Text>
+                      <Text style={styles.accessLogTime}>{formatAccessTime(log.createdAt)}</Text>
+                    </View>
+                    <Text style={styles.accessLogPath}>
+                      {log.method} {log.path}
+                    </Text>
+                    <Text style={styles.accessLogMeta}>
+                      {log.actorUserId} · {log.actorRole} · {log.statusCode} · {shortUserAgent(log.userAgent)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {adminMessage ? <Text style={styles.adminMessage}>{adminMessage}</Text> : null}
+          </View>
+        ) : null}
       </ScrollView>
       {selectedCenter ? (
         <Animated.View
@@ -787,6 +922,85 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "900",
+  },
+  adminPanel: {
+    marginTop: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+  },
+  adminHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 12,
+  },
+  adminCaption: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  adminPasswordInput: {
+    marginTop: 8,
+  },
+  adminMessage: {
+    marginTop: 10,
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  refreshSmallButton: {
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.ink,
+  },
+  refreshSmallButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  accessLogList: {
+    gap: 8,
+  },
+  accessLogItem: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 8,
+    backgroundColor: "#f8fbf9",
+  },
+  accessLogTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  accessLogSource: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  accessLogTime: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  accessLogPath: {
+    marginTop: 6,
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  accessLogMeta: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
   },
   listHeader: {
     flexDirection: "row",
