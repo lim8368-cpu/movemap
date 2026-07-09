@@ -23,7 +23,7 @@
 현재는 로컬 MVP 상태다.
 
 ```text
-웹사이트: http://localhost:8080/web-browser/
+웹사이트: http://localhost:8080/web/
 API 서버: http://localhost:8090
 모바일 앱: Expo Go 테스트
 지도: 네이버 지도 API

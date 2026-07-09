@@ -16,6 +16,17 @@
 - 센터 승인/노출 테스트 데이터
 - 출시 및 업데이트 가이드 문서
 
+## 보안 기준
+
+환자 개인정보와 건강정보는 민감정보입니다.
+현재 로컬 MVP는 실제 환자정보 저장용이 아니며, 운영 출시 전에는 보안 문서의 `출시 전 필수` 항목을 완료해야 합니다.
+
+먼저 확인할 문서:
+
+- `docs/SECURITY_ARCHITECTURE.md`
+- `docs/SECURITY_CHECKLIST.md`
+- `database/SECURITY_SCHEMA.md`
+
 ## 폴더 구조
 
 ```text
@@ -55,6 +66,12 @@ movemap-github-ready/
 
 ### 1. API 서버 실행
 
+처음 실행할 때는 `.env.example`을 참고해서 `.env`를 만들고 로컬 관리자 비밀번호를 넣습니다.
+
+```text
+LOCAL_ADMIN_PASSWORD=내가_정한_로컬_비밀번호
+```
+
 ```bash
 node server/server.js
 ```
@@ -89,6 +106,12 @@ npx expo start --lan
 
 Expo Go에서 표시되는 QR 또는 `exp://...` 주소로 접속합니다.
 
+### 4. 보안 단위 테스트
+
+```bash
+node server/security.test.js
+```
+
 ## GitHub에 올릴 때 주의할 점
 
 GitHub에 올리면 안 되는 것:
@@ -96,6 +119,8 @@ GitHub에 올리면 안 되는 것:
 - `node_modules`
 - `.expo`
 - `.env`
+- 인증서, 서비스 계정 키, API 비밀키
+- 실제 환자정보, 면허증 이미지, 치료 기록
 - `.DS_Store`
 
 이 파일들은 `.gitignore`에 등록해두었습니다.
@@ -125,4 +150,3 @@ GitHub에 올리면 안 되는 것:
 → Expo 테스트
 → GitHub 업로드
 ```
-

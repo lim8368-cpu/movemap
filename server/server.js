@@ -2,15 +2,38 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const security = require("./security");
+
+loadLocalEnv(path.resolve(__dirname, "..", ".env"));
 
 const PORT = Number(process.env.PORT || 8090);
 const ROOT = path.resolve(__dirname, "..");
 const DB_PATH = path.join(__dirname, "data", "db.json");
-const ADMIN_DIR = path.join(ROOT, "admin-dashboard");
-const WEB_DIR = path.join(ROOT, "web-browser");
-const REGISTER_DIR = path.join(ROOT, "center-registration");
+const ADMIN_DIR = path.join(ROOT, "admin");
+const WEB_DIR = path.join(ROOT, "web");
+const REGISTER_DIR = path.join(ROOT, "register");
 
 const sessions = new Map();
+const rateLimit = security.createRateLimiter({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
+  max: Number(process.env.RATE_LIMIT_MAX || 160),
+});
+
+function loadLocalEnv(filePath) {
+  if (process.env.NODE_ENV === "production" || !fs.existsSync(filePath)) return;
+
+  const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const index = trimmed.indexOf("=");
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim().replace(/^["']|["']$/g, "");
+    if (key && process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
 
 function readDb() {
   return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
@@ -22,22 +45,12 @@ function writeDb(db) {
 
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
-  res.writeHead(status, {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(body),
-  });
+  res.writeHead(status, security.jsonHeaders(Buffer.byteLength(body)));
   res.end(body);
 }
 
 function sendText(res, status, text, contentType = "text/plain; charset=utf-8") {
-  res.writeHead(status, {
-    "Access-Control-Allow-Origin": "*",
-    "Content-Type": contentType,
-    "Content-Length": Buffer.byteLength(text),
-  });
+  res.writeHead(status, security.textHeaders(contentType, Buffer.byteLength(text)));
   res.end(text);
 }
 
@@ -76,7 +89,37 @@ function requireSession(req, res) {
     sendJson(res, 401, { error: "로그인이 필요합니다." });
     return null;
   }
-  return sessions.get(token);
+
+  const session = sessions.get(token);
+  if (session.expiresAt <= Date.now()) {
+    sessions.delete(token);
+    sendJson(res, 401, { error: "세션이 만료되었습니다. 다시 로그인해 주세요." });
+    return null;
+  }
+
+  return session;
+}
+
+function requirePermission(req, res, permission) {
+  const session = requireSession(req, res);
+  if (!session) return null;
+
+  if (!security.hasPermission(session, permission)) {
+    const db = readDb();
+    security.appendAuditLog(db, {
+      actorUserId: session.id,
+      organizationId: session.organizationId,
+      action: permission,
+      objectType: "api",
+      objectId: req.url,
+      status: "denied",
+    });
+    writeDb(db);
+    sendJson(res, 403, { error: "권한이 없습니다." });
+    return null;
+  }
+
+  return session;
 }
 
 function summarizeStats(db) {
@@ -225,6 +268,7 @@ function serveFile(res, baseDir, pathname) {
 
   const file = fs.readFileSync(filePath);
   res.writeHead(200, {
+    ...security.textHeaders(contentTypeFor(filePath), file.length),
     "Content-Type": contentTypeFor(filePath),
     "Content-Length": file.length,
   });
@@ -240,26 +284,77 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
+    if (security.rejectInsecureRequest(req, res, sendJson)) return;
+    if (!rateLimit(req, res, sendJson)) return;
+
     if (url.pathname === "/api/health") {
       sendJson(res, 200, { ok: true, service: "movemap-backend" });
       return;
     }
 
     if (url.pathname === "/api/login" && req.method === "POST") {
+      if (security.isProduction() && !process.env.AUTH_PROVIDER) {
+        sendJson(res, 503, {
+          error: "운영 인증 공급자가 설정되지 않아 로그인을 중단했습니다.",
+        });
+        return;
+      }
+
       const body = await readBody(req);
       const db = readDb();
-      const user = db.users.find(
-        (item) => item.id === body.id && item.password === body.password
-      );
+      const user = db.users.find((item) => item.id === body.id);
 
+      if (security.isProduction() && user) {
+        sendJson(res, 503, {
+          error: "운영 환경에서는 로컬 비밀번호 인증을 사용할 수 없습니다.",
+        });
+        return;
+      }
+
+      const localAdminPassword = process.env.LOCAL_ADMIN_PASSWORD;
+      if (!security.isProduction() && !localAdminPassword) {
+        sendJson(res, 503, {
+          error: "로컬 관리자 비밀번호가 설정되지 않았습니다. .env의 LOCAL_ADMIN_PASSWORD를 설정해 주세요.",
+        });
+        return;
+      }
+
+      const passwordMatches = !security.isProduction() && body.password === localAdminPassword;
       if (!user) {
         sendJson(res, 401, { error: "아이디 또는 비밀번호가 맞지 않습니다." });
         return;
       }
 
-      const token = crypto.randomBytes(24).toString("hex");
-      sessions.set(token, { id: user.id, role: user.role });
-      sendJson(res, 200, { token, user: { id: user.id, role: user.role } });
+      if (!passwordMatches) {
+        sendJson(res, 401, { error: "아이디 또는 비밀번호가 맞지 않습니다." });
+        return;
+      }
+
+      const token = crypto.randomBytes(32).toString("hex");
+      const session = {
+        id: user.id,
+        role: user.role,
+        organizationId: user.organizationId || "movemap",
+        expiresAt: Date.now() + security.ACCESS_TOKEN_TTL_MS,
+      };
+      sessions.set(token, session);
+      sendJson(res, 200, {
+        token,
+        expiresInSeconds: Math.floor(security.ACCESS_TOKEN_TTL_MS / 1000),
+        user: {
+          id: user.id,
+          role: user.role,
+          organizationId: session.organizationId,
+        },
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/logout" && req.method === "POST") {
+      const session = requireSession(req, res);
+      if (!session) return;
+      sessions.delete(getToken(req));
+      sendJson(res, 200, { ok: true });
       return;
     }
 
@@ -273,10 +368,10 @@ const server = http.createServer(async (req, res) => {
       const db = readDb();
       const event = {
         id: crypto.randomUUID(),
-        type: body.type,
-        centerId: body.centerId,
-        source: body.source || "web",
-        detail: body.detail || "",
+        type: cleanText(body.type, 40),
+        centerId: cleanText(body.centerId, 120),
+        source: cleanText(body.source || "web", 40),
+        detail: security.cleanAuditText(body.detail || "", 80),
         createdAt: new Date().toISOString(),
       };
       db.events.push(event);
@@ -287,6 +382,13 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === "/api/center-applications" && req.method === "POST") {
       const body = await readBody(req);
+      if (security.isProduction() && (body.photoDataUrl || body.licenseImageDataUrl)) {
+        sendJson(res, 400, {
+          error: "운영 환경에서는 파일을 JSON/base64로 저장할 수 없습니다. 비공개 파일 저장소 업로드를 사용해야 합니다.",
+        });
+        return;
+      }
+
       const requiredFields = [
         "centerName",
         "ownerName",
@@ -341,7 +443,8 @@ const server = http.createServer(async (req, res) => {
       url.pathname.endsWith("/approve") &&
       req.method === "POST"
     ) {
-      if (!requireSession(req, res)) return;
+      const session = requirePermission(req, res, "center:approve");
+      if (!session) return;
 
       const applicationId = url.pathname
         .replace("/api/center-applications/", "")
@@ -356,6 +459,15 @@ const server = http.createServer(async (req, res) => {
 
       if (application.status === "approved") {
         const center = db.centers.find((item) => item.sourceApplicationId === application.id);
+        security.appendAuditLog(db, {
+          actorUserId: session.id,
+          organizationId: session.organizationId,
+          action: "center:approve",
+          objectType: "centerApplication",
+          objectId: application.id,
+          status: "success",
+        });
+        writeDb(db);
         sendJson(res, 200, { ok: true, center, application });
         return;
       }
@@ -365,6 +477,14 @@ const server = http.createServer(async (req, res) => {
       application.approvedAt = new Date().toISOString();
       application.centerId = center.id;
       db.centers.push(center);
+      security.appendAuditLog(db, {
+        actorUserId: session.id,
+        organizationId: session.organizationId,
+        action: "center:approve",
+        objectType: "centerApplication",
+        objectId: application.id,
+        status: "success",
+      });
       writeDb(db);
       sendJson(res, 200, { ok: true, center, application });
       return;
@@ -375,7 +495,8 @@ const server = http.createServer(async (req, res) => {
       url.pathname.endsWith("/location") &&
       req.method === "POST"
     ) {
-      if (!requireSession(req, res)) return;
+      const session = requirePermission(req, res, "center:update");
+      if (!session) return;
 
       const centerId = decodeURIComponent(
         url.pathname.replace("/api/centers/", "").replace("/location", "")
@@ -416,13 +537,21 @@ const server = http.createServer(async (req, res) => {
         application.naverMapUrl = center.naverMapUrl;
       }
 
+      security.appendAuditLog(db, {
+        actorUserId: session.id,
+        organizationId: session.organizationId,
+        action: "center:update-location",
+        objectType: "center",
+        objectId: center.id,
+        status: "success",
+      });
       writeDb(db);
       sendJson(res, 200, { ok: true, center });
       return;
     }
 
     if (url.pathname === "/api/stats" && req.method === "GET") {
-      if (!requireSession(req, res)) return;
+      if (!requirePermission(req, res, "stats:read")) return;
       sendJson(res, 200, summarizeStats(readDb()));
       return;
     }
@@ -449,10 +578,15 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(res, 404, { error: "찾을 수 없습니다." });
   } catch (error) {
-    sendJson(res, 500, { error: "서버 오류가 발생했습니다.", detail: error.message });
+    console.error("Movemap server error", {
+      method: req.method,
+      path: url.pathname,
+      message: security.isProduction() ? "redacted" : error.message,
+    });
+    sendJson(res, 500, { error: "서버 오류가 발생했습니다." });
   }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Movemap backend running at http://localhost:${PORT}`);
+  console.log(`Movemap backend running locally at http://localhost:${PORT}`);
 });

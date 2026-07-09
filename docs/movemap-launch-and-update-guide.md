@@ -4,7 +4,7 @@
 
 현재 무브맵은 로컬 MVP 상태다.
 
-- 웹사이트: `http://localhost:8080/web-browser/`
+- 웹사이트: `http://localhost:8080/web/`
 - 모바일 앱: Expo Go에서 테스트
 - API 서버: `http://localhost:8090`
 - 데이터 저장: 로컬 JSON 기반

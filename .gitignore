@@ -4,6 +4,8 @@ node_modules/
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -13,3 +15,27 @@ build/
 .next/
 coverage/
 
+# Secrets and production credentials
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.p8
+*.jks
+*.keystore
+*.mobileprovision
+service-account*.json
+*-service-account.json
+google-services.json
+GoogleService-Info.plist
+firebase-adminsdk*.json
+supabase-service-role*.json
+ncloud-*.json
+
+# Local databases and uploads
+*.sqlite
+*.sqlite3
+uploads/
+private-files/
+backups/
