@@ -1,18 +1,32 @@
-# 무브맵 iOS/Android 앱
+# 무브맵 공통 앱
 
-물리치료사가 운영하는 운동센터를 지도에서 찾는 iOS/Android 공용 앱 프로토타입입니다.
+물리치료사가 운영하는 운동센터를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
+
+이 앱은 iOS, Android, Web을 같은 코드 흐름으로 관리하는 중심 앱입니다.
 
 ## 실행 방법
 
 ```bash
 npm install
+npm run start
+```
+
+iOS:
+
+```bash
 npm run ios
 ```
 
-또는 Android는:
+Android:
 
 ```bash
 npm run android
+```
+
+Web:
+
+```bash
+npm run web
 ```
 
 ## 지금 들어간 화면
@@ -22,17 +36,22 @@ npm run android
 - Expo Go용 네이버 지도 WebView
 - 센터 상세 정보
 - 추천 센터 목록
-- 센터장 등록 진입 버튼
+- 최고관리자 접속기록 확인
 - 상담 요청 버튼
 
 ## 참고
 
-웹 브라우저 버전은 `../web-browser/` 폴더에 따로 있습니다.
+네이버 지도 WebView용 HTML은 `public/web/mobile-map.html`에 보관합니다.
+API 서버를 실행하면 아래 주소로 접근할 수 있습니다.
+
+```text
+http://localhost:8090/web/mobile-map.html
+```
 
 Expo Go에서 네이버 지도를 보려면 네이버 Cloud Platform 콘솔의 `Web 서비스 URL`에 맥북 개발 서버 주소를 추가해야 합니다.
 
 ```text
-http://192.168.150.139:8080
+http://192.168.150.139:8090
 ```
 
 ## 다음 구현 후보

@@ -193,7 +193,7 @@
       "id": "8291c44c-2480-4899-8df9-fda243907495",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-05T11:42:30.619Z"
     },
@@ -201,7 +201,7 @@
       "id": "50ca4e2a-c081-42f3-91ce-a2e1003d16db",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:39.373Z"
     },
@@ -209,7 +209,7 @@
       "id": "912e6b6b-a930-4582-93b4-1e0b3a56d3b8",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:42.480Z"
     },
@@ -217,7 +217,7 @@
       "id": "32d2ce09-c847-4737-81ed-435b195b8dd0",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:43.687Z"
     },
@@ -225,7 +225,7 @@
       "id": "ffab2a02-6d8c-4430-9923-287e1869ebc1",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:45.288Z"
     },
@@ -233,7 +233,7 @@
       "id": "654f86be-becd-4c2e-9232-6fcf71c203ba",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:45.797Z"
     },
@@ -241,7 +241,7 @@
       "id": "a3d3bea1-2c4a-4cfa-adad-425d78af2659",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:46.580Z"
     },
@@ -249,7 +249,7 @@
       "id": "41c2353e-f045-413d-ab95-ca5666db4d9e",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:47.330Z"
     },
@@ -257,7 +257,7 @@
       "id": "894b7051-988b-4006-bd39-02ca3344095f",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-05T11:42:59.785Z"
     },
@@ -265,7 +265,7 @@
       "id": "3bc43a85-3c2e-4dd4-b040-65668f100795",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-05T11:43:02.087Z"
     },
@@ -273,7 +273,7 @@
       "id": "ad093fcc-a2ac-4e40-b4dc-a4574130f6e9",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-05T11:43:04.068Z"
     },
@@ -281,7 +281,7 @@
       "id": "8cbf3c4f-1b8c-48eb-bdd8-48f23dea0d6c",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:33.888Z"
     },
@@ -289,7 +289,7 @@
       "id": "a4c796da-2541-4d81-aaf3-28a5b7427aca",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:34.578Z"
     },
@@ -297,7 +297,7 @@
       "id": "6ee38e21-d35c-4ca5-9731-a0575e5cfa0c",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:35.075Z"
     },
@@ -305,7 +305,7 @@
       "id": "25bb303e-1b5e-4352-8b10-5094d643ce1b",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:35.232Z"
     },
@@ -313,7 +313,7 @@
       "id": "a08ceba5-5724-4d39-92c6-57f7791cf43c",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:35.415Z"
     },
@@ -321,7 +321,7 @@
       "id": "1d4f65ef-f87c-41ef-bb2b-f08b60dc96ae",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:08:35.692Z"
     },
@@ -329,7 +329,7 @@
       "id": "d570b482-3903-4019-ad3a-d1d78bde85d4",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:08:37.949Z"
     },
@@ -337,7 +337,7 @@
       "id": "1751ceb8-1dc4-406b-b99b-c615701eade2",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:12:03.561Z"
     },
@@ -345,7 +345,7 @@
       "id": "cbd55ef9-9e62-4a53-9f04-a59c28ad3f28",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "initial_load",
       "createdAt": "2026-07-06T11:12:04.418Z"
     },
@@ -353,7 +353,7 @@
       "id": "d33835c3-14d4-434b-8bac-e56d9960e018",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:12:06.881Z"
     },
@@ -361,7 +361,7 @@
       "id": "4068a131-ae22-4528-a29f-74591d7229b0",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:16:01.438Z"
     },
@@ -369,7 +369,7 @@
       "id": "d4a32a29-4df8-48e7-9c53-41f75d9b1431",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:18:41.882Z"
     },
@@ -377,7 +377,7 @@
       "id": "aeca6c29-f1e1-424f-a1b8-60d6f6b0e630",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:27:01.131Z"
     },
@@ -385,7 +385,7 @@
       "id": "15b7700a-2229-475e-934d-19a7480694b2",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:27:16.054Z"
     },
@@ -393,7 +393,7 @@
       "id": "d3985dca-e44c-4993-8804-88228d24dc2d",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:34:05.449Z"
     },
@@ -401,7 +401,7 @@
       "id": "013df187-25bc-4ef2-af25-7f13cdc67c92",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:35:15.285Z"
     },
@@ -409,7 +409,7 @@
       "id": "1c7e7173-c5a2-4dc1-8ab6-7be917c6a32c",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:52:58.873Z"
     },
@@ -417,7 +417,7 @@
       "id": "b35c2116-a060-4bb2-a979-0258a86cf028",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T11:58:56.598Z"
     },
@@ -425,7 +425,7 @@
       "id": "dfb07272-51c0-4f33-8668-bbe949ec5155",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-06T12:19:10.997Z"
     },
@@ -433,7 +433,7 @@
       "id": "a45c63f8-0751-410d-8c33-7b9c4eb4e02f",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:01:37.012Z"
     },
@@ -441,7 +441,7 @@
       "id": "ce26004f-87b2-4c63-bce5-cde4f9db490d",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:02:30.416Z"
     },
@@ -449,7 +449,7 @@
       "id": "dfd3cc18-c365-4d29-a880-6556dbdc82c3",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:03:30.227Z"
     },
@@ -457,7 +457,7 @@
       "id": "ff554518-43cd-416a-a6da-774b0c64441b",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:03:31.522Z"
     },
@@ -465,7 +465,7 @@
       "id": "6ea3663a-6f4e-4cbb-bf04-21bc988b04fc",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:03:34.403Z"
     },
@@ -473,7 +473,7 @@
       "id": "928b3d19-c6f7-454d-ac16-5870a2664db3",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:03:35.944Z"
     },
@@ -481,7 +481,7 @@
       "id": "23ec9127-9b4b-4b4c-ba53-d3e53152428f",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:48.163Z"
     },
@@ -489,7 +489,7 @@
       "id": "3227b0d6-4989-4cc4-90a3-2aecdf31bfe3",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:48.494Z"
     },
@@ -497,7 +497,7 @@
       "id": "22ec9121-2d6c-47c2-b9c3-0112b955e1e4",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:48.686Z"
     },
@@ -505,7 +505,7 @@
       "id": "f68a51b6-26a1-4cbd-9a54-0b4b3f5dee54",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:48.836Z"
     },
@@ -513,7 +513,7 @@
       "id": "1070d3de-2ca8-46ed-94b4-4a68d3cc1c36",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:49.029Z"
     },
@@ -521,7 +521,7 @@
       "id": "e799edea-d797-4edc-9da8-7fb0ff180425",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:49.203Z"
     },
@@ -529,7 +529,7 @@
       "id": "4e1161ef-bafa-41bd-b3cb-c866c2792617",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:49.348Z"
     },
@@ -537,7 +537,7 @@
       "id": "fbacd724-d85e-4af3-b72f-9d079edcb862",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:50.239Z"
     },
@@ -545,7 +545,7 @@
       "id": "c59b4452-82cf-4671-ae5f-6f7354c398db",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:50.425Z"
     },
@@ -553,7 +553,7 @@
       "id": "05ffe563-aaca-4e4b-9eba-2062b30e0982",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:50.595Z"
     },
@@ -561,7 +561,7 @@
       "id": "06ac1168-8548-42ba-bf2b-e82352141052",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:50.750Z"
     },
@@ -569,7 +569,7 @@
       "id": "10b5962e-eb21-432f-b378-c451f018e2cd",
       "type": "contact_click",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "detail_panel",
       "createdAt": "2026-07-07T13:03:50.921Z"
     },
@@ -577,7 +577,7 @@
       "id": "04e1d81f-48bf-4967-9b2d-36d753113e12",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:05:40.137Z"
     },
@@ -585,7 +585,7 @@
       "id": "54abf1d9-d73e-4177-bc6b-8a78f8afc894",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:06:21.968Z"
     },
@@ -593,7 +593,7 @@
       "id": "6c91306b-8e26-412f-85c9-71cdc7b23f2c",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:06:50.867Z"
     },
@@ -601,7 +601,7 @@
       "id": "e1e3f491-30d4-486e-b440-2ec20b951ce8",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:03.888Z"
     },
@@ -609,7 +609,7 @@
       "id": "c7e9636b-8a1d-41a5-9bf5-c23364d8df51",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:28.483Z"
     },
@@ -617,7 +617,7 @@
       "id": "b882d5e4-b838-489c-8b56-84ba1451cb49",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:33.182Z"
     },
@@ -625,7 +625,7 @@
       "id": "fadd8a44-8470-45ba-987a-97551ecbe22a",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:34.798Z"
     },
@@ -633,7 +633,7 @@
       "id": "0ce7e8da-98f4-4339-845c-a0cffb90728a",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:36.438Z"
     },
@@ -641,7 +641,7 @@
       "id": "08f41ac0-b784-4717-a1a4-317b05849837",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:38.019Z"
     },
@@ -649,7 +649,7 @@
       "id": "6717359b-bfff-4d45-a4a0-50fd0d7c02c9",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:39.145Z"
     },
@@ -657,7 +657,7 @@
       "id": "2dbcf06c-c63c-4fac-b28a-d93a1f0776e6",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:40.533Z"
     },
@@ -665,7 +665,7 @@
       "id": "ced98224-6e24-45e5-a45c-4f2a9b15eecd",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:41.334Z"
     },
@@ -673,7 +673,7 @@
       "id": "6e08b108-a0f3-4074-9644-38521eb8b3c5",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:42.723Z"
     },
@@ -681,7 +681,7 @@
       "id": "e90d53fa-941e-428e-8fc5-f7a8a27fe27b",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:43.502Z"
     },
@@ -689,7 +689,7 @@
       "id": "b7a9e45a-dde7-4c7a-a9fc-abd616147130",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:49.628Z"
     },
@@ -697,7 +697,7 @@
       "id": "42f8e07e-838f-4466-9dae-e3881b1b5775",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:52.935Z"
     },
@@ -705,7 +705,7 @@
       "id": "9c8dd6d8-6bac-4716-a455-1de4ef3a23cb",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:54.602Z"
     },
@@ -713,7 +713,7 @@
       "id": "363af034-4ded-4fc1-acd9-78b69a339856",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:07:55.655Z"
     },
@@ -721,7 +721,7 @@
       "id": "02d2c201-5c03-409a-a8ef-0de0325c1cc4",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:09:55.338Z"
     },
@@ -729,7 +729,7 @@
       "id": "ce1d0765-ea8e-4a78-93a2-b316067cb53b",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:09:56.346Z"
     },
@@ -737,7 +737,7 @@
       "id": "6bea2d6e-fe40-433e-8c29-932d83787dd1",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:10:10.187Z"
     },
@@ -745,7 +745,7 @@
       "id": "9b6bfc28-9daf-43f1-9158-51c058edf274",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:10:12.471Z"
     },
@@ -753,7 +753,7 @@
       "id": "48101b97-3c22-4aa1-b0f5-70dbd4b46259",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:10:14.643Z"
     },
@@ -761,7 +761,7 @@
       "id": "0ae786e3-48bd-447e-8604-12ffd75f3a95",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:10:15.688Z"
     },
@@ -769,7 +769,7 @@
       "id": "2f04c17e-e7e7-4f6a-8ecd-c363da77678a",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:10:17.301Z"
     },
@@ -777,7 +777,7 @@
       "id": "ba82705f-2b4a-4f15-ad2c-89689dc3e663",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:11:46.564Z"
     },
@@ -785,7 +785,7 @@
       "id": "f692f451-7806-4ec6-992a-305653ff309f",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:11:56.058Z"
     },
@@ -793,7 +793,7 @@
       "id": "2477012d-bab9-47a2-b7bc-7b4d549abad2",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:11:59.401Z"
     },
@@ -801,7 +801,7 @@
       "id": "c81f0349-2e1e-4446-b2f1-ae025a319328",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:01.369Z"
     },
@@ -809,7 +809,7 @@
       "id": "c7ef1641-74fd-4d02-9915-ca74dfc48eff",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:04.097Z"
     },
@@ -817,7 +817,7 @@
       "id": "c6d7f7d3-8319-43a7-99d2-b55304b7895c",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:05.358Z"
     },
@@ -825,7 +825,7 @@
       "id": "93bfbfeb-dc5d-4b64-a15c-1d175173a50c",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:06.990Z"
     },
@@ -833,7 +833,7 @@
       "id": "3bd1fe91-ecad-45fd-9655-155e473207b4",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:08.033Z"
     },
@@ -841,7 +841,7 @@
       "id": "3b17d2cc-7bc4-4154-9d0d-0e8dca44c1ff",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:08.510Z"
     },
@@ -849,7 +849,7 @@
       "id": "1f8e4a93-147f-4af7-b42e-037b4f8ce39e",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:12:08.945Z"
     },
@@ -857,7 +857,7 @@
       "id": "cf89b5fd-d9ef-4bca-97c0-d673038eed25",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:13:43.137Z"
     },
@@ -865,7 +865,7 @@
       "id": "dc49eab3-977f-4f77-963d-083d94e02ae5",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:14:46.088Z"
     },
@@ -873,7 +873,7 @@
       "id": "c0d449e7-9552-4dce-82f6-0d6f00ac1591",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:06.039Z"
     },
@@ -881,7 +881,7 @@
       "id": "e890151f-7c0a-4df1-b250-c1fe9ba58af5",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:08.515Z"
     },
@@ -889,7 +889,7 @@
       "id": "206e02ac-b21e-4d91-9b60-08267f337af3",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:10.599Z"
     },
@@ -897,7 +897,7 @@
       "id": "fccdd912-b040-4778-be5b-7449c2b9c3e6",
       "type": "center_view",
       "centerId": "center-1783336094258",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:14.590Z"
     },
@@ -905,7 +905,7 @@
       "id": "403b7a54-df33-4e25-90b9-da674ccfff6f",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:15.128Z"
     },
@@ -913,7 +913,7 @@
       "id": "ced502c0-ba66-4cd2-a589-8604d6ec3068",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:17.450Z"
     },
@@ -921,7 +921,7 @@
       "id": "c6f7c2e2-7f70-4656-acce-b035a07d774b",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:18.494Z"
     },
@@ -929,7 +929,7 @@
       "id": "1aeaae99-bd8e-4d5e-a3b3-22d692a12195",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:15:22.027Z"
     },
@@ -937,7 +937,7 @@
       "id": "a6c9ed80-fe32-4b5d-9abf-e3f36d0c78cd",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:20:42.452Z"
     },
@@ -945,7 +945,7 @@
       "id": "cfc9db56-044f-4230-9927-3d4f570627cd",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:20:51.981Z"
     },
@@ -953,7 +953,7 @@
       "id": "6a3cf644-37d4-465e-b53d-bb9ff12e4e90",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:20:59.621Z"
     },
@@ -961,7 +961,7 @@
       "id": "64f47f96-a911-4450-9a65-900951abf791",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:22:12.081Z"
     },
@@ -969,7 +969,7 @@
       "id": "affa5e0f-9b18-4bb0-9925-2cff3d3d4416",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:25:47.026Z"
     },
@@ -977,7 +977,7 @@
       "id": "311c3616-152b-4e56-82a8-1160aa7d6e15",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:18.446Z"
     },
@@ -985,7 +985,7 @@
       "id": "6a6cd7c5-03b9-499e-bc8d-d034ec939355",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:24.483Z"
     },
@@ -993,7 +993,7 @@
       "id": "c04ca30b-bc3f-458e-be77-851e26fd7f71",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:28.338Z"
     },
@@ -1001,7 +1001,7 @@
       "id": "b9e9eca6-fe92-44d5-8ee2-65804f0019c6",
       "type": "center_view",
       "centerId": "reform",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:30.354Z"
     },
@@ -1009,7 +1009,7 @@
       "id": "496ac7e4-4ec9-46b5-ab4d-c621a43de596",
       "type": "center_view",
       "centerId": "posture",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:31.015Z"
     },
@@ -1017,7 +1017,7 @@
       "id": "1aa8cc06-5c2e-412f-9d6a-4aafd444e0d1",
       "type": "center_view",
       "centerId": "shoulder",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:26:31.714Z"
     },
@@ -1025,7 +1025,7 @@
       "id": "d426f7bf-2a0c-4c41-a827-6f8e2146806e",
       "type": "center_view",
       "centerId": "core",
-      "source": "web-browser",
+      "source": "web",
       "detail": "select_center",
       "createdAt": "2026-07-07T13:34:13.181Z"
     }

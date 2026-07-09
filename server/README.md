@@ -8,8 +8,9 @@
 - 센터 등록 데이터 저장
 - 관리자 승인 흐름 테스트
 - 이벤트 기록 테스트
+- 접속기록 테스트
+- `apps/admin`, `apps/register`, `apps/app/public/web` 정적 파일 제공
 
 현재는 `data/db.json`을 사용합니다.
 
 출시 단계에서는 Supabase 또는 별도 서버 DB로 옮기는 것을 추천합니다.
-

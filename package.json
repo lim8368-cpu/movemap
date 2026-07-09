@@ -1,0 +1,16 @@
+{
+  "name": "movemap",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/app"
+  ],
+  "scripts": {
+    "app:start": "npm --prefix apps/app run start",
+    "app:ios": "npm --prefix apps/app run ios",
+    "app:android": "npm --prefix apps/app run android",
+    "app:web": "npm --prefix apps/app run web",
+    "server:start": "node server/server.js",
+    "server:test:security": "node server/security.test.js"
+  }
+}

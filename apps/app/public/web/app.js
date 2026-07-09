@@ -150,7 +150,7 @@ function trackEvent(type, centerId, detail = "") {
       type,
       centerId,
       detail,
-      source: "web-browser",
+      source: "web",
     }),
   }).catch(() => {});
 }

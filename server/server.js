@@ -9,9 +9,9 @@ loadLocalEnv(path.resolve(__dirname, "..", ".env"));
 const PORT = Number(process.env.PORT || 8090);
 const ROOT = path.resolve(__dirname, "..");
 const DB_PATH = path.join(__dirname, "data", "db.json");
-const ADMIN_DIR = path.join(ROOT, "admin");
-const WEB_DIR = path.join(ROOT, "web");
-const REGISTER_DIR = path.join(ROOT, "register");
+const ADMIN_DIR = path.join(ROOT, "apps", "admin");
+const WEB_DIR = path.join(ROOT, "apps", "app", "public", "web");
+const REGISTER_DIR = path.join(ROOT, "apps", "register");
 
 const sessions = new Map();
 const rateLimit = security.createRateLimiter({

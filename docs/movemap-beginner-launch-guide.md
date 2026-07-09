@@ -131,20 +131,23 @@ GitHub가 직접 하기 어려운 일:
 
 ```text
 movemap/
-  web/
-    사람들이 보는 웹사이트
+  apps/
+    app/
+      사람들이 보는 앱
+      iPhone, Android, Web을 같이 관리하는 곳
 
-  mobile/
-    iPhone, Android 앱
+    admin/
+      내가 보는 관리자 페이지
 
-  admin/
-    내가 보는 관리자 페이지
-
-  register/
-    센터장이 센터를 등록하는 페이지
+    register/
+      센터장이 센터를 등록하는 페이지
 
   server/
     센터 정보 저장/조회/승인을 처리하는 서버
+
+  packages/
+    shared/
+      앱과 서버가 같이 쓸 공통 자료
 
   database/
     데이터 저장 구조 설명

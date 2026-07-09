@@ -17,17 +17,17 @@ const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
 로컬에서 테스트하려면 네이버 Cloud Platform 콘솔의 `Web 서비스 URL`에 아래 주소를 추가하세요.
 
 ```text
-http://localhost:8080
+http://localhost:8090
 ```
 
 `file://`로 직접 열면 브라우저에서는 페이지가 보여도 네이버 지도 API의 도메인 검증에서 막힐 수 있습니다.
 
 ## 로컬 서버로 열기
 
-프로젝트 루트에서 아래처럼 실행한 뒤 브라우저에서 `http://localhost:8080/web-browser/`을 여세요.
+프로젝트 루트에서 아래처럼 API 서버를 실행한 뒤 브라우저에서 `http://localhost:8090/web/`을 여세요.
 
 ```bash
-python3 -m http.server 8080 -d outputs
+npm run server:start
 ```
 
 ## 배포할 때

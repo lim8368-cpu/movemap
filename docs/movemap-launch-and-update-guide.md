@@ -4,8 +4,8 @@
 
 현재 무브맵은 로컬 MVP 상태다.
 
-- 웹사이트: `http://localhost:8080/web/`
-- 모바일 앱: Expo Go에서 테스트
+- 공통 앱 Web: Expo Web에서 테스트
+- iOS/Android 앱: Expo Go에서 테스트
 - API 서버: `http://localhost:8090`
 - 데이터 저장: 로컬 JSON 기반
 - 지도: 네이버 지도 API
@@ -22,7 +22,7 @@ GitHub
 = 원본 코드 저장소
 
 Vercel
-= 웹사이트, 센터 등록 페이지, 관리자 페이지 배포
+= Expo Web, 센터 등록 페이지, 관리자 페이지 배포
 
 Supabase
 = DB, 로그인, 사진 저장, 센터 데이터 저장
@@ -38,20 +38,18 @@ Naver Cloud
 
 ```text
 movemap/
-  web/
-    사용자 웹사이트
-    센터 검색 지도
+  apps/
+    app/
+      Expo React Native + React Native Web 공통 앱
+      iOS / Android / Web 사용자 화면
 
-  mobile/
-    iOS / Android 앱
+    admin/
+      관리자 페이지
+      센터 승인
+      조회수와 접속기록 확인
 
-  admin/
-    관리자 페이지
-    센터 승인
-    조회수 확인
-
-  register/
-    센터장 등록 페이지
+    register/
+      센터장 등록 페이지
 
   server/
     API 서버
@@ -61,6 +59,10 @@ movemap/
   database/
     DB 구조
     초기 데이터
+
+  packages/
+    shared/
+      공통 타입, API 함수, 검증 로직
 ```
 
 ## 3. 로컬 MVP에서 출시 버전으로 가는 순서
@@ -303,7 +305,7 @@ MOBILE_MAP_URL=https://movemap.kr/mobile-map.html
 업데이트 흐름:
 
 ```text
-Codex가 web/admin/register 코드 수정
+Codex가 apps/app, apps/admin, apps/register 코드 수정
 → 로컬에서 확인
 → GitHub push
 → Vercel 자동 배포

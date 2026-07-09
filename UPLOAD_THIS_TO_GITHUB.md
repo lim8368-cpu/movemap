@@ -19,23 +19,21 @@ movemap/
   .gitignore
   .env.example
 
-  web/
-    사용자 웹사이트
-    네이버 지도 기반 메인 화면
-    모바일 WebView용 지도 HTML
+  apps/
+    app/
+      Expo React Native + React Native Web 공통 앱
+      iOS / Android / Web 사용자 화면
+      public/web/
+        네이버 지도 WebView와 기존 웹 MVP 자산
 
-  mobile/
-    Expo 기반 iOS/Android 앱
-    웹과 같은 센터 지도 UX를 모바일에서 확인하는 앱
+    admin/
+      관리자 페이지
+      센터 등록 신청 확인
+      승인 후 메인 웹/앱에 센터 노출
 
-  admin/
-    관리자 페이지
-    센터 등록 신청 확인
-    승인 후 메인 웹/앱에 센터 노출
-
-  register/
-    센터장용 등록 페이지
-    센터 정보, 사진, 면허 인증 자료 입력
+    register/
+      센터장용 등록 페이지
+      센터 정보, 사진, 면허 인증 자료 입력
 
   server/
     로컬 API 서버
@@ -46,8 +44,9 @@ movemap/
     로컬 MVP 테스트 DB
     실제 환자정보 저장 금지
 
-  shared/
-    앞으로 웹/모바일/서버가 같이 쓸 공통 코드 자리
+  packages/
+    shared/
+      앞으로 앱/서버/관리자 페이지가 같이 쓸 공통 코드 자리
 
   database/
     운영 DB 설계 문서
@@ -118,12 +117,11 @@ git push -u origin main
 앞으로 Codex와 작업할 때는 이 폴더 안에서 수정합니다.
 
 ```text
-web/
-mobile/
-admin/
-register/
+apps/app/
+apps/admin/
+apps/register/
 server/
-shared/
+packages/shared/
 database/
 docs/
 ```

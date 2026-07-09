@@ -23,9 +23,10 @@
 현재는 로컬 MVP 상태다.
 
 ```text
-웹사이트: http://localhost:8080/web/
 API 서버: http://localhost:8090
-모바일 앱: Expo Go 테스트
+공통 앱: Expo React Native + React Native Web
+iOS/Android 앱: Expo Go 테스트
+Web 앱: Expo Web 테스트
 지도: 네이버 지도 API
 데이터: 로컬 서버/JSON 기반
 ```
@@ -37,9 +38,10 @@ API 서버: http://localhost:8090
 
 ## 4. 지금까지 만든 기능
 
-### 사용자 웹사이트
+### 사용자 앱
 
-- 무브맵 메인 웹페이지
+- Expo React Native + React Native Web 공통 앱
+- iOS / Android / Web 공통 사용자 화면
 - 네이버 지도 연동
 - 센터 목록 표시
 - 센터 검색/필터
@@ -95,16 +97,17 @@ lae0rqg0zj
 
 출시 시 네이버 클라우드 콘솔에 실제 도메인과 앱 정보를 등록해야 한다.
 
-### 모바일 앱
+### 공통 앱
 
-Expo React Native를 사용한다.
+Expo React Native + React Native Web을 사용한다.
 
-하나의 모바일 코드로 iOS와 Android를 같이 만든다.
+하나의 앱 코드로 iOS, Android, Web을 같이 만든다.
 
 ```text
-mobile/ 코드 1개
+apps/app 코드 1개
 → iOS 앱
 → Android 앱
+→ Web 앱
 ```
 
 ### 추천 배포 구조
@@ -114,7 +117,7 @@ GitHub
 = 코드 보관소
 
 Vercel
-= 웹사이트 배포
+= Web 앱, 관리자, 등록 페이지 배포
 
 Supabase
 = DB, 로그인, 사진 저장
@@ -136,12 +139,13 @@ GitHub는 서버가 아니라 코드 보관소다.
 
 ```text
 movemap/
-  web/
-  mobile/
-  admin/
-  register/
+  apps/
+    app/
+    admin/
+    register/
   server/
-  shared/
+  packages/
+    shared/
   database/
   docs/
 ```
@@ -158,9 +162,9 @@ GitHub 저장소 1개
 
 ## 7. 출시용 폴더 구조
 
-### web
+### apps/app
 
-사용자가 보는 웹사이트
+사용자가 보는 공통 앱
 
 예:
 
@@ -168,19 +172,11 @@ GitHub 저장소 1개
 - 센터 검색
 - 센터 상세
 - 추천 센터 목록
-
-### mobile
-
-iOS/Android 앱
-
-예:
-
-- Expo 앱 코드
-- 앱 화면
-- 모바일 지도
+- iOS / Android / Web 화면
+- 네이버 지도 WebView 자산
 - 하단 상세 카드
 
-### register
+### apps/register
 
 센터장 등록 페이지
 
@@ -192,7 +188,7 @@ iOS/Android 앱
 - 면허 인증
 - 등록 신청
 
-### admin
+### apps/admin
 
 관리자 페이지
 
@@ -202,6 +198,7 @@ iOS/Android 앱
 - 승인/반려
 - 센터 수정
 - 조회수 확인
+- 접속기록 확인
 
 ### server
 
@@ -214,9 +211,9 @@ API 서버
 - 승인 처리
 - 조회 로그 기록
 
-### shared
+### packages/shared
 
-웹과 앱이 같이 쓰는 공통 정보
+앱, 서버, 관리자 페이지가 같이 쓰는 공통 정보
 
 예:
 

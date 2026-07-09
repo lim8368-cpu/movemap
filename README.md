@@ -8,8 +8,8 @@
 
 현재 포함된 기능:
 
-- 사용자 웹사이트
-- iOS/Android Expo 앱
+- Expo React Native + React Native Web 기반 사용자 앱
+- iOS/Android/Web 공통 앱 구조
 - 센터장 등록 페이지
 - 관리자 페이지
 - 로컬 API 서버
@@ -37,33 +37,35 @@ iPhone 앱 / Android 앱 / Web
 
 - `docs/SECURITY_ARCHITECTURE.md`
 - `docs/SECURITY_CHECKLIST.md`
+- `docs/PROJECT_STRUCTURE.md`
 - `database/SECURITY_SCHEMA.md`
 
 ## 폴더 구조
 
 ```text
 movemap-github-ready/
-  web/
-    사용자 웹사이트
-    네이버 지도
-    모바일 지도 WebView HTML
+  apps/
+    app/
+      Expo React Native + React Native Web 앱
+      iOS / Android / Web 공통 사용자 화면
+      public/web/
+        네이버 지도 WebView와 기존 웹 MVP 자산
 
-  mobile/
-    Expo 기반 iOS/Android 앱
+    admin/
+      관리자 페이지
+      센터 승인/관리 화면
+      최고관리자 접속기록 화면
 
-  admin/
-    관리자 페이지
-    센터 승인/관리 화면
-
-  register/
-    센터장 등록 페이지
+    register/
+      센터장 등록 페이지
 
   server/
     로컬 API 서버
     테스트 DB JSON
 
-  shared/
-    앞으로 웹/모바일/서버가 같이 쓸 공통 설정을 넣을 곳
+  packages/
+    shared/
+      앞으로 앱/서버/관리자 페이지가 같이 쓸 공통 설정을 넣을 곳
 
   database/
     앞으로 Supabase DB 구조와 마이그레이션을 넣을 곳
@@ -94,34 +96,49 @@ node server/server.js
 http://localhost:8090
 ```
 
-### 2. 웹사이트 실행
+### 2. 공통 앱 실행
 
-이 폴더에서 정적 서버를 실행합니다.
-
-```bash
-python3 -m http.server 8080
-```
-
-접속 주소:
-
-```text
-http://localhost:8080/web/
-```
-
-### 3. 모바일 앱 실행
+Expo 앱 하나로 iOS, Android, Web을 실행합니다.
 
 ```bash
-cd mobile
-npm install
-npx expo start --lan
+npm --prefix apps/app install
+npm run app:start
+```
+
+Web으로 볼 때:
+
+```bash
+npm run app:web
+```
+
+iOS/Android로 볼 때:
+
+```bash
+npm run app:ios
+npm run app:android
 ```
 
 Expo Go에서 표시되는 QR 또는 `exp://...` 주소로 접속합니다.
 
+기존 네이버 지도 WebView HTML은 API 서버의 아래 경로로도 제공됩니다.
+
+```text
+http://localhost:8090/web/mobile-map.html
+```
+
+### 3. 관리자/등록 페이지 확인
+
+API 서버를 실행한 상태에서 접속합니다.
+
+```text
+http://localhost:8090/admin/
+http://localhost:8090/register/
+```
+
 ### 4. 보안 단위 테스트
 
 ```bash
-node server/security.test.js
+npm run server:test:security
 ```
 
 ## GitHub에 올릴 때 주의할 점
@@ -156,8 +173,8 @@ GitHub에 올리면 안 되는 것:
 
 ```text
 센터 상세 카드 디자인 변경
-→ web 수정
-→ mobile 수정
+→ apps/app 수정
+→ iOS / Android / Web 확인
 → 로컬 웹 테스트
 → Expo 테스트
 → GitHub 업로드
