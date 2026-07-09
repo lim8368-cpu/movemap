@@ -153,7 +153,7 @@ button {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -230,6 +230,18 @@ th {
   border-radius: 8px;
   padding: 12px;
   background: #fbfdfc;
+}
+
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #e8f3ff;
+  color: #1769aa;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .application-item {

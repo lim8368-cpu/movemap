@@ -17,6 +17,14 @@ assert.strictEqual(
   security.hasPermission({ role: "read_only" }, "patient:delete"),
   false
 );
+assert.strictEqual(
+  security.hasPermission({ role: "super_admin" }, "access_logs:read"),
+  true
+);
+assert.strictEqual(
+  security.hasPermission({ role: "admin" }, "access_logs:read"),
+  false
+);
 
 const patient = { id: "patient-1", organizationId: "org-1" };
 

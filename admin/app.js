@@ -19,6 +19,29 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(value));
+}
+
+function shortUserAgent(value) {
+  const userAgent = String(value || "");
+  if (!userAgent) return "-";
+  if (userAgent.includes("Expo")) return "Expo 앱";
+  if (userAgent.includes("iPhone")) return "iPhone";
+  if (userAgent.includes("Android")) return "Android";
+  if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) return "Safari";
+  if (userAgent.includes("Chrome")) return "Chrome";
+  return userAgent.slice(0, 42);
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -38,7 +61,10 @@ function imageMarkup(src, label) {
 async function approveApplication(applicationId) {
   const response = await fetch(`${API_BASE}/api/center-applications/${applicationId}/approve`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Movemap-Client": "admin",
+    },
   });
 
   if (!response.ok) {
@@ -69,6 +95,7 @@ async function updateCenterLocation(centerId) {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "X-Movemap-Client": "admin",
     },
     body: JSON.stringify({
       area,
@@ -92,7 +119,10 @@ async function login() {
   loginMessage.textContent = "";
   const response = await fetch(`${API_BASE}/api/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Movemap-Client": "admin",
+    },
     body: JSON.stringify({
       id: loginId.value.trim(),
       password: loginPassword.value,
@@ -112,7 +142,10 @@ async function login() {
 
 async function loadStats() {
   const response = await fetch(`${API_BASE}/api/stats`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Movemap-Client": "admin",
+    },
   });
 
   if (response.status === 401) {
@@ -132,6 +165,7 @@ async function loadStats() {
   document.querySelector("#totalViews").textContent = data.totals.views;
   document.querySelector("#totalContacts").textContent = data.totals.contactClicks;
   document.querySelector("#totalEvents").textContent = data.totals.events;
+  await loadAccessLogs();
 
   document.querySelector("#centerApplications").innerHTML =
     data.centerApplications
@@ -219,6 +253,42 @@ async function loadStats() {
   document.querySelectorAll("[data-save-location-id]").forEach((button) => {
     button.addEventListener("click", () => updateCenterLocation(button.dataset.saveLocationId));
   });
+}
+
+async function loadAccessLogs() {
+  const response = await fetch(`${API_BASE}/api/access-logs`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Movemap-Client": "admin",
+    },
+  });
+
+  if (!response.ok) {
+    document.querySelector("#totalAccessLogs").textContent = "0";
+    document.querySelector("#accessLogs").innerHTML =
+      "<tr><td colspan=\"8\">최고관리자만 접속 기록을 볼 수 있습니다.</td></tr>";
+    return;
+  }
+
+  const data = await response.json();
+  document.querySelector("#totalAccessLogs").textContent = data.totals.accessLogs;
+  document.querySelector("#accessLogs").innerHTML =
+    data.accessLogs
+      .map(
+        (log) => `
+          <tr>
+            <td>${formatDateTime(log.createdAt)}</td>
+            <td>${escapeHtml(log.actorUserId)}</td>
+            <td>${escapeHtml(log.actorRole)}</td>
+            <td><span class="source-badge">${escapeHtml(log.source)}</span></td>
+            <td>${escapeHtml(log.method)} ${escapeHtml(log.path)}</td>
+            <td>${escapeHtml(log.statusCode)}</td>
+            <td>${escapeHtml(log.ip)}</td>
+            <td title="${escapeHtml(log.userAgent)}">${escapeHtml(shortUserAgent(log.userAgent))}</td>
+          </tr>
+        `
+      )
+      .join("") || "<tr><td colspan=\"8\">아직 접속 기록이 없습니다.</td></tr>";
 }
 
 loginButton.addEventListener("click", login);

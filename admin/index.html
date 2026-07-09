@@ -54,6 +54,10 @@
             <span>전체 이벤트</span>
             <strong id="totalEvents">0</strong>
           </article>
+          <article>
+            <span>접속 기록</span>
+            <strong id="totalAccessLogs">0</strong>
+          </article>
         </div>
 
         <section class="table-section">
@@ -85,6 +89,27 @@
         <section class="table-section">
           <h2>최근 이벤트</h2>
           <div id="recentEvents" class="event-list"></div>
+        </section>
+
+        <section class="table-section">
+          <h2>접속 기록</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>시간</th>
+                  <th>사용자</th>
+                  <th>역할</th>
+                  <th>출처</th>
+                  <th>요청</th>
+                  <th>상태</th>
+                  <th>IP</th>
+                  <th>기기/브라우저</th>
+                </tr>
+              </thead>
+              <tbody id="accessLogs"></tbody>
+            </table>
+          </div>
         </section>
       </section>
     </main>

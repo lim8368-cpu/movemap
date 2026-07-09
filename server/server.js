@@ -106,6 +106,11 @@ function requirePermission(req, res, permission) {
 
   if (!security.hasPermission(session, permission)) {
     const db = readDb();
+    appendAccessLog(db, req, {
+      session,
+      statusCode: 403,
+      source: "api",
+    });
     security.appendAuditLog(db, {
       actorUserId: session.id,
       organizationId: session.organizationId,
@@ -120,6 +125,38 @@ function requirePermission(req, res, permission) {
   }
 
   return session;
+}
+
+function requestIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) return String(forwarded).split(",")[0].trim();
+  return req.socket.remoteAddress || "unknown";
+}
+
+function requestSource(req, fallback = "api") {
+  return cleanText(req.headers["x-movemap-client"] || fallback, 40);
+}
+
+function appendAccessLog(db, req, options = {}) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const session = options.session || null;
+  security.appendAccessLog(db, {
+    actorUserId: options.actorUserId || session?.id || "anonymous",
+    actorRole: session?.role || options.actorRole || "anonymous",
+    organizationId: session?.organizationId || options.organizationId || "unknown",
+    source: options.source || requestSource(req),
+    method: req.method,
+    path: url.pathname,
+    statusCode: options.statusCode || 200,
+    ip: requestIp(req),
+    userAgent: req.headers["user-agent"] || "unknown",
+  });
+}
+
+function recordAccess(req, options = {}) {
+  const db = options.db || readDb();
+  appendAccessLog(db, req, options);
+  if (!options.db) writeDb(db);
 }
 
 function summarizeStats(db) {
@@ -288,6 +325,7 @@ const server = http.createServer(async (req, res) => {
     if (!rateLimit(req, res, sendJson)) return;
 
     if (url.pathname === "/api/health") {
+      recordAccess(req, { source: requestSource(req, "health") });
       sendJson(res, 200, { ok: true, service: "movemap-backend" });
       return;
     }
@@ -321,11 +359,35 @@ const server = http.createServer(async (req, res) => {
 
       const passwordMatches = !security.isProduction() && body.password === localAdminPassword;
       if (!user) {
+        security.appendAccessLog(db, {
+          actorUserId: cleanText(body.id, 80) || "unknown",
+          actorRole: "login_failed",
+          organizationId: "unknown",
+          source: requestSource(req, "admin"),
+          method: req.method,
+          path: url.pathname,
+          statusCode: 401,
+          ip: requestIp(req),
+          userAgent: req.headers["user-agent"] || "unknown",
+        });
+        writeDb(db);
         sendJson(res, 401, { error: "아이디 또는 비밀번호가 맞지 않습니다." });
         return;
       }
 
       if (!passwordMatches) {
+        security.appendAccessLog(db, {
+          actorUserId: user.id,
+          actorRole: "login_failed",
+          organizationId: user.organizationId || "movemap",
+          source: requestSource(req, "admin"),
+          method: req.method,
+          path: url.pathname,
+          statusCode: 401,
+          ip: requestIp(req),
+          userAgent: req.headers["user-agent"] || "unknown",
+        });
+        writeDb(db);
         sendJson(res, 401, { error: "아이디 또는 비밀번호가 맞지 않습니다." });
         return;
       }
@@ -338,6 +400,11 @@ const server = http.createServer(async (req, res) => {
         expiresAt: Date.now() + security.ACCESS_TOKEN_TTL_MS,
       };
       sessions.set(token, session);
+      appendAccessLog(db, req, {
+        session,
+        source: requestSource(req, "admin"),
+      });
+      writeDb(db);
       sendJson(res, 200, {
         token,
         expiresInSeconds: Math.floor(security.ACCESS_TOKEN_TTL_MS / 1000),
@@ -354,6 +421,7 @@ const server = http.createServer(async (req, res) => {
       const session = requireSession(req, res);
       if (!session) return;
       sessions.delete(getToken(req));
+      recordAccess(req, { session, source: requestSource(req, "admin") });
       sendJson(res, 200, { ok: true });
       return;
     }
@@ -375,6 +443,9 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString(),
       };
       db.events.push(event);
+      appendAccessLog(db, req, {
+        source: event.source,
+      });
       writeDb(db);
       sendJson(res, 201, { ok: true, event });
       return;
@@ -433,6 +504,9 @@ const server = http.createServer(async (req, res) => {
       };
 
       db.centerApplications.push(application);
+      appendAccessLog(db, req, {
+        source: requestSource(req, "register"),
+      });
       writeDb(db);
       sendJson(res, 201, { ok: true, application });
       return;
@@ -459,6 +533,10 @@ const server = http.createServer(async (req, res) => {
 
       if (application.status === "approved") {
         const center = db.centers.find((item) => item.sourceApplicationId === application.id);
+        appendAccessLog(db, req, {
+          session,
+          source: requestSource(req, "admin"),
+        });
         security.appendAuditLog(db, {
           actorUserId: session.id,
           organizationId: session.organizationId,
@@ -477,6 +555,10 @@ const server = http.createServer(async (req, res) => {
       application.approvedAt = new Date().toISOString();
       application.centerId = center.id;
       db.centers.push(center);
+      appendAccessLog(db, req, {
+        session,
+        source: requestSource(req, "admin"),
+      });
       security.appendAuditLog(db, {
         actorUserId: session.id,
         organizationId: session.organizationId,
@@ -545,37 +627,77 @@ const server = http.createServer(async (req, res) => {
         objectId: center.id,
         status: "success",
       });
+      appendAccessLog(db, req, {
+        session,
+        source: requestSource(req, "admin"),
+      });
       writeDb(db);
       sendJson(res, 200, { ok: true, center });
       return;
     }
 
     if (url.pathname === "/api/stats" && req.method === "GET") {
-      if (!requirePermission(req, res, "stats:read")) return;
+      const session = requirePermission(req, res, "stats:read");
+      if (!session) return;
+      recordAccess(req, { session, source: requestSource(req, "admin") });
       sendJson(res, 200, summarizeStats(readDb()));
       return;
     }
 
+    if (url.pathname === "/api/access-logs" && req.method === "GET") {
+      const session = requirePermission(req, res, "access_logs:read");
+      if (!session) return;
+      const db = readDb();
+      appendAccessLog(db, req, {
+        session,
+        source: requestSource(req, "admin"),
+      });
+      const accessLogs = (db.accessLogs || []).slice(-120).reverse();
+      writeDb(db);
+      sendJson(res, 200, {
+        accessLogs,
+        totals: {
+          accessLogs: db.accessLogs.length,
+        },
+      });
+      return;
+    }
+
     if (url.pathname === "/api/centers" && req.method === "GET") {
-      sendJson(res, 200, { centers: readDb().centers });
+      const db = readDb();
+      appendAccessLog(db, req, {
+        source: requestSource(req, "web"),
+      });
+      writeDb(db);
+      sendJson(res, 200, { centers: db.centers });
       return;
     }
 
     if (url.pathname.startsWith("/admin")) {
+      if (url.pathname === "/admin" || url.pathname === "/admin/") {
+        recordAccess(req, { source: "admin-page" });
+      }
       serveFile(res, ADMIN_DIR, url.pathname.replace(/^\/admin/, "") || "/");
       return;
     }
 
     if (url.pathname.startsWith("/web")) {
+      if (url.pathname === "/web" || url.pathname === "/web/") {
+        recordAccess(req, { source: "web-page" });
+      }
       serveFile(res, WEB_DIR, url.pathname.replace(/^\/web/, "") || "/");
       return;
     }
 
     if (url.pathname.startsWith("/register")) {
+      if (url.pathname === "/register" || url.pathname === "/register/") {
+        recordAccess(req, { source: "register-page" });
+      }
       serveFile(res, REGISTER_DIR, url.pathname.replace(/^\/register/, "") || "/");
       return;
     }
 
+    recordAccess(req, { statusCode: 404, source: requestSource(req, "unknown") });
     sendJson(res, 404, { error: "찾을 수 없습니다." });
   } catch (error) {
     console.error("Movemap server error", {

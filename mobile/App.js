@@ -14,7 +14,7 @@ import {
 import { WebView } from "react-native-webview";
 
 const API_BASE = "http://192.168.150.139:8090";
-const MOBILE_MAP_URL = `http://192.168.150.139:8080/web-browser/mobile-map.html?apiBase=${encodeURIComponent(API_BASE)}&v=20260707-detail-scroll-room`;
+const MOBILE_MAP_URL = `http://192.168.150.139:8080/web/mobile-map.html?apiBase=${encodeURIComponent(API_BASE)}&v=20260709-access-logs`;
 
 const sampleCenters = [
   {
@@ -105,7 +105,9 @@ export default function App() {
   useEffect(() => {
     async function loadCenters() {
       try {
-        const response = await fetch(`${API_BASE}/api/centers`);
+        const response = await fetch(`${API_BASE}/api/centers`, {
+          headers: { "X-Movemap-Client": "mobile-app" },
+        });
         if (!response.ok) return;
         const data = await response.json();
         const approvedCenters = (data.centers || []).map((center) => ({

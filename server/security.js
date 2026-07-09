@@ -3,6 +3,17 @@ const crypto = require("crypto");
 const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 const ROLE_PERMISSIONS = {
+  super_admin: new Set([
+    "access_logs:read",
+    "center:approve",
+    "center:update",
+    "stats:read",
+    "patient:create",
+    "patient:read",
+    "patient:update",
+    "patient:delete",
+    "patient:export",
+  ]),
   admin: new Set([
     "center:approve",
     "center:update",
@@ -159,6 +170,27 @@ function appendAuditLog(db, entry) {
   });
 }
 
+function appendAccessLog(db, entry) {
+  if (!Array.isArray(db.accessLogs)) db.accessLogs = [];
+  db.accessLogs.push({
+    id: crypto.randomUUID(),
+    actorUserId: cleanAuditText(entry.actorUserId || "anonymous", 80),
+    actorRole: cleanAuditText(entry.actorRole || "anonymous", 40),
+    organizationId: cleanAuditText(entry.organizationId || "unknown", 80),
+    source: cleanAuditText(entry.source || "unknown", 40),
+    method: cleanAuditText(entry.method || "GET", 12),
+    path: cleanAuditText(entry.path || "/", 160),
+    statusCode: Number(entry.statusCode) || 200,
+    ip: cleanAuditText(entry.ip || "unknown", 80),
+    userAgent: cleanAuditText(entry.userAgent || "unknown", 180),
+    createdAt: new Date().toISOString(),
+  });
+
+  if (db.accessLogs.length > 1000) {
+    db.accessLogs = db.accessLogs.slice(-1000);
+  }
+}
+
 function encryptionKeyFromBase64(base64Key) {
   if (!base64Key) {
     throw new Error("Missing encryption key");
@@ -206,6 +238,7 @@ function decryptField(payload, base64Key) {
 
 module.exports = {
   ACCESS_TOKEN_TTL_MS,
+  appendAccessLog,
   appendAuditLog,
   canAccessPatient,
   cleanAuditText,

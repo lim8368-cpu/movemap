@@ -113,7 +113,9 @@
 
       async function loadCenters() {
         try {
-          const response = await fetch(`${API_BASE}/api/centers`);
+          const response = await fetch(`${API_BASE}/api/centers`, {
+            headers: { "X-Movemap-Client": "mobile-map" },
+          });
           if (!response.ok) throw new Error("centers unavailable");
           const data = await response.json();
           const approvedCenters = (data.centers || [])

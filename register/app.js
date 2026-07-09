@@ -153,7 +153,10 @@ form.addEventListener("submit", async (event) => {
   try {
     const response = await fetch(`${API_BASE}/api/center-applications`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Movemap-Client": "register",
+      },
       body: JSON.stringify(formToPayload(new FormData(form))),
     });
     const data = await response.json();

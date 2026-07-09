@@ -123,7 +123,9 @@ function normalizeCenter(center) {
 
 async function loadApprovedCenters() {
   try {
-    const response = await fetch(`${API_BASE}/api/centers`);
+    const response = await fetch(`${API_BASE}/api/centers`, {
+      headers: { "X-Movemap-Client": "web" },
+    });
     if (!response.ok) throw new Error("centers unavailable");
     const data = await response.json();
     const approvedCenters = (data.centers || []).map(normalizeCenter);
@@ -140,7 +142,10 @@ async function loadApprovedCenters() {
 function trackEvent(type, centerId, detail = "") {
   fetch(`${API_BASE}/api/events`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Movemap-Client": "web",
+    },
     body: JSON.stringify({
       type,
       centerId,

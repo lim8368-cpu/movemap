@@ -82,3 +82,20 @@
 - `created_at`
 
 감사 로그에는 환자 이름, 연락처, 진단명, 치료내용, 비밀번호, 토큰을 저장하지 않습니다.
+
+## access_logs
+
+- `id` UUID primary key
+- `organization_id` UUID
+- `actor_user_id`
+- `actor_role`
+- `source`
+- `method`
+- `path`
+- `status_code`
+- `ip`
+- `user_agent`
+- `created_at`
+
+접속기록은 최고관리자만 볼 수 있습니다.
+접속기록에는 비밀번호, 토큰, 환자 이름, 진단명, 치료내용을 저장하지 않습니다.
