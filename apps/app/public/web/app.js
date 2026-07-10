@@ -73,7 +73,6 @@ const sampleCenters = [
   },
 ];
 
-const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
 const API_BASE = "http://localhost:8090";
 const centerList = document.querySelector("#centerList");
 const resultCount = document.querySelector("#resultCount");
@@ -99,6 +98,9 @@ let lastTrackedViewId = "";
 let userMarker = null;
 let centerFocusTimers = [];
 let panelGestureActive = false;
+let publicConfig = {
+  naverMapNcpKeyId: "",
+};
 const CENTER_MARKER_MIN_ZOOM = 13;
 const CENTER_DETAIL_ZOOM = 16;
 
@@ -136,6 +138,18 @@ async function loadApprovedCenters() {
   } catch {
     centers = sampleCenters;
     selectedId = "";
+  }
+}
+
+async function loadPublicConfig() {
+  try {
+    const response = await fetch(`${API_BASE}/api/config`, {
+      headers: { "X-Movemap-Client": "web" },
+    });
+    if (!response.ok) throw new Error("config unavailable");
+    publicConfig = await response.json();
+  } catch {
+    publicConfig = { naverMapNcpKeyId: "" };
   }
 }
 
@@ -554,7 +568,8 @@ function getNaverMapKey() {
   return (
     params.get("naverKey") ||
     localStorage.getItem("NAVER_MAP_NCP_KEY_ID") ||
-    NAVER_MAP_NCP_KEY_ID
+    publicConfig.naverMapNcpKeyId ||
+    ""
   );
 }
 
@@ -731,6 +746,7 @@ locateButton.addEventListener("click", () => {
 });
 
 async function initApp() {
+  await loadPublicConfig();
   await loadApprovedCenters();
   renderDetail();
   renderList();

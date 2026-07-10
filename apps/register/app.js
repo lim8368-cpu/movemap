@@ -14,7 +14,9 @@ const photoPreview = document.querySelector("#photoPreview");
 const licenseFileInput = document.querySelector("#licenseFileInput");
 const licenseImageDataUrlInput = document.querySelector("#licenseImageDataUrlInput");
 const licensePreview = document.querySelector("#licensePreview");
-const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
+let publicConfig = {
+  naverMapNcpKeyId: "",
+};
 let geocodeTimer = null;
 
 function createNaverMapUrl(address) {
@@ -49,13 +51,31 @@ function loadNaverMapSdk() {
       return;
     }
 
+    const key = publicConfig.naverMapNcpKeyId;
+    if (!key) {
+      reject(new Error("Naver map key is missing"));
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(NAVER_MAP_NCP_KEY_ID)}&submodules=geocoder&v=${Date.now()}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&submodules=geocoder&v=${Date.now()}`;
     script.async = true;
     script.onload = resolve;
     script.onerror = reject;
     document.head.appendChild(script);
   });
+}
+
+async function loadPublicConfig() {
+  try {
+    const response = await fetch(`${API_BASE}/api/config`, {
+      headers: { "X-Movemap-Client": "register" },
+    });
+    if (!response.ok) throw new Error("config unavailable");
+    publicConfig = await response.json();
+  } catch {
+    publicConfig = { naverMapNcpKeyId: "" };
+  }
 }
 
 async function geocodeAddress() {
@@ -212,4 +232,4 @@ naverMapLink.addEventListener("click", (event) => {
     addressInput.focus();
   }
 });
-syncNaverMapLink();
+loadPublicConfig().finally(syncNaverMapLink);

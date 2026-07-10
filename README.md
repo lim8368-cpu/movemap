@@ -84,6 +84,8 @@ movemap-github-ready/
 
 ```text
 LOCAL_ADMIN_PASSWORD=내가_정한_로컬_비밀번호
+NAVER_MAP_NCP_KEY_ID=내_네이버_지도_Client_ID
+MOVEMAP_DB_PATH=server/data/db.local.json
 ```
 
 ```bash
@@ -150,9 +152,12 @@ GitHub에 올리면 안 되는 것:
 - `.env`
 - 인증서, 서비스 계정 키, API 비밀키
 - 실제 환자정보, 면허증 이미지, 치료 기록
+- `server/data/db.json`, `server/data/db.local.json` 같은 실제 로컬/운영 DB 파일
 - `.DS_Store`
 
 이 파일들은 `.gitignore`에 등록해두었습니다.
+
+GitHub에는 `server/data/db.example.json`처럼 개인정보가 없는 샘플 DB만 올립니다.
 
 ## 출시 준비 다음 단계
 

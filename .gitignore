@@ -34,6 +34,12 @@ supabase-service-role*.json
 ncloud-*.json
 
 # Local databases and uploads
+server/data/db.json
+server/data/db.local.json
+server/data/*.local.json
+server/data/*.prod.json
+server/data/*.backup.json
+!server/data/db.example.json
 *.sqlite
 *.sqlite3
 uploads/

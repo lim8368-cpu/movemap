@@ -8,7 +8,11 @@ loadLocalEnv(path.resolve(__dirname, "..", ".env"));
 
 const PORT = Number(process.env.PORT || 8090);
 const ROOT = path.resolve(__dirname, "..");
-const DB_PATH = path.join(__dirname, "data", "db.json");
+const configuredDbPath = process.env.MOVEMAP_DB_PATH || "server/data/db.local.json";
+const DB_PATH = path.isAbsolute(configuredDbPath)
+  ? configuredDbPath
+  : path.join(ROOT, configuredDbPath);
+const DB_SEED_PATH = path.join(__dirname, "data", "db.example.json");
 const ADMIN_DIR = path.join(ROOT, "apps", "admin");
 const WEB_DIR = path.join(ROOT, "apps", "app", "public", "web");
 const REGISTER_DIR = path.join(ROOT, "apps", "register");
@@ -36,11 +40,19 @@ function loadLocalEnv(filePath) {
 }
 
 function readDb() {
+  ensureLocalDb();
   return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
 }
 
 function writeDb(db) {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   fs.writeFileSync(DB_PATH, `${JSON.stringify(db, null, 2)}\n`);
+}
+
+function ensureLocalDb() {
+  if (fs.existsSync(DB_PATH)) return;
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  fs.copyFileSync(DB_SEED_PATH, DB_PATH);
 }
 
 function sendJson(res, status, data) {
@@ -327,6 +339,13 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/health") {
       recordAccess(req, { source: requestSource(req, "health") });
       sendJson(res, 200, { ok: true, service: "movemap-backend" });
+      return;
+    }
+
+    if (url.pathname === "/api/config" && req.method === "GET") {
+      sendJson(res, 200, {
+        naverMapNcpKeyId: process.env.NAVER_MAP_NCP_KEY_ID || "",
+      });
       return;
     }
 

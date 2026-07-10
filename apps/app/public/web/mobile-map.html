@@ -84,9 +84,11 @@
     <div id="notice" class="notice">네이버 지도 인증을 확인해주세요.</div>
 
     <script>
-      const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
       const API_BASE =
         new URLSearchParams(window.location.search).get("apiBase") || "http://192.168.150.139:8090";
+      let publicConfig = {
+        naverMapNcpKeyId: new URLSearchParams(window.location.search).get("naverKeyId") || "",
+      };
       let centers = [
         { id: "core", name: "코어핏", rating: "4.9", lat: 37.4979, lng: 127.0276 },
         { id: "reform", name: "리폼무브", rating: "4.8", lat: 37.5557, lng: 126.9236 },
@@ -104,11 +106,30 @@
       }
 
       function loadMapSdk() {
+        const key = publicConfig.naverMapNcpKeyId;
+        if (!key) {
+          showNotice();
+          return;
+        }
+
         const script = document.createElement("script");
-        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_MAP_NCP_KEY_ID}&v=${Date.now()}`;
+        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&v=${Date.now()}`;
         script.onload = initMap;
         script.onerror = showNotice;
         document.head.appendChild(script);
+      }
+
+      async function loadPublicConfig() {
+        if (publicConfig.naverMapNcpKeyId) return;
+        try {
+          const response = await fetch(`${API_BASE}/api/config`, {
+            headers: { "X-Movemap-Client": "mobile-map" },
+          });
+          if (!response.ok) throw new Error("config unavailable");
+          publicConfig = await response.json();
+        } catch {
+          showNotice();
+        }
       }
 
       async function loadCenters() {
@@ -378,7 +399,7 @@
 
       document.addEventListener("message", handleNativeMessage);
       window.addEventListener("message", handleNativeMessage);
-      loadCenters().finally(loadMapSdk);
+      Promise.all([loadPublicConfig(), loadCenters()]).finally(loadMapSdk);
     </script>
   </body>
 </html>

@@ -2,15 +2,18 @@
 
 웹 프로토타입은 네이버 지도 JavaScript SDK를 사용합니다.
 
-## 현재 키
+## 현재 키 관리 방식
 
-[app.js](./app.js)에 아래 `ncpKeyId`가 들어가 있습니다.
+네이버 지도 JavaScript SDK의 `ncpKeyId`에는 `Client ID`를 넣습니다.
+`Client Secret`은 브라우저 코드, 앱 번들, GitHub 저장소에 넣지 마세요.
 
-```js
-const NAVER_MAP_NCP_KEY_ID = "lae0rqg0zj";
+로컬에서는 프로젝트 루트의 `.env` 파일에 아래처럼 넣습니다.
+
+```text
+NAVER_MAP_NCP_KEY_ID=내_네이버_지도_Client_ID
 ```
 
-네이버 지도 JavaScript SDK의 `ncpKeyId`에는 `Client ID`를 넣습니다. `Client Secret`은 브라우저 코드에 넣지 마세요.
+서버가 `/api/config`로 앱에 필요한 공개 설정만 내려줍니다.
 
 ## 네이버 콘솔에서 허용 URL
 

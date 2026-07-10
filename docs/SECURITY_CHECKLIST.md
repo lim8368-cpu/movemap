@@ -63,7 +63,7 @@ API 서버
 
 | 유출 경로 | 위험 | 현재 조치 | 출시 전 남은 일 |
 |---|---|---|---|
-| `server/data/db.json`에 민감정보 저장 | Git 업로드 또는 로컬 파일 유출 | 로컬 MVP용이라고 문서화 | 운영 DB로 이전, 실제 환자정보 사용 금지 |
+| `server/data/db.json` 또는 로컬 DB에 민감정보 저장 | Git 업로드 또는 로컬 파일 유출 | 실제 DB 파일은 `.gitignore`에 포함하고 `db.example.json`만 추적 | 운영 DB로 이전, 실제 환자정보 사용 금지 |
 | 등록 신청 이미지가 base64로 JSON에 저장 | 파일 노출과 DB 비대화 | 운영 모드에서 base64 파일 저장 차단 | 비공개 파일 저장소와 signed URL 구현 |
 | HTTP 로컬 주소 사용 | 중간자 공격 | 운영 모드 HTTPS 강제 | 배포 도메인 HTTPS 적용 |
 | CORS `*` 허용 | 외부 사이트의 API 호출 위험 | wildcard 제거 | 운영 도메인만 `ALLOWED_ORIGINS` 등록 |
