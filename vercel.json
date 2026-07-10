@@ -15,6 +15,22 @@
       "destination": "/api/events"
     },
     {
+      "source": "/api/center-applications",
+      "destination": "/api/center-applications"
+    },
+    {
+      "source": "/register",
+      "destination": "/register/index.html"
+    },
+    {
+      "source": "/register/",
+      "destination": "/register/index.html"
+    },
+    {
+      "source": "/register/:path*",
+      "destination": "/register/:path*"
+    },
+    {
       "source": "/web/:path*",
       "destination": "/:path*"
     },

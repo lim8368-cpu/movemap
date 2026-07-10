@@ -100,11 +100,15 @@ button {
 
 .primary-button,
 .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
   border-radius: 8px;
   padding: 0 16px;
   border: 1px solid var(--mint);
   font-weight: 700;
+  text-decoration: none;
 }
 
 .primary-button {
