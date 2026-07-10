@@ -42,6 +42,7 @@ movemap/
     출시 가이드
     보안 문서
     운영 문서
+    환경/브랜치/배포 전략
 ```
 
 ## 수정 원칙
@@ -62,11 +63,24 @@ movemap/
 ```bash
 npm run server:start
 npm run app:start
+npm run app:start:staging
+npm run app:start:production
 npm run app:web
 npm run app:ios
 npm run app:android
 npm run server:test:security
 ```
+
+## 환경 분리
+
+운영과 테스트 분리 기준은 아래 문서를 먼저 확인합니다.
+
+```text
+docs/ENVIRONMENT_BRANCH_DEPLOYMENT.md
+docs/RELEASE_WORKFLOW.md
+```
+
+`main`은 운영, `develop`은 테스트, `feature/*`는 개별 작업에 사용합니다.
 
 ## 현재 주의점
 

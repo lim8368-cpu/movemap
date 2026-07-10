@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 
-const API_BASE = "http://192.168.150.139:8090";
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.150.139:8090";
 const MOBILE_MAP_URL = `${API_BASE}/web/mobile-map.html?apiBase=${encodeURIComponent(API_BASE)}&v=20260709-unified-app`;
 
 const sampleCenters = [

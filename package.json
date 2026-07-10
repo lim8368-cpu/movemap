@@ -7,9 +7,17 @@
   ],
   "scripts": {
     "app:start": "npm --prefix apps/app run start",
+    "app:start:staging": "npm --prefix apps/app run start:staging",
+    "app:start:production": "npm --prefix apps/app run start:production",
     "app:ios": "npm --prefix apps/app run ios",
+    "app:ios:staging": "npm --prefix apps/app run ios:staging",
+    "app:ios:production": "npm --prefix apps/app run ios:production",
     "app:android": "npm --prefix apps/app run android",
+    "app:android:staging": "npm --prefix apps/app run android:staging",
+    "app:android:production": "npm --prefix apps/app run android:production",
     "app:web": "npm --prefix apps/app run web",
+    "app:web:staging": "npm --prefix apps/app run web:staging",
+    "app:web:production": "npm --prefix apps/app run web:production",
     "server:start": "node server/server.js",
     "server:test:security": "node server/security.test.js"
   }

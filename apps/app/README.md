@@ -29,6 +29,24 @@ Web:
 npm run web
 ```
 
+## 환경별 앱 구분
+
+앱 설정은 `app.config.js`에서 관리합니다.
+
+| 환경 | 앱 이름 | iOS Bundle ID | Android applicationId |
+|---|---|---|---|
+| development | 무브맵 Dev | `com.movemap.app.dev` | `com.movemap.app.dev` |
+| staging | 무브맵 Test | `com.movemap.app.staging` | `com.movemap.app.staging` |
+| production | 무브맵 | `com.movemap.app` | `com.movemap.app` |
+
+테스트 앱과 운영 앱은 한 휴대폰에 동시에 설치할 수 있습니다.
+
+```bash
+npm run start:staging
+npm run ios:staging
+npm run android:staging
+```
+
 ## 지금 들어간 화면
 
 - 지역/증상/검색 필터

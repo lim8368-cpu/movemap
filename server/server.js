@@ -4,7 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 const security = require("./security");
 
-loadLocalEnv(path.resolve(__dirname, "..", ".env"));
+loadLocalEnvFiles(path.resolve(__dirname, ".."));
 
 const PORT = Number(process.env.PORT || 8090);
 const ROOT = path.resolve(__dirname, "..");
@@ -37,6 +37,16 @@ function loadLocalEnv(filePath) {
       process.env[key] = value;
     }
   }
+}
+
+function loadLocalEnvFiles(rootDir) {
+  if (process.env.NODE_ENV === "production") return;
+
+  loadLocalEnv(path.join(rootDir, ".env"));
+  loadLocalEnv(path.join(rootDir, ".env.local"));
+
+  const appEnv = process.env.APP_ENV || "development";
+  loadLocalEnv(path.join(rootDir, `.env.${appEnv}`));
 }
 
 function readDb() {

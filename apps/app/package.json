@@ -4,10 +4,18 @@
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "start": "expo start",
-    "ios": "expo start --ios",
-    "android": "expo start --android",
-    "web": "expo start --web"
+    "start": "APP_ENV=development expo start",
+    "start:staging": "APP_ENV=staging expo start",
+    "start:production": "APP_ENV=production expo start",
+    "ios": "APP_ENV=development expo start --ios",
+    "ios:staging": "APP_ENV=staging expo start --ios",
+    "ios:production": "APP_ENV=production expo start --ios",
+    "android": "APP_ENV=development expo start --android",
+    "android:staging": "APP_ENV=staging expo start --android",
+    "android:production": "APP_ENV=production expo start --android",
+    "web": "APP_ENV=development expo start --web",
+    "web:staging": "APP_ENV=staging expo start --web",
+    "web:production": "APP_ENV=production expo start --web"
   },
   "dependencies": {
     "expo": "~54.0.35",

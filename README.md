@@ -38,6 +38,8 @@ iPhone 앱 / Android 앱 / Web
 - `docs/SECURITY_ARCHITECTURE.md`
 - `docs/SECURITY_CHECKLIST.md`
 - `docs/PROJECT_STRUCTURE.md`
+- `docs/ENVIRONMENT_BRANCH_DEPLOYMENT.md`
+- `docs/RELEASE_WORKFLOW.md`
 - `database/SECURITY_SCHEMA.md`
 
 ## 폴더 구조
@@ -48,6 +50,7 @@ movemap-github-ready/
     app/
       Expo React Native + React Native Web 앱
       iOS / Android / Web 공통 사용자 화면
+      development / staging / production 앱 설정 분리
       public/web/
         네이버 지도 WebView와 기존 웹 MVP 자산
 
@@ -173,6 +176,7 @@ GitHub에는 `server/data/db.example.json`처럼 개인정보가 없는 샘플 D
 ## 앞으로 작업 규칙
 
 앞으로 수정할 때는 웹과 모바일을 같이 고려합니다.
+새 기능은 `feature/*` 브랜치에서 작업하고, preview 확인 후 `develop`, 최종 확인 후 `main`으로 병합합니다.
 
 예:
 
