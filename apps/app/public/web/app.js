@@ -73,7 +73,9 @@ const sampleCenters = [
   },
 ];
 
-const API_BASE = "http://localhost:8090";
+const API_BASE =
+  window.MOVEMAP_API_BASE ||
+  (window.location.protocol === "file:" ? "http://localhost:8090" : window.location.origin);
 const centerList = document.querySelector("#centerList");
 const resultCount = document.querySelector("#resultCount");
 const detailPanel = document.querySelector("#detailPanel");

@@ -1,0 +1,26 @@
+{
+  "buildCommand": "npm run vercel:build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "/api/config"
+    },
+    {
+      "source": "/api/centers",
+      "destination": "/api/centers"
+    },
+    {
+      "source": "/api/events",
+      "destination": "/api/events"
+    },
+    {
+      "source": "/web/:path*",
+      "destination": "/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

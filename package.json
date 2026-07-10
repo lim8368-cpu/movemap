@@ -10,6 +10,7 @@
     "app:ios": "npm --prefix apps/app run ios",
     "app:android": "npm --prefix apps/app run android",
     "app:web": "npm --prefix apps/app run web",
+    "vercel:build": "node scripts/build-vercel-static.js",
     "server:start": "node server/server.js",
     "server:test:security": "node server/security.test.js"
   }
