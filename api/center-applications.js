@@ -1,4 +1,4 @@
-const { sendJson } = require("./_shared");
+const { sendJson, hasSupabaseConfig, supabaseRequest } = require("./_shared");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -59,9 +59,36 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    if (!hasSupabaseConfig()) {
+      sendJson(res, 503, { error: "테스트 DB가 아직 연결되지 않았습니다." });
+      return;
+    }
+
+    const rows = await supabaseRequest("center_applications", {
+      method: "POST",
+      body: {
+        center_name: body.centerName.trim(),
+        owner_name: body.ownerName.trim(),
+        phone: body.phone.trim(),
+        area: body.area.trim(),
+        address: body.address.trim(),
+        naver_map_url: body.naverMapUrl || null,
+        lat: body.lat ? Number(body.lat) : null,
+        lng: body.lng ? Number(body.lng) : null,
+        website: body.website || null,
+        photo_url: body.photoUrl || null,
+        license_holder_name: body.licenseHolderName.trim(),
+        license_number: body.licenseNumber.trim(),
+        services: body.services || null,
+        memo: body.memo || null,
+        consent: true,
+        status: "pending",
+      },
+    });
+
     sendJson(res, 202, {
       ok: true,
-      applicationId: `local-${Date.now()}`,
+      applicationId: rows[0].id,
       status: "received",
       message: "등록 신청이 접수되었습니다. 운영자 확인 후 연락드릴게요.",
     });

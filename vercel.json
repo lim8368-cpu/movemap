@@ -31,6 +31,14 @@
       "destination": "/register/:path*"
     },
     {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/:path*"
+    },
+    {
       "source": "/web/:path*",
       "destination": "/:path*"
     },

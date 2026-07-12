@@ -1,0 +1,3 @@
+-- Test/Preview only. Never run this file against the production project.
+-- The current test Supabase project contains the four UI sample centers.
+-- Production starts empty and receives centers only through application approval.
