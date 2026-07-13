@@ -13,10 +13,6 @@
         <h1>센터 조회와 상담 클릭을 확인합니다</h1>
         <p class="intro">초기 MVP용 운영자 관리자입니다.</p>
         <label>
-          아이디
-          <input id="loginId" value="admin" autocomplete="username" />
-        </label>
-        <label>
           비밀번호
           <input id="loginPassword" type="password" autocomplete="current-password" />
         </label>
@@ -30,7 +26,10 @@
             <p class="eyebrow">Movemap Admin</p>
             <h1>운영 대시보드</h1>
           </div>
-          <button id="refreshButton" type="button">새로고침</button>
+          <div>
+            <button id="refreshButton" type="button">새로고침</button>
+            <button id="logoutButton" type="button">로그아웃</button>
+          </div>
         </header>
 
         <div class="summary-grid">

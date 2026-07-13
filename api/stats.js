@@ -1,4 +1,10 @@
-const { sendJson, isAdminRequest, supabaseRequest, centerFromRow } = require("./_shared");
+const {
+  sendJson,
+  isAdminRequest,
+  supabaseRequest,
+  centerFromRow,
+  createSignedStorageUrl,
+} = require("./_shared");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
@@ -9,12 +15,31 @@ module.exports = async function handler(req, res) {
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=100" }),
     ]);
-    const centers = centerRows.map((row) => ({
-      ...centerFromRow(row),
+    const centers = await Promise.all(centerRows.map(async (row) => ({
+      ...centerFromRow(row, row.photo_path ? await createSignedStorageUrl(row.photo_path) : ""),
       views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
       contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
       lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
-    }));
+    })));
+    const applicationItems = await Promise.all(applications.map(async (item) => ({
+      id: item.id,
+      centerName: item.center_name,
+      ownerName: item.owner_name,
+      phone: item.phone,
+      area: item.area,
+      address: item.address,
+      naverMapUrl: item.naver_map_url,
+      website: item.website,
+      photoUrl: item.photo_path ? await createSignedStorageUrl(item.photo_path) : (item.photo_url || ""),
+      licenseImageUrl: item.license_image_path ? await createSignedStorageUrl(item.license_image_path) : "",
+      licenseHolderName: item.license_holder_name,
+      licenseNumber: item.license_number,
+      services: item.services,
+      memo: item.memo,
+      status: item.status,
+      centerId: centerRows.find((center) => center.application_id === item.id)?.id || "",
+      createdAt: item.created_at,
+    })));
     sendJson(res, 200, {
       totals: {
         centers: centers.length,
@@ -23,23 +48,7 @@ module.exports = async function handler(req, res) {
         contactClicks: events.filter((item) => item.event_type === "contact").length,
         events: events.length,
       },
-      centerApplications: applications.map((item) => ({
-        id: item.id,
-        centerName: item.center_name,
-        ownerName: item.owner_name,
-        phone: item.phone,
-        area: item.area,
-        address: item.address,
-        naverMapUrl: item.naver_map_url,
-        website: item.website,
-        photoUrl: item.photo_url,
-        licenseHolderName: item.license_holder_name,
-        licenseNumber: item.license_number,
-        services: item.services,
-        memo: item.memo,
-        status: item.status,
-        createdAt: item.created_at,
-      })),
+      centerApplications: applicationItems,
       centers,
       recentEvents: events.slice(0, 30).map((item) => ({
         type: item.event_type,

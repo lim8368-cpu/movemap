@@ -1,3 +1,7 @@
+const crypto = require("crypto");
+
+const ADMIN_SESSION_TTL_SECONDS = 15 * 60;
+const ADMIN_COOKIE_NAME = "movemap_admin_session";
 const sampleCenters = [
   {
     id: "core",
@@ -88,6 +92,12 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+function runtimeEnvironment() {
+  if (process.env.VERCEL_ENV === "production") return "production";
+  if (process.env.VERCEL_ENV === "preview") return "test";
+  return process.env.APP_ENV || "development";
+}
+
 function hasSupabaseConfig() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
@@ -116,7 +126,104 @@ async function supabaseRequest(table, { method = "GET", query = "", body } = {})
   return data;
 }
 
-function centerFromRow(row) {
+async function supabaseStorageRequest(path, { method = "POST", body, headers = {} } = {}) {
+  if (!hasSupabaseConfig()) throw new Error("Supabase environment variables are not configured");
+  const response = await fetch(`${process.env.SUPABASE_URL}/storage/v1${path}`, {
+    method,
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      ...headers,
+    },
+    body,
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) throw new Error(data?.message || data?.error || `Storage request failed (${response.status})`);
+  return data;
+}
+
+function storageBucket() {
+  return process.env.SUPABASE_STORAGE_BUCKET || "movemap-private";
+}
+
+async function createSignedStorageUrl(objectPath, expiresIn = 900) {
+  if (!objectPath) return "";
+  const bucket = storageBucket();
+  const data = await supabaseStorageRequest(
+    `/object/sign/${encodeURIComponent(bucket)}/${objectPath.split("/").map(encodeURIComponent).join("/")}`,
+    {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn }),
+    }
+  );
+  const signedPath = data?.signedURL || data?.signedUrl;
+  if (!signedPath) return "";
+  return signedPath.startsWith("http") ? signedPath : `${process.env.SUPABASE_URL}/storage/v1${signedPath}`;
+}
+
+function parseScryptHash(encoded) {
+  const [algorithm, saltValue, hashValue] = String(encoded || "").split("$");
+  if (algorithm !== "scrypt" || !saltValue || !hashValue) return null;
+  try {
+    return { salt: Buffer.from(saltValue, "base64url"), hash: Buffer.from(hashValue, "base64url") };
+  } catch {
+    return null;
+  }
+}
+
+function verifyAdminPassword(password) {
+  const stored = parseScryptHash(process.env.ADMIN_PASSWORD_SCRYPT);
+  if (!stored || typeof password !== "string") return false;
+  const candidate = crypto.scryptSync(password, stored.salt, stored.hash.length);
+  return candidate.length === stored.hash.length && crypto.timingSafeEqual(candidate, stored.hash);
+}
+
+function signAdminSession(now = Date.now()) {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) throw new Error("ADMIN_SESSION_SECRET is not configured");
+  const payload = Buffer.from(JSON.stringify({ role: "super_admin", exp: now + ADMIN_SESSION_TTL_SECONDS * 1000 })).toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function verifyAdminSession(token, now = Date.now()) {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  const [payload, signature] = String(token || "").split(".");
+  if (!secret || !payload || !signature) return false;
+  const expected = crypto.createHmac("sha256", secret).update(payload).digest("base64url");
+  const given = Buffer.from(signature);
+  const wanted = Buffer.from(expected);
+  if (given.length !== wanted.length || !crypto.timingSafeEqual(given, wanted)) return false;
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return data.role === "super_admin" && Number(data.exp) > now;
+  } catch {
+    return false;
+  }
+}
+
+function cookieValue(req, name) {
+  const prefix = `${name}=`;
+  const item = String(req.headers.cookie || "").split(";").map((part) => part.trim()).find((part) => part.startsWith(prefix));
+  return item ? decodeURIComponent(item.slice(prefix.length)) : "";
+}
+
+function adminSessionFromRequest(req) {
+  const authorization = req.headers.authorization || "";
+  const bearer = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  return bearer || cookieValue(req, ADMIN_COOKIE_NAME);
+}
+
+function adminSessionCookie(token) {
+  return `${ADMIN_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${ADMIN_SESSION_TTL_SECONDS}`;
+}
+
+function clearAdminSessionCookie() {
+  return `${ADMIN_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
+}
+
+function centerFromRow(row, photoUrl = "") {
   return {
     id: row.id,
     name: row.name,
@@ -135,14 +242,12 @@ function centerFromRow(row) {
     lat: row.lat,
     lng: row.lng,
     plan: row.plan,
-    photoUrl: row.photo_path || "",
+    photoUrl,
   };
 }
 
 function isAdminRequest(req) {
-  const expected = process.env.ADMIN_API_TOKEN;
-  const authorization = req.headers.authorization || "";
-  return Boolean(expected && authorization === `Bearer ${expected}`);
+  return verifyAdminSession(adminSessionFromRequest(req));
 }
 
 module.exports = {
@@ -151,5 +256,15 @@ module.exports = {
   hasSupabaseConfig,
   supabaseRequest,
   centerFromRow,
+  createSignedStorageUrl,
+  clearAdminSessionCookie,
+  adminSessionCookie,
+  ADMIN_SESSION_TTL_SECONDS,
   isAdminRequest,
+  runtimeEnvironment,
+  signAdminSession,
+  storageBucket,
+  supabaseStorageRequest,
+  verifyAdminPassword,
+  verifyAdminSession,
 };

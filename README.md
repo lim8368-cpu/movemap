@@ -38,6 +38,7 @@ iPhone 앱 / Android 앱 / Web
 - `docs/SECURITY_ARCHITECTURE.md`
 - `docs/SECURITY_CHECKLIST.md`
 - `docs/PROJECT_STRUCTURE.md`
+- `docs/ENVIRONMENTS.md`
 - `database/SECURITY_SCHEMA.md`
 
 ## 폴더 구조
@@ -161,12 +162,11 @@ GitHub에는 `server/data/db.example.json`처럼 개인정보가 없는 샘플 D
 
 ## 출시 준비 다음 단계
 
-1. 로컬 주소를 환경변수로 변경
-2. Supabase 프로젝트 생성
-3. 센터 데이터 저장을 JSON에서 Supabase로 변경
-4. Vercel에 웹/등록/관리자 페이지 배포
-5. Expo EAS로 iOS/Android 빌드
-6. 네이버 클라우드에 운영 도메인 등록
+1. Preview와 Production Supabase 프로젝트를 각각 연결
+2. 각 Supabase에 비공개 저장소 마이그레이션 적용
+3. Vercel에 관리자 해시와 세션 비밀값 설정
+4. Expo EAS로 iOS/Android 빌드
+5. 네이버 클라우드에 운영 도메인 등록
 
 자세한 내용은 `docs/` 폴더의 가이드를 참고하세요.
 

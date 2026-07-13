@@ -1,4 +1,4 @@
-const { sendJson } = require("./_shared");
+const { runtimeEnvironment, sendJson } = require("./_shared");
 
 module.exports = function handler(req, res) {
   if (req.method !== "GET") {
@@ -8,5 +8,6 @@ module.exports = function handler(req, res) {
 
   sendJson(res, 200, {
     naverMapNcpKeyId: process.env.NAVER_MAP_NCP_KEY_ID || "",
+    environment: runtimeEnvironment(),
   });
 };

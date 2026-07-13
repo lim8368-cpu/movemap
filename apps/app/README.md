@@ -51,7 +51,13 @@ http://localhost:8090/web/mobile-map.html
 Expo Go에서 네이버 지도를 보려면 네이버 Cloud Platform 콘솔의 `Web 서비스 URL`에 맥북 개발 서버 주소를 추가해야 합니다.
 
 ```text
-http://192.168.150.139:8090
+http://내컴퓨터IP:8090
+```
+
+앱 실행 시 같은 주소를 공개 환경변수로 지정합니다.
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://내컴퓨터IP:8090 npm run app:start
 ```
 
 ## 다음 구현 후보

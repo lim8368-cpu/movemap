@@ -29,6 +29,7 @@ module.exports = async function handler(req, res) {
         price: "센터 문의",
         conversion: "신규 등록 센터",
         plan: "free",
+        photo_path: item.photo_path,
         status: "approved",
       },
     });

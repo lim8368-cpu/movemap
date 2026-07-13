@@ -49,6 +49,7 @@ module.exports = async function handler(req, res) {
       "address",
       "licenseHolderName",
       "licenseNumber",
+      "licenseImagePath",
     ];
 
     const missing = requiredFields.filter((field) => !requiredString(body[field]));
@@ -77,8 +78,10 @@ module.exports = async function handler(req, res) {
         lng: body.lng ? Number(body.lng) : null,
         website: body.website || null,
         photo_url: body.photoUrl || null,
+        photo_path: body.photoPath || null,
         license_holder_name: body.licenseHolderName.trim(),
         license_number: body.licenseNumber.trim(),
+        license_image_path: body.licenseImagePath,
         services: body.services || null,
         memo: body.memo || null,
         consent: true,

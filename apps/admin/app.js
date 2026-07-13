@@ -1,13 +1,21 @@
 const API_BASE = window.location.protocol === "file:" ? "http://localhost:8090" : window.location.origin;
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
-const loginId = document.querySelector("#loginId");
 const loginPassword = document.querySelector("#loginPassword");
 const loginButton = document.querySelector("#loginButton");
 const loginMessage = document.querySelector("#loginMessage");
 const refreshButton = document.querySelector("#refreshButton");
+const logoutButton = document.querySelector("#logoutButton");
+localStorage.removeItem("MOVEMAP_ADMIN_TOKEN");
+let sessionToken = "";
 
-let token = localStorage.getItem("MOVEMAP_ADMIN_TOKEN") || "";
+function adminHeaders(extra = {}) {
+  return {
+    ...extra,
+    ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+    "X-Movemap-Client": "admin",
+  };
+}
 
 function formatDate(value) {
   if (!value) return "-";
@@ -61,10 +69,7 @@ function imageMarkup(src, label) {
 async function approveApplication(applicationId) {
   const response = await fetch(`${API_BASE}/api/center-applications/${applicationId}/approve`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-Movemap-Client": "admin",
-    },
+    headers: adminHeaders(),
   });
 
   if (!response.ok) {
@@ -92,11 +97,7 @@ async function updateCenterLocation(centerId) {
 
   const response = await fetch(`${API_BASE}/api/centers/${encodeURIComponent(centerId)}/location`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "X-Movemap-Client": "admin",
-    },
+    headers: adminHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       area,
       address,
@@ -124,7 +125,6 @@ async function login() {
       "X-Movemap-Client": "admin",
     },
     body: JSON.stringify({
-      id: loginId.value.trim(),
       password: loginPassword.value,
     }),
   });
@@ -135,22 +135,25 @@ async function login() {
     return;
   }
 
-  token = data.token;
-  localStorage.setItem("MOVEMAP_ADMIN_TOKEN", token);
+  loginPassword.value = "";
+  sessionToken = data.token || "";
   await loadStats();
 }
 
 async function loadStats() {
   const response = await fetch(`${API_BASE}/api/stats`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-Movemap-Client": "admin",
-    },
+    headers: adminHeaders(),
   });
 
   if (response.status === 401) {
-    localStorage.removeItem("MOVEMAP_ADMIN_TOKEN");
-    token = "";
+    loginPanel.hidden = false;
+    dashboard.hidden = true;
+    return;
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    loginMessage.textContent = error.error || "관리자 데이터를 불러오지 못했습니다.";
     loginPanel.hidden = false;
     dashboard.hidden = true;
     return;
@@ -171,7 +174,7 @@ async function loadStats() {
     data.centerApplications
       .map(
         (item) => {
-          const centerImage = item.photoDataUrl || item.photoUrl;
+          const centerImage = item.photoUrl;
           const mapUrl =
             item.naverMapUrl ||
             `https://map.naver.com/p/search/${encodeURIComponent(item.address || "")}`;
@@ -186,7 +189,7 @@ async function loadStats() {
             </div>
             <div class="application-media">
               ${imageMarkup(centerImage, `${item.centerName} 대표 사진`)}
-              ${imageMarkup(item.licenseImageDataUrl, `${item.centerName} 면허 인증`)}
+              ${imageMarkup(item.licenseImageUrl, `${item.centerName} 면허 인증`)}
             </div>
             <p>${escapeHtml(item.address)} <a href="${escapeHtml(mapUrl)}" target="_blank" rel="noreferrer">네이버 지도 열기</a></p>
             <p>면허 인증: ${escapeHtml(item.licenseHolderName)} · ${escapeHtml(item.licenseNumber)}</p>
@@ -257,10 +260,7 @@ async function loadStats() {
 
 async function loadAccessLogs() {
   const response = await fetch(`${API_BASE}/api/access-logs`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-Movemap-Client": "admin",
-    },
+    headers: adminHeaders(),
   });
 
   if (!response.ok) {
@@ -293,10 +293,14 @@ async function loadAccessLogs() {
 
 loginButton.addEventListener("click", login);
 refreshButton.addEventListener("click", loadStats);
+logoutButton.addEventListener("click", async () => {
+  await fetch(`${API_BASE}/api/logout`, { method: "POST", headers: adminHeaders() });
+  sessionToken = "";
+  loginPanel.hidden = false;
+  dashboard.hidden = true;
+});
 loginPassword.addEventListener("keydown", (event) => {
   if (event.key === "Enter") login();
 });
 
-if (token) {
-  loadStats();
-}
+loadStats();

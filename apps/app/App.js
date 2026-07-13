@@ -13,7 +13,9 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 
-const API_BASE = "http://192.168.150.139:8090";
+const API_BASE = String(
+  process.env.EXPO_PUBLIC_API_BASE_URL || "https://movemap.vercel.app"
+).replace(/\/$/, "");
 const MOBILE_MAP_URL = `${API_BASE}/web/mobile-map.html?apiBase=${encodeURIComponent(API_BASE)}&v=20260709-unified-app`;
 
 const sampleCenters = [
@@ -240,12 +242,12 @@ export default function App() {
   }
 
   async function loadAccessLogs(tokenValue = adminToken) {
-    if (!tokenValue) return;
+    const headers = { "X-Movemap-Client": "mobile-app" };
+    if (tokenValue && tokenValue !== "cookie-session") {
+      headers.Authorization = `Bearer ${tokenValue}`;
+    }
     const response = await fetch(`${API_BASE}/api/access-logs`, {
-      headers: {
-        Authorization: `Bearer ${tokenValue}`,
-        "X-Movemap-Client": "mobile-app",
-      },
+      headers,
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -274,9 +276,10 @@ export default function App() {
       setAdminMessage(data.error || "로그인에 실패했습니다.");
       return;
     }
-    setAdminToken(data.token);
+    const sessionValue = data.token || "cookie-session";
+    setAdminToken(sessionValue);
     setAdminPassword("");
-    await loadAccessLogs(data.token);
+    await loadAccessLogs(sessionValue);
   }
 
   return (

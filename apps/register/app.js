@@ -9,10 +9,10 @@ const mapLinkHint = document.querySelector("#mapLinkHint");
 const latInput = document.querySelector("#latInput");
 const lngInput = document.querySelector("#lngInput");
 const photoFileInput = document.querySelector("#photoFileInput");
-const photoDataUrlInput = document.querySelector("#photoDataUrlInput");
+const photoPathInput = document.querySelector("#photoPathInput");
 const photoPreview = document.querySelector("#photoPreview");
 const licenseFileInput = document.querySelector("#licenseFileInput");
-const licenseImageDataUrlInput = document.querySelector("#licenseImageDataUrlInput");
+const licenseImagePathInput = document.querySelector("#licenseImagePathInput");
 const licensePreview = document.querySelector("#licensePreview");
 let publicConfig = {
   naverMapNcpKeyId: "",
@@ -112,23 +112,25 @@ function setMessage(text, type = "") {
   message.className = `message ${type}`.trim();
 }
 
-function readImageFile(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve("");
-      return;
-    }
+function validateImageFile(file, required = false) {
+  if (!file && !required) return;
+  if (!file) throw new Error("면허 증빙 사진을 선택해 주세요.");
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("JPG, PNG, WEBP 이미지만 올릴 수 있습니다.");
+  }
+  if (file.size > 3 * 1024 * 1024) throw new Error("이미지는 3MB 이하로 올려주세요.");
+}
 
-    if (file.size > 850_000) {
-      reject(new Error("사진은 850KB 이하로 올려주세요."));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("사진을 읽지 못했습니다."));
-    reader.readAsDataURL(file);
+async function uploadPrivateImage(file, kind) {
+  if (!file) return "";
+  const response = await fetch(`${API_BASE}/api/uploads?kind=${encodeURIComponent(kind)}`, {
+    method: "POST",
+    headers: { "Content-Type": file.type, "X-Movemap-Client": "register" },
+    body: file,
   });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "비공개 이미지 업로드에 실패했습니다.");
+  return data.path;
 }
 
 function renderPreview(container, dataUrl) {
@@ -154,10 +156,10 @@ function formToPayload(formData) {
     lng: formData.get("lng"),
     website: formData.get("website"),
     photoUrl: formData.get("photoUrl"),
-    photoDataUrl: formData.get("photoDataUrl"),
+    photoPath: formData.get("photoPath"),
     licenseHolderName: formData.get("licenseHolderName"),
     licenseNumber: formData.get("licenseNumber"),
-    licenseImageDataUrl: formData.get("licenseImageDataUrl"),
+    licenseImagePath: formData.get("licenseImagePath"),
     services: formData.get("services"),
     memo: formData.get("memo"),
     consent: formData.get("consent") === "on",
@@ -171,6 +173,14 @@ form.addEventListener("submit", async (event) => {
   submitButton.textContent = "신청 중...";
 
   try {
+    const photoFile = photoFileInput.files[0];
+    const licenseFile = licenseFileInput.files[0];
+    validateImageFile(photoFile);
+    validateImageFile(licenseFile, true);
+    submitButton.textContent = "사진을 안전하게 업로드 중...";
+    photoPathInput.value = await uploadPrivateImage(photoFile, "center-photo");
+    licenseImagePathInput.value = await uploadPrivateImage(licenseFile, "license");
+    submitButton.textContent = "신청 중...";
     const response = await fetch(`${API_BASE}/api/center-applications`, {
       method: "POST",
       headers: {
@@ -192,7 +202,7 @@ form.addEventListener("submit", async (event) => {
     renderPreview(licensePreview, "");
     setMessage("등록 신청이 접수되었습니다. 운영자 확인 후 연락드릴게요.", "success");
   } catch (error) {
-    setMessage("서버 연결을 확인해 주세요.", "error");
+    setMessage(error.message || "서버 연결을 확인해 주세요.", "error");
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "등록 신청하기";
@@ -202,26 +212,28 @@ form.addEventListener("submit", async (event) => {
 addressInput.addEventListener("input", syncNaverMapLink);
 photoFileInput.addEventListener("change", async () => {
   try {
-    const dataUrl = await readImageFile(photoFileInput.files[0]);
-    photoDataUrlInput.value = dataUrl;
-    renderPreview(photoPreview, dataUrl);
+    const file = photoFileInput.files[0];
+    validateImageFile(file);
+    photoPathInput.value = "";
+    renderPreview(photoPreview, file ? URL.createObjectURL(file) : "");
     setMessage("");
   } catch (error) {
     photoFileInput.value = "";
-    photoDataUrlInput.value = "";
+    photoPathInput.value = "";
     renderPreview(photoPreview, "");
     setMessage(error.message, "error");
   }
 });
 licenseFileInput.addEventListener("change", async () => {
   try {
-    const dataUrl = await readImageFile(licenseFileInput.files[0]);
-    licenseImageDataUrlInput.value = dataUrl;
-    renderPreview(licensePreview, dataUrl);
+    const file = licenseFileInput.files[0];
+    validateImageFile(file, true);
+    licenseImagePathInput.value = "";
+    renderPreview(licensePreview, URL.createObjectURL(file));
     setMessage("");
   } catch (error) {
     licenseFileInput.value = "";
-    licenseImageDataUrlInput.value = "";
+    licenseImagePathInput.value = "";
     renderPreview(licensePreview, "");
     setMessage(error.message, "error");
   }

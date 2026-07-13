@@ -85,7 +85,8 @@
 
     <script>
       const API_BASE =
-        new URLSearchParams(window.location.search).get("apiBase") || "http://192.168.150.139:8090";
+        new URLSearchParams(window.location.search).get("apiBase") ||
+        (window.location.protocol === "file:" ? "http://localhost:8090" : window.location.origin);
       let publicConfig = {
         naverMapNcpKeyId: new URLSearchParams(window.location.search).get("naverKeyId") || "",
       };
