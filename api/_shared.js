@@ -215,12 +215,22 @@ function adminSessionFromRequest(req) {
   return bearer || cookieValue(req, ADMIN_COOKIE_NAME);
 }
 
-function adminSessionCookie(token) {
-  return `${ADMIN_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${ADMIN_SESSION_TTL_SECONDS}`;
+function requestUsesHttps(req) {
+  const forwardedProto = String(req?.headers?.["x-forwarded-proto"] || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  return forwardedProto === "https" || Boolean(req?.socket?.encrypted);
 }
 
-function clearAdminSessionCookie() {
-  return `${ADMIN_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
+function adminSessionCookie(token, req) {
+  const secure = requestUsesHttps(req) ? "; Secure" : "";
+  return `${ADMIN_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=${ADMIN_SESSION_TTL_SECONDS}`;
+}
+
+function clearAdminSessionCookie(req) {
+  const secure = requestUsesHttps(req) ? "; Secure" : "";
+  return `${ADMIN_COOKIE_NAME}=; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=0`;
 }
 
 function centerFromRow(row, photoUrl = "", photoUrls = []) {

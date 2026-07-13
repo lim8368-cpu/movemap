@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
 
     await clearLoginFailures(key);
     const token = signAdminSession();
-    res.setHeader("Set-Cookie", adminSessionCookie(token));
+    res.setHeader("Set-Cookie", adminSessionCookie(token, req));
     sendJson(res, 200, { ok: true, expiresInSeconds: ADMIN_SESSION_TTL_SECONDS });
   } catch (error) {
     console.error("admin login failed", error);
