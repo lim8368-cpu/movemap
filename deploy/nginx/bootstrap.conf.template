@@ -1,0 +1,65 @@
+map $http_cf_connecting_ip $movemap_client_ip {
+  default $http_cf_connecting_ip;
+  ""      $remote_addr;
+}
+
+limit_req_zone $movemap_client_ip zone=login_limit:10m rate=10r/m;
+limit_req_zone $movemap_client_ip zone=upload_limit:10m rate=30r/m;
+
+upstream movemap_app {
+  server app:3000;
+  keepalive 32;
+}
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name ${MOVEMAP_DOMAIN};
+
+  client_max_body_size 4m;
+  server_tokens off;
+
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+  location = /healthz {
+    proxy_pass http://movemap_app;
+    access_log off;
+  }
+
+  location = /api/login {
+    limit_req zone=login_limit burst=5 nodelay;
+    proxy_pass http://movemap_app;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $movemap_client_ip;
+    proxy_set_header X-Forwarded-Proto http;
+    proxy_set_header X-Forwarded-For $movemap_client_ip;
+  }
+
+  location = /api/uploads {
+    limit_req zone=upload_limit burst=10 nodelay;
+    proxy_request_buffering off;
+    proxy_pass http://movemap_app;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $movemap_client_ip;
+    proxy_set_header X-Forwarded-Proto http;
+    proxy_set_header X-Forwarded-For $movemap_client_ip;
+  }
+
+  location / {
+    proxy_pass http://movemap_app;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $movemap_client_ip;
+    proxy_set_header X-Forwarded-For $movemap_client_ip;
+    proxy_set_header X-Forwarded-Proto http;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 30s;
+    proxy_send_timeout 30s;
+  }
+}

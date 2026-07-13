@@ -170,6 +170,16 @@ GitHub에는 `server/data/db.example.json`처럼 개인정보가 없는 샘플 D
 
 자세한 내용은 `docs/` 폴더의 가이드를 참고하세요.
 
+## VPS + Docker + Nginx + Cloudflare 운영
+
+Vercel 대신 Docker Compose로 웹, 모든 API, Nginx HTTPS 프록시와 자동 백업을 운영할 수 있습니다.
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+VPS, Cloudflare, 백업 설정은 `docs/VPS_DOCKER_NGINX_CLOUDFLARE.md`를 확인하세요.
+
 ## 앞으로 작업 규칙
 
 앞으로 수정할 때는 웹과 모바일을 같이 고려합니다.
