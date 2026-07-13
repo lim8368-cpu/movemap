@@ -43,10 +43,6 @@
       "destination": "/api/center-applications"
     },
     {
-      "source": "/api/center-applications/:id/approve",
-      "destination": "/api/center-applications/:id/approve"
-    },
-    {
       "source": "/api/centers/:id/location",
       "destination": "/api/centers/:id/location"
     },
