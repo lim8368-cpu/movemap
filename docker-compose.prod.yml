@@ -74,6 +74,7 @@ services:
       - SETUID
     networks:
       - private
+      - egress
 
   backup:
     profiles:
