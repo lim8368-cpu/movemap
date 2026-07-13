@@ -7,6 +7,18 @@
       "destination": "/api/config"
     },
     {
+      "source": "/api/login",
+      "destination": "/api/login"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/stats"
+    },
+    {
+      "source": "/api/access-logs",
+      "destination": "/api/access-logs"
+    },
+    {
       "source": "/api/centers",
       "destination": "/api/centers"
     },
@@ -25,6 +37,14 @@
     {
       "source": "/api/center-applications",
       "destination": "/api/center-applications"
+    },
+    {
+      "source": "/api/center-applications/:id/approve",
+      "destination": "/api/center-applications/:id/approve"
+    },
+    {
+      "source": "/api/centers/:id/location",
+      "destination": "/api/centers/:id/location"
     },
     {
       "source": "/register",
