@@ -59,6 +59,7 @@ services:
       start_period: 10s
     read_only: true
     tmpfs:
+      - /etc/nginx/conf.d:size=1m,noexec,nosuid
       - /var/cache/nginx:size=64m,noexec,nosuid
       - /var/run:size=8m,noexec,nosuid
       - /tmp:size=16m,noexec,nosuid
