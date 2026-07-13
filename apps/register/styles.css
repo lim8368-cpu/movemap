@@ -153,7 +153,10 @@ textarea:focus {
 }
 
 .image-preview {
-  width: min(260px, 100%);
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -166,6 +169,8 @@ textarea:focus {
   aspect-ratio: 4 / 3;
   object-fit: cover;
 }
+
+.consent-row a { color: #167354; }
 
 .verification-section {
   display: grid;

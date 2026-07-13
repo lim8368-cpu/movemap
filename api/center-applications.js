@@ -79,6 +79,7 @@ module.exports = async function handler(req, res) {
         website: body.website || null,
         photo_url: body.photoUrl || null,
         photo_path: body.photoPath || null,
+        photo_paths: Array.isArray(body.photoPaths) ? body.photoPaths.slice(0, 5) : [],
         license_holder_name: body.licenseHolderName.trim(),
         license_number: body.licenseNumber.trim(),
         license_image_path: body.licenseImagePath,

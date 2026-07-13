@@ -15,12 +15,15 @@ module.exports = async function handler(req, res) {
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=100" }),
     ]);
-    const centers = await Promise.all(centerRows.map(async (row) => ({
-      ...centerFromRow(row, row.photo_path ? await createSignedStorageUrl(row.photo_path) : ""),
+    const centers = await Promise.all(centerRows.map(async (row) => {
+      const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
+      const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
+      return ({
+      ...centerFromRow(row, photoUrls[0] || "", photoUrls),
       views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
       contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
       lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
-    })));
+    }); }));
     const applicationItems = await Promise.all(applications.map(async (item) => ({
       id: item.id,
       centerName: item.center_name,
@@ -31,12 +34,14 @@ module.exports = async function handler(req, res) {
       naverMapUrl: item.naver_map_url,
       website: item.website,
       photoUrl: item.photo_path ? await createSignedStorageUrl(item.photo_path) : (item.photo_url || ""),
+      photoUrls: await Promise.all((item.photo_paths || []).map((path) => createSignedStorageUrl(path))),
       licenseImageUrl: item.license_image_path ? await createSignedStorageUrl(item.license_image_path) : "",
       licenseHolderName: item.license_holder_name,
       licenseNumber: item.license_number,
       services: item.services,
       memo: item.memo,
       status: item.status,
+      rejectionReason: item.rejection_reason,
       centerId: centerRows.find((center) => center.application_id === item.id)?.id || "",
       createdAt: item.created_at,
     })));

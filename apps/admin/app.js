@@ -84,6 +84,43 @@ async function approveApplication(applicationId) {
   await loadStats();
 }
 
+async function rejectApplication(applicationId) {
+  const reason = window.prompt("반려 사유를 입력해 주세요.", "등록 정보 보완이 필요합니다.");
+  if (reason === null) return;
+  const response = await fetch(`${API_BASE}/api/approve-center?action=reject&id=${encodeURIComponent(applicationId)}`, {
+    method: "POST", headers: adminHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ reason }),
+  });
+  if (!response.ok) return window.alert((await response.json().catch(() => ({}))).error || "반려에 실패했습니다.");
+  await loadStats();
+}
+
+async function updateCenter(centerId) {
+  const row = document.querySelector(`[data-center-row="${CSS.escape(centerId)}"]`);
+  const value = (name) => row.querySelector(`[data-center-${name}]`).value.trim();
+  const response = await fetch(`${API_BASE}/api/approve-center?action=update&id=${encodeURIComponent(centerId)}`, {
+    method: "POST",
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      name: value("name"), area: value("area"), address: value("address"),
+      lat: Number(value("lat")) || null, lng: Number(value("lng")) || null,
+      lead: value("lead"), tags: value("tags").split(",").map((item) => item.trim()).filter(Boolean),
+      therapist: value("therapist"), price: value("price"), plan: value("plan"),
+      naver_map_url: `https://map.naver.com/p/search/${encodeURIComponent(value("address") || value("area"))}`,
+    }),
+  });
+  if (!response.ok) return window.alert((await response.json().catch(() => ({}))).error || "수정에 실패했습니다.");
+  await loadStats();
+}
+
+async function deleteCenter(centerId, centerName) {
+  if (!window.confirm(`‘${centerName}’ 센터를 지도에서 완전히 삭제할까요?`)) return;
+  const response = await fetch(`${API_BASE}/api/approve-center?action=delete&id=${encodeURIComponent(centerId)}`, {
+    method: "POST", headers: adminHeaders(),
+  });
+  if (!response.ok) return window.alert((await response.json().catch(() => ({}))).error || "삭제에 실패했습니다.");
+  await loadStats();
+}
+
 function naverMapUrlFor(center) {
   return (
     center.naverMapUrl ||
@@ -177,7 +214,7 @@ async function loadStats() {
     data.centerApplications
       .map(
         (item) => {
-          const centerImage = item.photoUrl;
+          const centerImages = item.photoUrls?.length ? item.photoUrls : [item.photoUrl].filter(Boolean);
           const mapUrl =
             item.naverMapUrl ||
             `https://map.naver.com/p/search/${encodeURIComponent(item.address || "")}`;
@@ -191,7 +228,7 @@ async function loadStats() {
               <mark>${item.status === "pending" ? "승인 대기" : escapeHtml(item.status)}</mark>
             </div>
             <div class="application-media">
-              ${imageMarkup(centerImage, `${item.centerName} 대표 사진`)}
+              ${centerImages.map((src, index) => imageMarkup(src, `${item.centerName} 사진 ${index + 1}`)).join("")}
               ${imageMarkup(item.licenseImageUrl, `${item.centerName} 면허 인증`)}
             </div>
             <p>${escapeHtml(item.address)} <a href="${escapeHtml(mapUrl)}" target="_blank" rel="noreferrer">네이버 지도 열기</a></p>
@@ -201,8 +238,8 @@ async function loadStats() {
             ${item.memo ? `<p>${escapeHtml(item.memo)}</p>` : ""}
             ${
               item.status === "pending"
-                ? `<button class="approve-button" type="button" data-approve-id="${escapeHtml(item.id)}">승인하고 지도에 등록</button>`
-                : `<p>등록 완료 센터 ID: ${escapeHtml(item.centerId)}</p>`
+                ? `<div class="application-actions"><button class="approve-button" type="button" data-approve-id="${escapeHtml(item.id)}">승인하고 지도에 등록</button><button class="danger-button" type="button" data-reject-id="${escapeHtml(item.id)}">반려</button></div>`
+                : `<p>${item.status === "rejected" ? `반려 사유: ${escapeHtml(item.rejectionReason || "-")}` : `등록 완료 센터 ID: ${escapeHtml(item.centerId)}`}</p>`
             }
             <small>${formatDate(item.createdAt)}</small>
           </article>
@@ -215,23 +252,27 @@ async function loadStats() {
     .map(
       (center) => `
         <tr data-center-row="${escapeHtml(center.id)}">
-          <td>${escapeHtml(center.name)}</td>
-          <td><input class="table-input" data-location-area value="${escapeHtml(center.area)}" /></td>
+          <td><input class="table-input" data-center-name value="${escapeHtml(center.name)}" /></td>
+          <td><input class="table-input" data-center-area value="${escapeHtml(center.area)}" /></td>
           <td>
-            <input class="table-input address-input" data-location-address value="${escapeHtml(center.address || "")}" placeholder="상세 주소" />
+            <input class="table-input address-input" data-center-address value="${escapeHtml(center.address || "")}" placeholder="상세 주소" />
             <a href="${escapeHtml(naverMapUrlFor(center))}" target="_blank" rel="noreferrer">지도 열기</a>
           </td>
           <td>
             <div class="coordinate-editor">
-              <input class="table-input" data-location-lat value="${escapeHtml(center.lat)}" placeholder="위도" />
-              <input class="table-input" data-location-lng value="${escapeHtml(center.lng)}" placeholder="경도" />
-              <button class="save-location-button" type="button" data-save-location-id="${escapeHtml(center.id)}">저장</button>
+              <input class="table-input" data-center-lat value="${escapeHtml(center.lat)}" placeholder="위도" />
+              <input class="table-input" data-center-lng value="${escapeHtml(center.lng)}" placeholder="경도" />
             </div>
           </td>
-          <td>${escapeHtml(center.plan)}</td>
+          <td><input class="table-input" data-center-plan value="${escapeHtml(center.plan)}" /></td>
+          <td><textarea class="table-textarea" data-center-lead>${escapeHtml(center.lead)}</textarea></td>
+          <td><input class="table-input" data-center-tags value="${escapeHtml((center.tags || []).join(", "))}" /></td>
+          <td><input class="table-input" data-center-therapist value="${escapeHtml(center.therapist)}" /></td>
+          <td><input class="table-input" data-center-price value="${escapeHtml(center.price)}" /></td>
           <td>${center.views}</td>
           <td>${center.contactClicks}</td>
           <td>${formatDate(center.lastEventAt)}</td>
+          <td><div class="row-actions"><button type="button" data-update-center="${escapeHtml(center.id)}">수정 저장</button><button class="danger-button" type="button" data-delete-center="${escapeHtml(center.id)}" data-center-name="${escapeHtml(center.name)}">삭제</button></div></td>
         </tr>
       `
     )
@@ -255,6 +296,10 @@ async function loadStats() {
   document.querySelectorAll("[data-approve-id]").forEach((button) => {
     button.addEventListener("click", () => approveApplication(button.dataset.approveId));
   });
+
+  document.querySelectorAll("[data-reject-id]").forEach((button) => button.addEventListener("click", () => rejectApplication(button.dataset.rejectId)));
+  document.querySelectorAll("[data-update-center]").forEach((button) => button.addEventListener("click", () => updateCenter(button.dataset.updateCenter)));
+  document.querySelectorAll("[data-delete-center]").forEach((button) => button.addEventListener("click", () => deleteCenter(button.dataset.deleteCenter, button.dataset.centerName)));
 
   document.querySelectorAll("[data-save-location-id]").forEach((button) => {
     button.addEventListener("click", () => updateCenterLocation(button.dataset.saveLocationId));

@@ -144,6 +144,12 @@ function renderPreview(container, dataUrl) {
   container.innerHTML = `<img src="${dataUrl}" alt="" />`;
 }
 
+function renderPreviews(container, urls) {
+  const items = (urls || []).filter(Boolean);
+  container.hidden = items.length === 0;
+  container.innerHTML = items.map((url) => `<img src="${url}" alt="센터 사진 미리보기" />`).join("");
+}
+
 function formToPayload(formData) {
   return {
     centerName: formData.get("centerName"),
@@ -157,6 +163,7 @@ function formToPayload(formData) {
     website: formData.get("website"),
     photoUrl: formData.get("photoUrl"),
     photoPath: formData.get("photoPath"),
+    photoPaths: JSON.parse(formData.get("photoPaths") || "[]"),
     licenseHolderName: formData.get("licenseHolderName"),
     licenseNumber: formData.get("licenseNumber"),
     licenseImagePath: formData.get("licenseImagePath"),
@@ -173,12 +180,16 @@ form.addEventListener("submit", async (event) => {
   submitButton.textContent = "신청 중...";
 
   try {
-    const photoFile = photoFileInput.files[0];
+    const photoFiles = [...photoFileInput.files].slice(0, 5);
     const licenseFile = licenseFileInput.files[0];
-    validateImageFile(photoFile);
+    if (photoFileInput.files.length > 5) throw new Error("센터 사진은 최대 5장까지 올릴 수 있습니다.");
+    photoFiles.forEach((file) => validateImageFile(file));
     validateImageFile(licenseFile, true);
     submitButton.textContent = "사진을 안전하게 업로드 중...";
-    photoPathInput.value = await uploadPrivateImage(photoFile, "center-photo");
+    const photoPaths = [];
+    for (const file of photoFiles) photoPaths.push(await uploadPrivateImage(file, "center-photo"));
+    photoPathInput.value = photoPaths[0] || "";
+    document.querySelector("#photoPathsInput").value = JSON.stringify(photoPaths);
     licenseImagePathInput.value = await uploadPrivateImage(licenseFile, "license");
     submitButton.textContent = "신청 중...";
     const response = await fetch(`${API_BASE}/api/center-applications`, {
@@ -212,14 +223,17 @@ form.addEventListener("submit", async (event) => {
 addressInput.addEventListener("input", syncNaverMapLink);
 photoFileInput.addEventListener("change", async () => {
   try {
-    const file = photoFileInput.files[0];
-    validateImageFile(file);
+    const files = [...photoFileInput.files];
+    if (files.length > 5) throw new Error("센터 사진은 최대 5장까지 올릴 수 있습니다.");
+    files.forEach((file) => validateImageFile(file));
     photoPathInput.value = "";
-    renderPreview(photoPreview, file ? URL.createObjectURL(file) : "");
+    document.querySelector("#photoPathsInput").value = "[]";
+    renderPreviews(photoPreview, files.map((file) => URL.createObjectURL(file)));
     setMessage("");
   } catch (error) {
     photoFileInput.value = "";
     photoPathInput.value = "";
+    document.querySelector("#photoPathsInput").value = "[]";
     renderPreview(photoPreview, "");
     setMessage(error.message, "error");
   }

@@ -39,6 +39,10 @@
       "destination": "/api/logout"
     },
     {
+      "source": "/api/reviews",
+      "destination": "/api/reviews"
+    },
+    {
       "source": "/api/center-applications",
       "destination": "/api/center-applications"
     },

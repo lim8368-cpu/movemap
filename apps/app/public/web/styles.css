@@ -34,7 +34,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -198,6 +200,9 @@ h1 {
   color: var(--ink);
   background: #fbfdfc;
 }
+
+.search-box select { width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; background: #fff; }
+.compact-filter { margin-top: 14px; }
 
 .filter-row {
   display: flex;
@@ -589,6 +594,22 @@ button.cluster-marker.large {
   background: #eef4ef;
 }
 
+.center-gallery { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.center-gallery img { scroll-snap-align: start; }
+.empty-state { display: grid; gap: 6px; padding: 22px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
+.review-section { border-top: 1px solid var(--line); padding-top: 14px; }
+.review-list { display: grid; gap: 8px; }
+.review-list article { padding: 10px; border-radius: 8px; background: var(--soft); }
+.review-list strong { color: #d98922; }
+.review-list strong span, .review-list p, .review-list small { color: var(--ink); }
+.review-form { display: grid; gap: 8px; margin-top: 12px; }
+.review-form div { display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
+.review-form input, .review-form select, .review-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 9px; }
+.review-form textarea { min-height: 80px; resize: vertical; }
+.review-message { min-height: 20px; margin: 0; }
+.legal-footer { position: fixed; right: 18px; bottom: 5px; z-index: 30; display: flex; gap: 12px; font-size: 11px; }
+.legal-footer a { color: var(--muted); }
+
 .detail-panel p {
   margin-bottom: 8px;
   color: var(--muted);
@@ -696,4 +717,11 @@ button.cluster-marker.large {
     max-height: min(520px, calc(100vh - 96px));
     padding: 16px;
   }
+
+  .layout { grid-template-rows: minmax(330px, 52fr) minmax(280px, 48fr); }
+  .brand small { display: none; }
+  .topbar { padding: 10px 14px; }
+  .top-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .top-actions .primary-button, .top-actions .ghost-button { min-height: 38px; }
+  .review-form div { grid-template-columns: 1fr; }
 }

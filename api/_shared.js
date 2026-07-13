@@ -223,7 +223,7 @@ function clearAdminSessionCookie() {
   return `${ADMIN_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
 }
 
-function centerFromRow(row, photoUrl = "") {
+function centerFromRow(row, photoUrl = "", photoUrls = []) {
   return {
     id: row.id,
     name: row.name,
@@ -232,8 +232,8 @@ function centerFromRow(row, photoUrl = "") {
     address: row.address,
     naverMapUrl: row.naver_map_url,
     distance: "신규",
-    rating: "신규",
-    reviews: "0",
+    rating: row.rating || "신규",
+    reviews: row.reviews || "0",
     lead: row.lead,
     tags: row.tags || [],
     therapist: row.therapist,
@@ -243,6 +243,7 @@ function centerFromRow(row, photoUrl = "") {
     lng: row.lng,
     plan: row.plan,
     photoUrl,
+    photoUrls,
   };
 }
 

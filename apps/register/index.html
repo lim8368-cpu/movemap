@@ -63,12 +63,13 @@
               <input name="photoUrl" placeholder="선택 입력: 이미지 URL" />
             </label>
             <label>
-              대표 사진 파일
-              <input id="photoFileInput" name="photoFile" type="file" accept="image/*" />
+              센터 사진 파일 (최대 5장)
+              <input id="photoFileInput" name="photoFile" type="file" accept="image/*" multiple />
             </label>
           </div>
           <div id="photoPreview" class="image-preview" hidden></div>
           <input id="photoPathInput" name="photoPath" type="hidden" />
+          <input id="photoPathsInput" name="photoPaths" type="hidden" value="[]" />
 
           <section class="verification-section">
             <div>
@@ -106,7 +107,7 @@
 
           <label class="consent-row">
             <input name="consent" type="checkbox" required />
-            <span>등록 검토와 연락을 위해 위 정보를 무브맵 운영자가 확인하는 것에 동의합니다.</span>
+            <span><a href="/privacy.html" target="_blank">개인정보처리방침</a>을 확인했으며 등록 검토와 연락을 위한 정보 처리에 동의합니다.</span>
           </label>
 
           <button id="submitButton" type="submit">등록 신청하기</button>

@@ -82,6 +82,7 @@ const detailPanel = document.querySelector("#detailPanel");
 const searchInput = document.querySelector("#searchInput");
 const regionButtons = document.querySelectorAll("[data-region]");
 const checkboxes = document.querySelectorAll(".filter-grid input");
+const areaSelect = document.querySelector("#areaSelect");
 const mapElement = document.querySelector("#naverMap");
 const mapStatus = document.querySelector("#mapStatus");
 const mapFallback = document.querySelector("#mapFallback");
@@ -105,6 +106,10 @@ let publicConfig = {
 };
 const CENTER_MARKER_MIN_ZOOM = 13;
 const CENTER_DETAIL_ZOOM = 16;
+
+function escapeHtml(value) {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
 
 function normalizeCenter(center) {
   return {
@@ -133,10 +138,8 @@ async function loadApprovedCenters() {
     if (!response.ok) throw new Error("centers unavailable");
     const data = await response.json();
     const approvedCenters = (data.centers || []).map(normalizeCenter);
-    if (approvedCenters.length) {
-      centers = approvedCenters;
-      selectedId = centers.some((center) => center.id === selectedId) ? selectedId : "";
-    }
+    centers = approvedCenters;
+    selectedId = centers.some((center) => center.id === selectedId) ? selectedId : "";
   } catch {
     centers = sampleCenters;
     selectedId = "";
@@ -236,10 +239,11 @@ function matchesFilters(center) {
   const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
   const text = [center.name, center.area, center.lead, center.tags.join(" ")].join(" ").toLowerCase();
   const regionMatch = selectedRegion === "all" || center.region === selectedRegion;
+  const areaMatch = !areaSelect || areaSelect.value === "all" || center.area.includes(areaSelect.value);
   const queryMatch = !query || text.includes(query);
   const tagMatch = selectedTags.length === 0 || selectedTags.some((tag) => center.tags.includes(tag));
 
-  return regionMatch && queryMatch && tagMatch;
+  return regionMatch && areaMatch && queryMatch && tagMatch;
 }
 
 function renderList() {
@@ -252,20 +256,20 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
-              <h3>${center.name}</h3>
-              <p>${center.lead}</p>
+              <h3>${escapeHtml(center.name)}</h3>
+              <p>${escapeHtml(center.lead)}</p>
             </div>
             <span class="badge">자격 확인</span>
           </div>
           <div class="meta-row">
-            <span>${center.area}</span>
-            <span>${center.distance}</span>
-            <span>평점 ${center.rating}</span>
+            <span>${escapeHtml(center.area)}</span>
+            <span>${escapeHtml(center.distance)}</span>
+            <span>평점 ${escapeHtml(center.rating)}</span>
           </div>
         </button>
       `
     )
-    .join("");
+    .join("") || `<div class="empty-state"><strong>조건에 맞는 센터가 아직 없습니다.</strong><span>센터 등록 신청이 승인되면 이곳에 표시됩니다.</span></div>`;
 
   document.querySelectorAll("[data-card-id]").forEach((card) => {
     card.addEventListener("click", () => openCenterDetail(card.dataset.cardId));
@@ -286,6 +290,7 @@ function renderDetail() {
   }
 
   const photoSrc = center.photoDataUrl || center.photoUrl || "";
+  const gallery = (center.photoUrls?.length ? center.photoUrls : [photoSrc]).filter((src) => src && /^https?:\/\/|^data:image\//.test(src));
   const showPhoto = photoSrc && /^https?:\/\/|^data:image\//.test(photoSrc);
 
   detailPanel.hidden = false;
@@ -293,16 +298,16 @@ function renderDetail() {
   detailPanel.innerHTML = `
     <div>
       <span class="badge">물리치료사 운영 확인</span>
-      <h2>${center.name}</h2>
+      <h2>${escapeHtml(center.name)}</h2>
       ${
         showPhoto
-          ? `<img class="center-detail-photo" src="${photoSrc}" alt="${center.name} 대표 사진" />`
+          ? `<div class="center-gallery">${gallery.map((src, index) => `<img class="center-detail-photo" src="${escapeHtml(src)}" alt="${escapeHtml(center.name)} 사진 ${index + 1}" />`).join("")}</div>`
           : ""
       }
-      <p>${center.lead}</p>
-      <p><strong>${center.therapist}</strong></p>
+      <p>${escapeHtml(center.lead)}</p>
+      <p><strong>${escapeHtml(center.therapist)}</strong></p>
       <div class="tag-row">
-        ${center.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}
+        ${center.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
       </div>
     </div>
     <div class="metric-box">
@@ -322,11 +327,44 @@ function renderDetail() {
         상담 요청 기록하기
       </button>
     </div>
+    <section class="review-section">
+      <h3>이용자 후기</h3>
+      <div id="reviewList" class="review-list"><p>후기를 불러오는 중입니다.</p></div>
+      <form id="reviewForm" class="review-form">
+        <div><select name="rating" aria-label="별점"><option value="5">★★★★★ 5점</option><option value="4">★★★★ 4점</option><option value="3">★★★ 3점</option><option value="2">★★ 2점</option><option value="1">★ 1점</option></select><input name="nickname" maxlength="30" placeholder="닉네임" required /></div>
+        <textarea name="content" minlength="10" maxlength="500" placeholder="10자 이상 솔직한 이용 후기를 남겨주세요." required></textarea>
+        <button type="submit">후기 등록</button><p class="review-message" role="status"></p>
+      </form>
+    </section>
   `;
 
   detailPanel.querySelector(".contact-button").addEventListener("click", () => {
     trackEvent("contact_click", center.id, "detail_panel");
   });
+  loadCenterReviews(center.id);
+  detailPanel.querySelector("#reviewForm").addEventListener("submit", (event) => submitReview(event, center.id));
+}
+
+async function loadCenterReviews(centerId) {
+  const list = detailPanel.querySelector("#reviewList");
+  if (!list) return;
+  try {
+    const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error();
+    list.innerHTML = data.reviews.map((review) => `<article><strong>${"★".repeat(review.rating)} <span>${escapeHtml(review.nickname)}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
+  } catch { list.innerHTML = "<p>후기를 불러오지 못했습니다.</p>"; }
+}
+
+async function submitReview(event, centerId) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector(".review-message");
+  const values = new FormData(form);
+  const response = await fetch(`${API_BASE}/api/reviews`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ centerId, rating: Number(values.get("rating")), nickname: values.get("nickname"), content: values.get("content") }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) { message.textContent = data.error || "후기 등록에 실패했습니다."; return; }
+  form.reset(); message.textContent = "후기가 등록되었습니다."; await loadCenterReviews(centerId);
 }
 
 function openCenterDetail(id) {
@@ -731,6 +769,7 @@ regionButtons.forEach((button) => {
 });
 
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
+areaSelect?.addEventListener("change", renderList);
 searchInput.addEventListener("input", renderList);
 mapFallback.addEventListener("click", clearSelectedCenter);
 zoomInButton.addEventListener("click", () => {

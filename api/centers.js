@@ -18,12 +18,16 @@ module.exports = async function handler(req, res) {
       sendJson(res, 200, { centers: sampleCenters, source: "fallback" });
       return;
     }
-    const rows = await supabaseRequest("centers", {
-      query: "?select=*&status=eq.approved&order=created_at.desc",
-    });
+    const [rows, reviews] = await Promise.all([
+      supabaseRequest("centers", { query: "?select=*&status=eq.approved&order=created_at.desc" }),
+      supabaseRequest("reviews", { query: "?select=center_id,rating&status=eq.approved" }),
+    ]);
     const centers = await Promise.all(rows.map(async (row) => {
-      const photoUrl = row.photo_path ? await createSignedStorageUrl(row.photo_path, 3600) : "";
-      return centerFromRow(row, photoUrl);
+      const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
+      const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path, 3600)));
+      const ownReviews = reviews.filter((review) => review.center_id === row.id);
+      const rating = ownReviews.length ? (ownReviews.reduce((sum, review) => sum + Number(review.rating), 0) / ownReviews.length).toFixed(1) : "신규";
+      return centerFromRow({ ...row, rating, reviews: String(ownReviews.length) }, photoUrls[0] || "", photoUrls);
     }));
     sendJson(res, 200, { centers, source: "supabase" });
   } catch (error) {

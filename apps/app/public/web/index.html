@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>무브맵 | 물리치료사 운동센터 찾기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260707-detail-scroll-room" />
+    <link rel="stylesheet" href="./styles.css?v=20260713-complete" />
   </head>
   <body>
     <div class="app-shell">
@@ -18,7 +18,7 @@
         </a>
         <nav class="top-actions">
           <a class="ghost-button" href="/register/">센터 등록</a>
-          <button class="primary-button" type="button">상담 요청</button>
+          <a class="primary-button" href="#centerList">센터 찾기</a>
         </nav>
       </header>
 
@@ -42,6 +42,10 @@
               <button class="chip" type="button" data-region="mapo">마포</button>
               <button class="chip" type="button" data-region="bundang">분당</button>
             </div>
+            <label class="search-box compact-filter">
+              <span>시·도 필터</span>
+              <select id="areaSelect"><option value="all">전국</option><option>서울</option><option>경기</option><option>인천</option><option>부산</option><option>대구</option><option>대전</option><option>광주</option><option>울산</option><option>세종</option><option>강원</option><option>충북</option><option>충남</option><option>전북</option><option>전남</option><option>경북</option><option>경남</option><option>제주</option></select>
+            </label>
 
             <div class="filter-grid" aria-label="목적 필터">
               <label><input type="checkbox" value="허리" /> 허리</label>
@@ -81,8 +85,9 @@
           <article id="detailPanel" class="detail-panel" aria-live="polite"></article>
         </section>
       </main>
+      <footer class="legal-footer"><a href="/terms.html">이용약관</a><a href="/privacy.html">개인정보처리방침</a></footer>
     </div>
 
-    <script src="./app.js?v=20260707-detail-scroll-room"></script>
+    <script src="./app.js?v=20260713-complete"></script>
   </body>
 </html>
