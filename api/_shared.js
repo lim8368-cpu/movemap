@@ -88,7 +88,68 @@ function sendJson(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+function hasSupabaseConfig() {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function supabaseRequest(table, { method = "GET", query = "", body } = {}) {
+  if (!hasSupabaseConfig()) {
+    throw new Error("Supabase environment variables are not configured");
+  }
+
+  const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method,
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: method === "POST" ? "return=representation" : "return=minimal",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    throw new Error(data?.message || `Supabase request failed (${response.status})`);
+  }
+  return data;
+}
+
+function centerFromRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    region: row.region,
+    area: row.area,
+    address: row.address,
+    naverMapUrl: row.naver_map_url,
+    distance: "신규",
+    rating: "신규",
+    reviews: "0",
+    lead: row.lead,
+    tags: row.tags || [],
+    therapist: row.therapist,
+    price: row.price,
+    conversion: row.conversion,
+    lat: row.lat,
+    lng: row.lng,
+    plan: row.plan,
+    photoUrl: row.photo_path || "",
+  };
+}
+
+function isAdminRequest(req) {
+  const expected = process.env.ADMIN_API_TOKEN;
+  const authorization = req.headers.authorization || "";
+  return Boolean(expected && authorization === `Bearer ${expected}`);
+}
+
 module.exports = {
   sampleCenters,
   sendJson,
+  hasSupabaseConfig,
+  supabaseRequest,
+  centerFromRow,
+  isAdminRequest,
 };

@@ -4,8 +4,10 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 const source = path.join(root, "apps", "app", "public", "web");
 const registerSource = path.join(root, "apps", "register");
+const adminSource = path.join(root, "apps", "admin");
 const target = path.join(root, "dist");
 const registerTarget = path.join(target, "register");
+const adminTarget = path.join(target, "admin");
 
 function copyDirectory(from, to) {
   fs.mkdirSync(to, { recursive: true });
@@ -26,4 +28,5 @@ function copyDirectory(from, to) {
 fs.rmSync(target, { recursive: true, force: true });
 copyDirectory(source, target);
 copyDirectory(registerSource, registerTarget);
+copyDirectory(adminSource, adminTarget);
 console.log(`Vercel static web assets copied to ${target}`);

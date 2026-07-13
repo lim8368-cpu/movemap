@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8090";
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:8090" : window.location.origin;
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
 const loginId = document.querySelector("#loginId");
