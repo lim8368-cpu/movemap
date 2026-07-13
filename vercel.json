@@ -1,6 +1,13 @@
 {
   "buildCommand": "npm run vercel:build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/config",
@@ -61,10 +68,6 @@
     {
       "source": "/register/:path*",
       "destination": "/register/:path*"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin/index.html"
     },
     {
       "source": "/admin/:path*",
