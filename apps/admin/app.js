@@ -67,10 +67,13 @@ function imageMarkup(src, label) {
 }
 
 async function approveApplication(applicationId) {
-  const response = await fetch(`${API_BASE}/api/center-applications/${applicationId}/approve`, {
-    method: "POST",
-    headers: adminHeaders(),
-  });
+  const response = await fetch(
+    `${API_BASE}/api/approve-center?id=${encodeURIComponent(applicationId)}`,
+    {
+      method: "POST",
+      headers: adminHeaders(),
+    }
+  );
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));

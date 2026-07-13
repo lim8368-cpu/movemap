@@ -19,6 +19,10 @@
       "destination": "/api/access-logs"
     },
     {
+      "source": "/api/approve-center",
+      "destination": "/api/approve-center"
+    },
+    {
       "source": "/api/centers",
       "destination": "/api/centers"
     },
