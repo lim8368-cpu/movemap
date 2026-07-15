@@ -333,19 +333,21 @@ async function submitReview(event, centerId) {
 function openCenterDetail(id) {
   detailPanel.hidden = true;
   detailPanel.innerHTML = "";
+  if (!naverMap) {
+    selectedId = id;
+    renderDetail();
+  }
   selectCenter(id, { showPopup: true });
 }
 
 function centerPopupContent(center) {
   return `<article class="map-popup">
     <button class="map-popup-close" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">×</button>
-    <div class="map-popup-top"><span class="map-popup-badge">✓ 물리치료사 출신</span><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
-    <h3>${escapeHtml(center.name)}</h3>
-    <p class="map-popup-location">⌖ ${escapeHtml(center.area)}</p>
-    <p class="map-popup-lead">${escapeHtml(center.lead)}</p>
-    <div class="map-popup-tags">${center.tags.slice(0,3).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
-    <button class="map-popup-cta" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">센터에 문의하기 <span>→</span></button>
-    <small>센터가 직접 제공한 정보입니다.</small>
+    <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
+    <p class="map-popup-category">운동센터 · <b>물리치료사 출신</b></p>
+    <p class="map-popup-location">${escapeHtml(center.area)}</p>
+    <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
+    <div class="map-popup-actions"><button class="map-popup-cta" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">상세보기</button><button class="map-popup-route" type="button">길찾기</button></div>
   </article>`;
 }
 
