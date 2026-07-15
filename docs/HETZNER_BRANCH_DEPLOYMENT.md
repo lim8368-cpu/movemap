@@ -8,9 +8,9 @@ develop ──────> staging.example.com ─┐
 feature/* ────> <branch>.preview.example.com ─> staging Supabase
 ```
 
-production VPS와 staging VPS를 별도로 사용한다. 최소한 별도 VPS를 권장하며, 계정·SSH
-키·방화벽·env 파일도 분리한다. Feature Preview는 staging VPS 안에서만 여러 Docker
-프로젝트로 실행하며 production Docker network에 참여하지 않는다.
+현재는 Hetzner VPS 한 대 안에서 운영과 테스트를 논리적으로 분리한다. 운영 Nginx는
+80번 포트, Preview Traefik은 443번 포트를 사용하며 서로 다른 Docker network와 env
+파일을 사용한다. Feature Preview는 production Docker network에 참여하지 않는다.
 
 ## 1. GitHub 브랜치와 보호 규칙
 
@@ -28,16 +28,16 @@ git pull --ff-only
 git switch -c feature/기능명
 ```
 
-## 2. DNS와 TLS
+## 2. Preview 주소와 TLS
 
-Cloudflare에 다음 레코드를 만든다.
+도메인 구입 전에는 `sslip.io`의 자동 DNS를 사용한다. IP의 점을 하이픈으로 바꿔 다음
+주소를 쓴다.
 
-- 운영 도메인 A 레코드 -> production VPS
-- `staging` A 레코드 -> staging VPS
-- `*.preview` 와일드카드 A 레코드 -> staging VPS
+- develop: `https://staging.157-90-26-205.sslip.io`
+- feature: `https://feature-name.157-90-26-205.sslip.io`
 
-staging VPS의 Origin 인증서는 `staging`과 `*.preview`를 포함해야 한다. 인증서와 키는
-`deploy/tls`에 직접 넣되 Git에는 커밋하지 않는다.
+Traefik이 Let's Encrypt 인증서를 자동 발급하므로 Preview 비밀번호가 암호화되어 전송된다.
+나중에 사용자 도메인을 연결하면 `PREVIEW_HOST` 값만 바꾼다.
 
 ## 3. 데이터베이스
 
@@ -52,7 +52,7 @@ Supabase 프로젝트를 두 개 만든다.
 
 ## 4. 운영 배포
 
-production VPS의 `/opt/movemap/.env.production`에 운영 값만 저장한다.
+VPS의 `/opt/movemap/.env.production`에 운영 값만 저장한다.
 
 ```bash
 cd /opt/movemap
@@ -66,9 +66,9 @@ curl -fsS https://운영도메인/healthz
 
 `main` 병합만 이 절차를 실행한다. staging용 key를 운영 서버에 저장하지 않는다.
 
-## 5. staging 공용 라우터
+## 5. 같은 VPS의 staging 공용 라우터
 
-staging VPS에 Basic Auth 파일과 staging env를 만든다.
+운영 파일과 다른 `/opt/movemap-secrets`에 Basic Auth 파일과 staging env를 만든다.
 
 ```bash
 sudo mkdir -p /opt/movemap-secrets
@@ -76,8 +76,10 @@ sudo htpasswd -cB /opt/movemap-secrets/staging.htpasswd movemap-tester
 sudo chmod 600 /opt/movemap-secrets/staging.htpasswd
 ```
 
-실제 `.env.staging`에는 `STAGING_HTPASSWD_FILE`, staging Supabase URL/key와 staging
-project ref를 입력한다. 공용 라우터는 VPS당 한 번만 시작한다.
+실제 `.env.staging`에는 `STAGING_HTPASSWD_FILE`, `ACME_EMAIL`, staging Supabase
+URL/key와 staging project ref를 입력한다. 공용 라우터는 한 번만 시작한다. 기존 운영
+Nginx가 사용하지 않는 443 포트를 Preview가 사용하도록 bootstrap Compose의 443 publish는
+제거해야 한다.
 
 ```bash
 docker compose --env-file /opt/movemap-secrets/.env.staging \
@@ -93,13 +95,14 @@ docker compose --env-file /opt/movemap-secrets/.env.staging \
 
 ```bash
 export PREVIEW_SLUG=feature-center-search
-export PREVIEW_HOST=feature-center-search.preview.example.com
+export PREVIEW_HOST=feature-center-search.157-90-26-205.sslip.io
 export COMPOSE_PROJECT_NAME=movemap-$PREVIEW_SLUG
 docker compose --env-file /opt/movemap-secrets/.env.staging \
   -f docker-compose.preview.yml up -d --build
 ```
 
-`develop`은 `PREVIEW_SLUG=develop`, `PREVIEW_HOST=staging.example.com`으로 배포한다.
+`develop`은 `PREVIEW_SLUG=develop`,
+`PREVIEW_HOST=staging.157-90-26-205.sslip.io`로 배포한다.
 PR을 닫거나 병합한 feature stack은 다음 명령으로 제거한다.
 
 ```bash

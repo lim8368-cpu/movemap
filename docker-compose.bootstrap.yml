@@ -1,4 +1,6 @@
 services:
   nginx:
+    ports: !override
+      - "80:80"
     volumes:
       - ./deploy/nginx/bootstrap.conf.template:/etc/nginx/templates/default.conf.template:ro

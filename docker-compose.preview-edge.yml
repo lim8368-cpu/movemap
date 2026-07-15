@@ -6,19 +6,18 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.file.filename=/etc/traefik/dynamic.yml
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?required}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       - --api.dashboard=false
     ports:
-      - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./deploy/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - ./deploy/tls:/etc/traefik/tls:ro
       - ${STAGING_HTPASSWD_FILE:?required}:/etc/traefik/auth/staging.htpasswd:ro
+      - preview-letsencrypt:/letsencrypt
     security_opt:
       - no-new-privileges:true
     networks:
@@ -27,3 +26,6 @@ services:
 networks:
   preview-edge:
     name: movemap-preview-edge
+
+volumes:
+  preview-letsencrypt:

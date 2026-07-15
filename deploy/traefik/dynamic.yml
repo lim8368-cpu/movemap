@@ -1,8 +1,3 @@
-tls:
-  certificates:
-    - certFile: /etc/traefik/tls/origin.crt
-      keyFile: /etc/traefik/tls/origin.key
-
 http:
   middlewares:
     staging-auth:
