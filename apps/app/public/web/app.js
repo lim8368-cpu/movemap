@@ -301,57 +301,11 @@ function renderDetail() {
     return;
   }
 
-  const photoSrc = center.photoDataUrl || center.photoUrl || "";
-  const gallery = (center.photoUrls?.length ? center.photoUrls : [photoSrc]).filter((src) => src && /^https?:\/\/|^data:image\//.test(src));
-  const showPhoto = photoSrc && /^https?:\/\/|^data:image\//.test(photoSrc);
-
   detailPanel.hidden = false;
   document.body.classList.add("detail-open");
-  detailPanel.innerHTML = `
-    <div class="detail-head">
-      <div>
-        <span class="badge">✓ 물리치료사 출신</span>
-        <h2>${escapeHtml(center.name)}</h2>
-        <p class="detail-location">⌖ ${escapeHtml(center.area)} · ${escapeHtml(center.distance)}</p>
-      </div>
-      <button class="detail-close" type="button" aria-label="상세 정보 닫기">×</button>
-    </div>
-    <div class="detail-content">
-      <div class="detail-primary">
-      ${
-        showPhoto
-          ? `<div class="center-gallery">${gallery.map((src, index) => `<img class="center-detail-photo" src="${escapeHtml(src)}" alt="${escapeHtml(center.name)} 사진 ${index + 1}" />`).join("")}</div>`
-          : ""
-      }
-      <p class="detail-lead">${escapeHtml(center.lead)}</p>
-      <div class="operator-card"><span>운영자 정보</span><strong>${escapeHtml(center.therapist)}</strong></div>
-      <div class="tag-row">
-        ${center.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
-      </div>
-      </div>
-      <aside class="detail-actions">
-        <p>센터에서 제공한 정보를 확인한 후 직접 문의해 주세요.</p>
-        <button class="contact-button" type="button" data-contact-id="${center.id}">상담 문의하기 <span>→</span></button>
-        <small>DAIL은 의료 상담이나 진단을 제공하지 않습니다.</small>
-      </aside>
-    </div>
-    <section class="review-section" hidden>
-      <h3>이용자 후기</h3>
-      <div id="reviewList" class="review-list"><p>후기를 불러오는 중입니다.</p></div>
-      <form id="reviewForm" class="review-form">
-        <div><select name="rating" aria-label="별점"><option value="5">★★★★★ 5점</option><option value="4">★★★★ 4점</option><option value="3">★★★ 3점</option><option value="2">★★ 2점</option><option value="1">★ 1점</option></select><input name="nickname" maxlength="30" placeholder="닉네임" required /></div>
-        <textarea name="content" minlength="10" maxlength="500" placeholder="10자 이상 솔직한 이용 후기를 남겨주세요." required></textarea>
-        <button type="submit">후기 등록</button><p class="review-message" role="status"></p>
-      </form>
-    </section>
-  `;
-
-  detailPanel.querySelector(".detail-close").addEventListener("click", clearSelectedCenter);
-  detailPanel.querySelector(".contact-button").addEventListener("click", () => {
-    trackEvent("contact_click", center.id, "detail_panel");
-  });
-  loadCenterReviews(center.id);
-  detailPanel.querySelector("#reviewForm").addEventListener("submit", (event) => submitReview(event, center.id));
+  detailPanel.innerHTML = centerPopupContent(center);
+  detailPanel.querySelector(".map-popup-close").addEventListener("click", clearSelectedCenter);
+  detailPanel.querySelector(".map-popup-cta").addEventListener("click", () => trackEvent("contact_click", center.id, "map_popup"));
 }
 
 async function loadCenterReviews(centerId) {
