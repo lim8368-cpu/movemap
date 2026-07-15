@@ -1,9 +1,9 @@
 .benefits {
   max-width: 1200px;
   gap: 14px;
-  padding: 26px;
-  background: var(--soft);
-  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+  background: transparent;
+  border: 0;
 }
 
 .benefits div {
