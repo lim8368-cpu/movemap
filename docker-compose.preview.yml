@@ -33,6 +33,7 @@ services:
       - ALL
     labels:
       - traefik.enable=true
+      - traefik.docker.network=movemap-preview-edge
       - traefik.http.routers.${PREVIEW_SLUG:?required}.rule=Host(`${PREVIEW_HOST:?required}`)
       - traefik.http.routers.${PREVIEW_SLUG}.entrypoints=websecure
       - traefik.http.routers.${PREVIEW_SLUG}.tls=true
