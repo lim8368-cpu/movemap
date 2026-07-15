@@ -9,9 +9,10 @@
     (() => {
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       const navigation = performance.getEntriesByType?.("navigation")[0];
-      const shouldStartAtTop = !location.hash && navigation?.type === "reload";
+      const shouldStartAtTop = navigation?.type === "reload";
       if (!shouldStartAtTop) return;
 
+      if (location.hash) history.replaceState(null, "", `${location.pathname}${location.search}`);
       const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       resetScroll();
       window.addEventListener("DOMContentLoaded", resetScroll, { once: true });
