@@ -1,6 +1,6 @@
 services:
   edge:
-    image: traefik:v3.3
+    image: traefik:v3.6.16
     restart: unless-stopped
     environment:
       # Hetzner의 최신 Docker 데몬이 요구하는 최소 API 버전에 맞춘다.
