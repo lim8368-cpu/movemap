@@ -46,7 +46,10 @@ Supabase 프로젝트를 두 개 만든다.
 - `movemap-production`: 실제 데이터 전용
 - `movemap-staging`: 테스트/Preview 전용
 
-각 프로젝트에 `database/migrations/001`부터 최신 번호까지 순서대로 적용한다.
+마이그레이션의 배포 기준 경로는 `supabase/migrations/`이다. GitHub와 연결된 운영
+Supabase는 `main` 병합 시 이 폴더의 새 SQL만 순서대로 적용한다. 테스트 Supabase에는
+같은 SQL을 먼저 적용해 검증한다. 기존 `database/migrations/`는 이전 수동 배포 기록으로
+보존한다.
 `database/seeds/test_centers.sql`은 staging에만 실행한다. staging에는 `테스트센터01`,
 `010-0000-0000` 같은 가짜 값만 입력하며 실제 면허증·전화번호·환자정보를 복사하지 않는다.
 
