@@ -1,0 +1,47 @@
+.benefits {
+  max-width: 1200px;
+  gap: 14px;
+  padding: 26px;
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.benefits div {
+  min-height: 132px;
+  padding: 20px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 28, 46, 0.04);
+}
+
+.benefits b {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.benefits strong { margin-top: 5px; color: var(--navy); font-size: 14px; }
+.benefits span { font-size: 12px; }
+.register-area { padding-top: 48px; }
+form, .faq { width: min(760px, 100%); }
+.form-step { padding: 40px; border-radius: 20px; }
+.form-step.active { gap: 22px; }
+.form-step h2 { font-size: 24px; }
+label, legend { font-size: 13px; }
+.two { gap: 16px; }
+input { height: 52px; padding: 0 16px; border-radius: 10px; font-size: 14px; }
+textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14px; line-height: 1.65; }
+.choice span { min-height: 50px; }
+.chips span { min-height: 38px; padding: 8px 14px; }
+.next, #submitButton, .back { min-height: 52px; }
+.license-box { padding: 20px; }
+.faq { margin-top: 52px; }
+
+@media (max-width: 700px) {
+  .benefits { gap: 10px; padding: 16px; }
+  .benefits div { min-height: 118px; padding: 16px 8px; }
+  .benefits b { font-size: 30px; }
+  .form-step { padding: 24px; }
+  .register-area { padding-left: 16px; padding-right: 16px; }
+}
