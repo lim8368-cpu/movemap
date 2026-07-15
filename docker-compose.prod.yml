@@ -77,6 +77,15 @@ services:
     networks:
       - private
       - egress
+      - preview-edge
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=movemap-preview-edge"
+      - "traefik.http.routers.dail-production.rule=Host(`${PRODUCTION_HOST:-dail.157-90-26-205.sslip.io}`)"
+      - "traefik.http.routers.dail-production.entrypoints=websecure"
+      - "traefik.http.routers.dail-production.tls=true"
+      - "traefik.http.routers.dail-production.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dail-production.loadbalancer.server.port=80"
 
   backup:
     profiles:
@@ -126,6 +135,9 @@ networks:
     internal: true
   egress:
   backup:
+  preview-edge:
+    external: true
+    name: movemap-preview-edge
 
 volumes:
   backup-cache:
