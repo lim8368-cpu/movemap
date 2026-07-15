@@ -90,6 +90,9 @@ const locateButton = document.querySelector("#locateButton");
 const zoomInButton = document.querySelector("#zoomInButton");
 const zoomOutButton = document.querySelector("#zoomOutButton");
 const sidebarPanel = document.querySelector(".sidebar");
+const heroMapElement = document.querySelector("#heroNaverMap");
+const heroMapStatus = document.querySelector("#heroMapStatus");
+const heroLocateButton = document.querySelector("#heroLocateButton");
 
 let selectedRegion = "all";
 let centers = sampleCenters;
@@ -99,6 +102,10 @@ let naverMarkers = [];
 let clusterMarkers = [];
 let lastTrackedViewId = "";
 let userMarker = null;
+let centerInfoWindow = null;
+let heroMap = null;
+let heroUserMarker = null;
+let heroCenterMarkers = [];
 let centerFocusTimers = [];
 let panelGestureActive = false;
 let publicConfig = {
@@ -112,6 +119,8 @@ function escapeHtml(value) {
 }
 
 function normalizeCenter(center) {
+  const operatorText = String(center.therapist || "운영자 정보 확인 중")
+    .replace(/물리치료사(?:\s*\d+년|\s*운영 확인|\s*면허 확인)?/g, "물리치료사 출신");
   return {
     ...center,
     region: center.region || "other",
@@ -120,7 +129,7 @@ function normalizeCenter(center) {
     reviews: center.reviews || "0",
     lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
-    therapist: center.therapist || "운영자 정보 확인 중",
+    therapist: operatorText,
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
     lat: Number(center.lat) || 37.5665,
@@ -368,8 +377,42 @@ async function submitReview(event, centerId) {
 }
 
 function openCenterDetail(id) {
-  selectCenter(id, { openDetail: true });
+  detailPanel.hidden = true;
+  detailPanel.innerHTML = "";
+  selectCenter(id, { showPopup: true });
 }
+
+function centerPopupContent(center) {
+  return `<article class="map-popup">
+    <button class="map-popup-close" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">×</button>
+    <div class="map-popup-top"><span class="map-popup-badge">✓ 물리치료사 출신</span><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
+    <h3>${escapeHtml(center.name)}</h3>
+    <p class="map-popup-location">⌖ ${escapeHtml(center.area)}</p>
+    <p class="map-popup-lead">${escapeHtml(center.lead)}</p>
+    <div class="map-popup-tags">${center.tags.slice(0,3).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
+    <button class="map-popup-cta" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">센터에 문의하기 <span>→</span></button>
+    <small>센터가 직접 제공한 정보입니다.</small>
+  </article>`;
+}
+
+function showCenterInfoWindow(center) {
+  if (!naverMap || !center) return;
+  centerInfoWindow?.close();
+  centerInfoWindow = new naver.maps.InfoWindow({
+    content: centerPopupContent(center),
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    disableAnchor: false,
+    anchorColor: "#ffffff",
+    anchorSize: new naver.maps.Size(14, 10),
+    pixelOffset: new naver.maps.Point(0, -12),
+  });
+  const markerItem = naverMarkers.find(item => item.center.id === center.id);
+  centerInfoWindow.open(naverMap, markerItem?.marker || new naver.maps.LatLng(center.lat, center.lng));
+}
+
+window.closeDailMapPopup = clearSelectedCenter;
+window.trackDailContact = id => trackEvent("contact_click", id, "map_popup");
 
 function renderPins() {
   document.querySelectorAll(".pin").forEach((pin) => {
@@ -561,6 +604,7 @@ function rebuildNaverMarkers() {
 function clearSelectedCenter() {
   if (!selectedId && detailPanel.hidden) return;
   selectedId = "";
+  centerInfoWindow?.close();
   renderDetail();
   renderPins();
   renderList();
@@ -582,7 +626,7 @@ function selectCenter(id, options = {}) {
   const center = centers.find((item) => item.id === id);
   if (naverMap && center) {
     const position = new naver.maps.LatLng(center.lat, center.lng);
-    const targetZoom = options.openDetail ? CENTER_DETAIL_ZOOM : CENTER_MARKER_MIN_ZOOM;
+    const targetZoom = options.openDetail || options.showPopup ? CENTER_DETAIL_ZOOM : CENTER_MARKER_MIN_ZOOM;
     clearCenterFocusTimers();
     naverMap.__forceIndividualMarkers = true;
     naverMap.__clusterAnimating = true;
@@ -595,12 +639,41 @@ function selectCenter(id, options = {}) {
     queueCenterFocusStep(() => {
       naverMap.setCenter(position);
       renderPins();
+      if (options.showPopup) showCenterInfoWindow(center);
       naverMap.__clusterAnimating = false;
       naverMap.__forceIndividualMarkers = true;
       syncMarkerVisibility();
     }, 360);
   }
   syncMarkerVisibility();
+}
+
+function renderHeroCenterMarkers() {
+  heroCenterMarkers.forEach(marker => marker.setMap(null));
+  heroCenterMarkers = centers.slice(0, 5).map(center => {
+    const marker = new naver.maps.Marker({position:new naver.maps.LatLng(center.lat,center.lng),map:heroMap,title:center.name,icon:createMarkerIcon(false,center)});
+    naver.maps.Event.addListener(marker,"click",()=>{document.querySelector("#search").scrollIntoView({behavior:"smooth"});window.setTimeout(()=>openCenterDetail(center.id),500)});
+    return marker;
+  });
+}
+
+function locateHeroMap() {
+  if (!heroMap || !navigator.geolocation) return;
+  heroMapStatus.innerHTML = '<span class="status-pulse"></span> 현재 위치를 확인하고 있어요';
+  navigator.geolocation.getCurrentPosition(position=>{
+    const point=new naver.maps.LatLng(position.coords.latitude,position.coords.longitude);
+    heroMap.setCenter(point);heroMap.setZoom(14,true);
+    heroUserMarker?.setMap(null);
+    heroUserMarker=new naver.maps.Marker({position:point,map:heroMap,title:"현재 위치",icon:createUserMarkerIcon()});
+    heroMapStatus.textContent="현재 위치 주변 센터";
+  },()=>{heroMapStatus.textContent="위치 권한을 허용하면 내 주변에서 시작합니다"},{enableHighAccuracy:true,timeout:7000,maximumAge:120000});
+}
+
+function initHeroMap() {
+  if (!heroMapElement || !window.naver?.maps) return;
+  heroMap=new naver.maps.Map(heroMapElement,{center:new naver.maps.LatLng(37.5036,127.0247),zoom:12,minZoom:8,scaleControl:false,logoControl:true,mapDataControl:false,zoomControl:false,draggable:true,scrollWheel:false});
+  renderHeroCenterMarkers();
+  locateHeroMap();
 }
 
 function getNaverMapKey() {
@@ -690,6 +763,7 @@ async function initNaverMap() {
   const key = getNaverMapKey();
 
   if (!key) {
+    if (heroMapStatus) heroMapStatus.textContent = "지도를 준비하고 있어요";
     showFallbackMap();
     return;
   }
@@ -710,6 +784,8 @@ async function initNaverMap() {
       mapDataControl: false,
       zoomControl: false,
     });
+
+    initHeroMap();
 
     isolatePanelGesturesFromMap();
     rebuildNaverMarkers();
@@ -784,6 +860,20 @@ zoomOutButton.addEventListener("click", () => {
 });
 locateButton.addEventListener("click", () => {
   centerMapOnUser();
+});
+heroLocateButton?.addEventListener("click", locateHeroMap);
+document.querySelectorAll("[data-feature-center]").forEach(card => {
+  const showOnMap = () => {
+    const centerName = card.querySelector("h3")?.textContent.trim();
+    const matchedCenter = centers.find(center => center.id === card.dataset.featureCenter) || centers.find(center => center.name === centerName);
+    if (!matchedCenter) return;
+    document.querySelector("#search").scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => openCenterDetail(matchedCenter.id), 520);
+  };
+  card.addEventListener("click", showOnMap);
+  card.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showOnMap(); }
+  });
 });
 
 async function initApp() {
