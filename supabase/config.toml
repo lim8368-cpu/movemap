@@ -1,0 +1,4 @@
+[project]
+# Supabase Dashboard GitHub integration uses this folder for migrations.
+# Project-specific credentials stay in Supabase/Hetzner and are never committed.
+
