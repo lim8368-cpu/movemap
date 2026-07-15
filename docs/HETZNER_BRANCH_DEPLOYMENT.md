@@ -3,9 +3,9 @@
 ## 목표 구조
 
 ```text
-main ─────────> production VPS ─> production Supabase
-develop ──────> staging.example.com ─┐
-feature/* ────> <branch>.preview.example.com ─> staging Supabase
+main ─────────> production container ─> production Supabase
+develop ──────> staging.<server-ip>.sslip.io ─┐
+feature/* ────> <branch>.<server-ip>.sslip.io ─> staging Supabase
 ```
 
 현재는 Hetzner VPS 한 대 안에서 운영과 테스트를 논리적으로 분리한다. 운영 Nginx는
@@ -76,7 +76,7 @@ sudo htpasswd -cB /opt/movemap-secrets/staging.htpasswd movemap-tester
 sudo chmod 600 /opt/movemap-secrets/staging.htpasswd
 ```
 
-실제 `.env.staging`에는 `STAGING_HTPASSWD_FILE`, `ACME_EMAIL`, staging Supabase
+실제 `.env.staging`에는 `STAGING_HTPASSWD_FILE`, staging Supabase
 URL/key와 staging project ref를 입력한다. 공용 라우터는 한 번만 시작한다. 기존 운영
 Nginx가 사용하지 않는 443 포트를 Preview가 사용하도록 bootstrap Compose의 443 publish는
 제거해야 한다.
@@ -134,6 +134,6 @@ Supabase service-role key와 앱 비밀값은 GitHub Actions로 전달하지 않
 - `/api/config`의 environment가 `staging`이다.
 - Preview Supabase project ref가 staging ref와 같다.
 - 테스트 DB에 실제 개인정보가 없다.
-- main 배포는 production VPS와 production Supabase만 사용한다.
+- main 배포는 production container와 production Supabase만 사용한다.
 - `.env*`, 인증서, key, DB dump가 `git ls-files`에 나타나지 않는다.
 - staging/production 앱을 한 기기에 동시에 설치할 수 있다.

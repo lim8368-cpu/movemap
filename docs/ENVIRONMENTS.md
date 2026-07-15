@@ -28,8 +28,8 @@ service-role key를 복사해 쓰지 않는다.
 | 값 | 저장 위치 |
 |---|---|
 | 로컬 개발 값 | 개발자 PC의 `.env.development` |
-| staging 값 | staging VPS `/opt/movemap-secrets/.env.staging` |
-| production 값 | production VPS `/opt/movemap/.env.production` |
+| staging 값 | VPS `/opt/movemap-secrets/.env.staging` |
+| production 값 | VPS `/opt/movemap/.env.production` |
 | CI 접속 키 | GitHub Environment secrets |
 | EAS 빌드 값 | Expo EAS environment secrets |
 
