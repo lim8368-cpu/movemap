@@ -1,4 +1,4 @@
-# 무브맵 공통 앱
+# DAIL 공통 앱
 
 물리치료사가 운영하는 운동센터를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
 
