@@ -9,7 +9,7 @@ const sampleCenters = [
     reviews: "128",
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
-    therapist: "김민재 센터장 · 물리치료사 9년",
+    therapist: "김민재 센터장 · 물리치료사 출신",
     price: "첫 평가 30,000원",
     conversion: "상담 응답 평균 18분",
     lat: 37.4979,
@@ -27,7 +27,7 @@ const sampleCenters = [
     reviews: "94",
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
-    therapist: "박서연 대표 · 물리치료사 7년",
+    therapist: "박서연 대표 · 물리치료사 출신",
     price: "체험 수업 20,000원",
     conversion: "이번 주 예약 가능",
     lat: 37.5557,
@@ -45,7 +45,7 @@ const sampleCenters = [
     reviews: "76",
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
-    therapist: "이도윤 원장 · 물리치료사 11년",
+    therapist: "이도윤 원장 · 물리치료사 출신",
     price: "방문 상담 무료",
     conversion: "재방문율 71%",
     lat: 37.3827,
@@ -63,7 +63,7 @@ const sampleCenters = [
     reviews: "61",
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
-    therapist: "최하린 대표 · 물리치료사 8년",
+    therapist: "최하린 대표 · 물리치료사 출신",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
     lat: 37.5243,
@@ -118,9 +118,9 @@ function normalizeCenter(center) {
     distance: center.distance || "신규",
     rating: center.rating || "신규",
     reviews: center.reviews || "0",
-    lead: center.lead || "물리치료사가 운영하는 운동센터입니다.",
+    lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
-    therapist: center.therapist || "물리치료사 운영 확인",
+    therapist: center.therapist || "운영자 정보 확인 중",
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
     lat: Number(center.lat) || 37.5665,
@@ -256,7 +256,7 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
-              <span class="badge badge-pt">✓ 물리치료사 기반</span>
+              <span class="badge badge-pt">✓ 물리치료사 출신</span>
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
@@ -299,38 +299,34 @@ function renderDetail() {
   detailPanel.hidden = false;
   document.body.classList.add("detail-open");
   detailPanel.innerHTML = `
-    <div>
-      <span class="badge">물리치료사 운영 확인</span>
-      <h2>${escapeHtml(center.name)}</h2>
+    <div class="detail-head">
+      <div>
+        <span class="badge">✓ 물리치료사 출신</span>
+        <h2>${escapeHtml(center.name)}</h2>
+        <p class="detail-location">⌖ ${escapeHtml(center.area)} · ${escapeHtml(center.distance)}</p>
+      </div>
+      <button class="detail-close" type="button" aria-label="상세 정보 닫기">×</button>
+    </div>
+    <div class="detail-content">
+      <div class="detail-primary">
       ${
         showPhoto
           ? `<div class="center-gallery">${gallery.map((src, index) => `<img class="center-detail-photo" src="${escapeHtml(src)}" alt="${escapeHtml(center.name)} 사진 ${index + 1}" />`).join("")}</div>`
           : ""
       }
-      <p>${escapeHtml(center.lead)}</p>
-      <p><strong>${escapeHtml(center.therapist)}</strong></p>
+      <p class="detail-lead">${escapeHtml(center.lead)}</p>
+      <div class="operator-card"><span>운영자 정보</span><strong>${escapeHtml(center.therapist)}</strong></div>
       <div class="tag-row">
         ${center.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
       </div>
+      </div>
+      <aside class="detail-actions">
+        <p>센터에서 제공한 정보를 확인한 후 직접 문의해 주세요.</p>
+        <button class="contact-button" type="button" data-contact-id="${center.id}">상담 문의하기 <span>→</span></button>
+        <small>DAIL은 의료 상담이나 진단을 제공하지 않습니다.</small>
+      </aside>
     </div>
-    <div class="metric-box">
-      <div class="metric">
-        <strong>${center.rating}</strong>
-        <span>이용자 평점 · 후기 ${center.reviews}개</span>
-      </div>
-      <div class="metric">
-        <strong>${center.price}</strong>
-        <span>진입 장벽을 낮춘 첫 방문 상품</span>
-      </div>
-      <div class="metric">
-        <strong>${center.conversion}</strong>
-        <span>센터장 홍보 성과 지표</span>
-      </div>
-      <button class="primary-button contact-button" type="button" data-contact-id="${center.id}">
-        상담 요청 기록하기
-      </button>
-    </div>
-    <section class="review-section">
+    <section class="review-section" hidden>
       <h3>이용자 후기</h3>
       <div id="reviewList" class="review-list"><p>후기를 불러오는 중입니다.</p></div>
       <form id="reviewForm" class="review-form">
@@ -341,6 +337,7 @@ function renderDetail() {
     </section>
   `;
 
+  detailPanel.querySelector(".detail-close").addEventListener("click", clearSelectedCenter);
   detailPanel.querySelector(".contact-button").addEventListener("click", () => {
     trackEvent("contact_click", center.id, "detail_panel");
   });

@@ -196,7 +196,7 @@ server.headersTimeout = 35_000;
 server.keepAliveTimeout = 5_000;
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Movemap ${runtimeEnvironment.appEnv} server listening on port ${PORT}`);
+  console.log(`DAIL ${runtimeEnvironment.appEnv} server listening on port ${PORT}`);
 });
 
 function shutdown(signal) {

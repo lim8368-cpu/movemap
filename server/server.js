@@ -314,9 +314,9 @@ function applicationToCenter(db, application) {
     distance: "신규",
     rating: "신규",
     reviews: "0",
-    lead: application.services || application.memo || "물리치료사가 운영하는 운동센터입니다.",
+    lead: application.services || application.memo || "센터가 등록한 운동 프로그램 정보입니다.",
     tags: tagsFromText(application.services),
-    therapist: `${application.licenseHolderName} · 물리치료사 면허 확인`,
+    therapist: `${application.licenseHolderName} · 물리치료사 출신`,
     price: "센터 문의",
     conversion: "신규 등록 센터",
     lat,
@@ -786,7 +786,7 @@ const server = http.createServer(async (req, res) => {
     recordAccess(req, { statusCode: 404, source: requestSource(req, "unknown") });
     sendJson(res, 404, { error: "찾을 수 없습니다." });
   } catch (error) {
-    console.error("Movemap server error", {
+    console.error("DAIL server error", {
       method: req.method,
       path: url.pathname,
       message: security.isProduction() ? "redacted" : error.message,
@@ -796,5 +796,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Movemap backend running locally at http://localhost:${PORT}`);
+  console.log(`DAIL backend running locally at http://localhost:${PORT}`);
 });
