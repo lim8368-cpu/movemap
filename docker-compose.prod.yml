@@ -76,7 +76,6 @@ services:
       - SETUID
     networks:
       - private
-      - egress
       - preview-edge
     labels:
       - "traefik.enable=true"
