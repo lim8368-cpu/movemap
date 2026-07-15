@@ -2,6 +2,9 @@ services:
   edge:
     image: traefik:v3.3
     restart: unless-stopped
+    environment:
+      # Hetzner의 최신 Docker 데몬이 요구하는 최소 API 버전에 맞춘다.
+      DOCKER_API_VERSION: "1.40"
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
