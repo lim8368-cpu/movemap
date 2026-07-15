@@ -70,7 +70,10 @@ movemap-github-ready/
       앞으로 앱/서버/관리자 페이지가 같이 쓸 공통 설정을 넣을 곳
 
   database/
-    앞으로 Supabase DB 구조와 마이그레이션을 넣을 곳
+    이전 수동 배포용 Supabase DB 마이그레이션 기록
+
+  supabase/
+    GitHub 연동으로 자동 배포되는 Supabase 마이그레이션
 
   docs/
     출시 가이드
