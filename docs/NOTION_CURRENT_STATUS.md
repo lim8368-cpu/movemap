@@ -1,8 +1,8 @@
-# 무브맵 진행 상황 정리
+# DAIL 진행 상황 정리
 
 ## 1. 프로젝트 한 줄 요약
 
-무브맵은 물리치료사가 운영하는 운동센터를 지도에서 찾을 수 있는 서비스입니다.
+DAIL은 물리치료사가 운영하는 운동센터를 지도에서 찾을 수 있는 서비스입니다.
 웹, iOS, Android를 같이 출시하기 위해 Expo React Native + React Native Web 중심 구조로 정리했습니다.
 
 ## 2. 현재 저장소 위치
@@ -179,7 +179,7 @@ fe5dcc6 Add super admin access logs
 8ab3bff Document GitHub upload structure
 2917001 Add security baseline for patient data
 3f95726 Add GitHub upload guide
-80cb265 Initial Movemap MVP structure
+80cb265 Initial DAIL MVP structure
 ```
 
 보안 테스트:

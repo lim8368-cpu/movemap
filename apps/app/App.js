@@ -105,7 +105,7 @@ export default function App() {
         {loading ? (
           <View style={styles.loadingOverlay} pointerEvents="none">
             <ActivityIndicator size="large" color="#2f9b76" />
-            <Text style={styles.loadingText}>무브맵을 불러오는 중입니다</Text>
+            <Text style={styles.loadingText}>DAIL을 불러오는 중입니다</Text>
           </View>
         ) : null}
 

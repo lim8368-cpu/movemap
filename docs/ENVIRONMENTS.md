@@ -2,9 +2,9 @@
 
 | APP_ENV | 코드 위치 | 웹/API | 데이터 | 모바일 앱 |
 |---|---|---|---|---|
-| `development` | 개발자 PC | localhost | 로컬 JSON 또는 개발 Supabase | 무브맵 Dev |
-| `staging` | `develop`, `feature/*` | 비밀번호 보호 Preview | 테스트 Supabase, 가짜 데이터만 | 무브맵 Test |
-| `production` | `main` | 실제 서비스 | 운영 Supabase | 무브맵 |
+| `development` | 개발자 PC | localhost | 로컬 JSON 또는 개발 Supabase | DAIL Dev |
+| `staging` | `develop`, `feature/*` | 비밀번호 보호 Preview | 테스트 Supabase, 가짜 데이터만 | DAIL Test |
+| `production` | `main` | 실제 서비스 | 운영 Supabase | DAIL |
 
 실제 환경 파일은 커밋하지 않는다. 저장소에는 `.env.development.example`,
 `.env.staging.example`, `.env.production.example`만 둔다. `EXPO_PUBLIC_*` 값은 앱에서
@@ -42,8 +42,8 @@ service-role key를 복사해 쓰지 않는다.
 
 | 프로필 | 표시 이름 | iOS bundle ID | Android applicationId |
 |---|---|---|---|
-| development | 무브맵 Dev | `com.movemap.app.dev` | `com.movemap.app.dev` |
-| staging | 무브맵 Test | `com.movemap.app.staging` | `com.movemap.app.staging` |
-| production | 무브맵 | `com.movemap.app` | `com.movemap.app` |
+| development | DAIL Dev | `com.movemap.app.dev` | `com.movemap.app.dev` |
+| staging | DAIL Test | `com.movemap.app.staging` | `com.movemap.app.staging` |
+| production | DAIL | `com.movemap.app` | `com.movemap.app` |
 
 staging/production의 `EXPO_PUBLIC_API_BASE_URL`은 EAS 환경별 변수로 등록한다.

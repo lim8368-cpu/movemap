@@ -1,6 +1,6 @@
 # Vercel Hobby 첫 배포 가이드
 
-이 설정은 무브맵을 Vercel Hobby에서 먼저 테스트하기 위한 최소 배포 구성입니다.
+이 설정은 DAIL을 Vercel Hobby에서 먼저 테스트하기 위한 최소 배포 구성입니다.
 
 ## 현재 배포 방식
 

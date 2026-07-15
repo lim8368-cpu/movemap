@@ -1,18 +1,18 @@
 const PROFILES = {
   development: {
-    name: "무브맵 Dev",
+    name: "DAIL Dev",
     slug: "movemap-dev",
     scheme: "movemap-dev",
     identifier: "com.movemap.app.dev",
   },
   staging: {
-    name: "무브맵 Test",
+    name: "DAIL Test",
     slug: "movemap-staging",
     scheme: "movemap-staging",
     identifier: "com.movemap.app.staging",
   },
   production: {
-    name: "무브맵",
+    name: "DAIL",
     slug: "movemap",
     scheme: "movemap",
     identifier: "com.movemap.app",
@@ -45,7 +45,7 @@ module.exports = () => {
       android: {
         package: profile.identifier,
         permissions: ["CAMERA"],
-        adaptiveIcon: { backgroundColor: "#2f9b76" },
+        adaptiveIcon: { backgroundColor: "#0e2a3d" },
       },
     },
   };
