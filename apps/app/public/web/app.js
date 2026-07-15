@@ -867,8 +867,12 @@ document.querySelectorAll("[data-feature-center]").forEach(card => {
     const centerName = card.querySelector("h3")?.textContent.trim();
     const matchedCenter = centers.find(center => center.id === card.dataset.featureCenter) || centers.find(center => center.name === centerName);
     if (!matchedCenter) return;
-    document.querySelector("#search").scrollIntoView({ behavior: "smooth" });
-    window.setTimeout(() => openCenterDetail(matchedCenter.id), 520);
+    const searchSection = document.querySelector("#search");
+    searchSection.scrollIntoView({ behavior: "auto", block: "start" });
+    window.setTimeout(() => {
+      openCenterDetail(matchedCenter.id);
+      searchSection.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 80);
   };
   card.addEventListener("click", showOnMap);
   card.addEventListener("keydown", event => {
