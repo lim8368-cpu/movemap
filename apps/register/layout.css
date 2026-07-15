@@ -36,7 +36,30 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 .chips span { min-height: 38px; padding: 8px 14px; }
 .next, #submitButton, .back { min-height: 52px; }
 .license-box { padding: 20px; }
-.faq { margin-top: 52px; }
+.faq { margin-top: 72px; }
+.faq-heading { margin-bottom: 28px; text-align: center; }
+.faq-heading > span { display: inline-block; margin-bottom: 10px; color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.faq-heading h2 { margin: 0; color: var(--navy); font-size: 28px; line-height: 1.35; letter-spacing: -.035em; }
+.faq-heading p { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.faq-list { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 10px 32px rgba(15, 28, 46, .055); }
+.faq-list details { padding: 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.faq-list details:last-child { border-bottom: 0; }
+.faq-list summary { display: flex; min-height: 72px; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px; color: var(--navy); cursor: pointer; font-size: 15px; font-weight: 750; line-height: 1.5; list-style: none; transition: background .2s ease, color .2s ease; }
+.faq-list summary::-webkit-details-marker { display: none; }
+.faq-list summary:hover { background: #f8fbfb; color: var(--teal); }
+.faq-list summary:focus-visible { outline: 3px solid rgba(13, 148, 136, .18); outline-offset: -3px; }
+.faq-list summary i { width: 30px; height: 30px; flex: 0 0 30px; position: relative; border-radius: 50%; background: #f1f5f9; transition: background .2s ease, transform .2s ease; }
+.faq-list summary i::before, .faq-list summary i::after { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 1.5px; border-radius: 2px; background: #64748b; transform: translate(-50%, -50%); }
+.faq-list summary i::after { transform: translate(-50%, -50%) rotate(90deg); transition: transform .2s ease; }
+.faq-list details[open] summary { color: var(--teal); }
+.faq-list details[open] summary i { background: #e7f8f5; }
+.faq-list details[open] summary i::before, .faq-list details[open] summary i::after { background: var(--teal); }
+.faq-list details[open] summary i::after { transform: translate(-50%, -50%) rotate(0); }
+.faq-list details p { margin: -4px 72px 24px 24px; color: var(--muted); font-size: 14px; line-height: 1.75; }
+.faq-note { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding: 17px 20px; border-radius: 14px; background: #edf9f7; }
+.faq-note > span { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 10px; background: #fff; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 20px; }
+.faq-note p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.faq-note strong { display: block; margin-bottom: 2px; color: var(--navy); font-size: 13px; }
 
 @media (max-width: 700px) {
   .benefits { gap: 10px; padding: 16px; }
@@ -44,4 +67,13 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
   .benefits b { font-size: 30px; }
   .form-step { padding: 24px; }
   .register-area { padding-left: 16px; padding-right: 16px; }
+  .faq { margin-top: 56px; }
+  .faq-heading { margin-bottom: 22px; text-align: left; }
+  .faq-heading h2 { font-size: 23px; }
+  .faq-heading p { font-size: 13px; }
+  .faq-list { border-radius: 15px; }
+  .faq-list summary { min-height: 66px; gap: 14px; padding: 18px; font-size: 14px; }
+  .faq-list summary i { width: 28px; height: 28px; flex-basis: 28px; }
+  .faq-list details p { margin: -2px 58px 20px 18px; font-size: 13px; }
+  .faq-note { align-items: flex-start; padding: 16px; }
 }
