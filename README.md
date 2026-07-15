@@ -40,6 +40,7 @@ iPhone 앱 / Android 앱 / Web
 - `docs/PROJECT_STRUCTURE.md`
 - `docs/ENVIRONMENTS.md`
 - `database/SECURITY_SCHEMA.md`
+- `docs/HETZNER_BRANCH_DEPLOYMENT.md`
 
 ## 폴더 구조
 
@@ -81,7 +82,7 @@ movemap-github-ready/
 
 ### 1. API 서버 실행
 
-처음 실행할 때는 `.env.example`을 참고해서 `.env`를 만들고 로컬 관리자 비밀번호를 넣습니다.
+처음 실행할 때는 `.env.development.example`을 참고해서 `.env.development`를 만들고 로컬 관리자 비밀번호를 넣습니다.
 
 ```text
 LOCAL_ADMIN_PASSWORD=내가_정한_로컬_비밀번호
@@ -162,17 +163,17 @@ GitHub에는 `server/data/db.example.json`처럼 개인정보가 없는 샘플 D
 
 ## 출시 준비 다음 단계
 
-1. Preview와 Production Supabase 프로젝트를 각각 연결
+1. Staging과 Production Supabase 프로젝트를 각각 연결
 2. 각 Supabase에 비공개 저장소 마이그레이션 적용
-3. Vercel에 관리자 해시와 세션 비밀값 설정
+3. Hetzner staging/production 서버에 서로 다른 관리자 해시와 세션 비밀값 설정
 4. Expo EAS로 iOS/Android 빌드
 5. 네이버 클라우드에 운영 도메인 등록
 
 자세한 내용은 `docs/` 폴더의 가이드를 참고하세요.
 
-## VPS + Docker + Nginx + Cloudflare 운영
+## Hetzner + Docker + Nginx/Traefik + Cloudflare 운영
 
-Vercel 대신 Docker Compose로 웹, 모든 API, Nginx HTTPS 프록시와 자동 백업을 운영할 수 있습니다.
+운영은 Nginx, staging/feature Preview는 Traefik을 앞단에 두고 Docker Compose로 웹과 API를 운영합니다.
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build

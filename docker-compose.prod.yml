@@ -7,11 +7,13 @@ services:
     environment:
       NODE_ENV: production
       APP_ENV: production
+      DATA_ENVIRONMENT: production
       PORT: "3000"
       NAVER_MAP_NCP_KEY_ID: ${NAVER_MAP_NCP_KEY_ID:?required}
       SUPABASE_URL: ${SUPABASE_URL:?required}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?required}
       SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-movemap-private}
+      EXPECTED_SUPABASE_PROJECT_REF: ${EXPECTED_SUPABASE_PROJECT_REF:?required}
       ADMIN_PASSWORD_SCRYPT: ${ADMIN_PASSWORD_SCRYPT:?required}
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?required}
     expose:

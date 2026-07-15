@@ -1,6 +1,9 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { validateRuntimeEnvironment } = require("./environment");
+
+const runtimeEnvironment = validateRuntimeEnvironment();
 
 const ROOT = path.resolve(__dirname, "..");
 const STATIC_ROOT = path.join(ROOT, "dist");
@@ -193,7 +196,7 @@ server.headersTimeout = 35_000;
 server.keepAliveTimeout = 5_000;
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Movemap production server listening on port ${PORT}`);
+  console.log(`Movemap ${runtimeEnvironment.appEnv} server listening on port ${PORT}`);
 });
 
 function shutdown(signal) {

@@ -93,8 +93,6 @@ function sendJson(res, status, data) {
 }
 
 function runtimeEnvironment() {
-  if (process.env.VERCEL_ENV === "production") return "production";
-  if (process.env.VERCEL_ENV === "preview") return "test";
   return process.env.APP_ENV || "development";
 }
 

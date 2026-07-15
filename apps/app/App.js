@@ -12,7 +12,7 @@ import {
 import { WebView } from "react-native-webview";
 
 const API_BASE = String(
-  process.env.EXPO_PUBLIC_API_BASE_URL || "https://movemap.vercel.app"
+  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8090"
 ).replace(/\/$/, "");
 
 const SCREENS = [

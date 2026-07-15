@@ -1,0 +1,17 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/tls/origin.crt
+      keyFile: /etc/traefik/tls/origin.key
+
+http:
+  middlewares:
+    staging-auth:
+      basicAuth:
+        usersFile: /etc/traefik/auth/staging.htpasswd
+        removeHeader: true
+    staging-headers:
+      headers:
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow, noarchive"
+        contentTypeNosniff: true
+        referrerPolicy: no-referrer

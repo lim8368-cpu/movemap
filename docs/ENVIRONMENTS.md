@@ -1,56 +1,49 @@
-# 무브맵 환경 분리
+# 환경 분리 기준
 
-| 환경 | 용도 | Vercel 범위 | 데이터 원칙 |
+| APP_ENV | 코드 위치 | 웹/API | 데이터 | 모바일 앱 |
+|---|---|---|---|---|
+| `development` | 개발자 PC | localhost | 로컬 JSON 또는 개발 Supabase | 무브맵 Dev |
+| `staging` | `develop`, `feature/*` | 비밀번호 보호 Preview | 테스트 Supabase, 가짜 데이터만 | 무브맵 Test |
+| `production` | `main` | 실제 서비스 | 운영 Supabase | 무브맵 |
+
+실제 환경 파일은 커밋하지 않는다. 저장소에는 `.env.development.example`,
+`.env.staging.example`, `.env.production.example`만 둔다. `EXPO_PUBLIC_*` 값은 앱에서
+볼 수 있으므로 비밀번호, service-role key, DB URL을 넣지 않는다.
+
+## 서버의 교차 연결 차단
+
+서버 시작 시 다음 조건을 검사하고 하나라도 틀리면 즉시 종료한다.
+
+- staging/production에서는 `APP_ENV`와 `DATA_ENVIRONMENT`가 같아야 한다.
+- `SUPABASE_URL`의 project ref가 `EXPECTED_SUPABASE_PROJECT_REF`와 같아야 한다.
+- production은 Supabase 설정 없이 시작할 수 없다.
+- Supabase URL과 service-role key는 반드시 함께 설정해야 한다.
+
+따라서 staging의 `.env.staging`에는 테스트 Supabase ref만, production의
+`.env.production`에는 운영 Supabase ref만 기록한다. 두 서버에서 같은 env 파일이나
+service-role key를 복사해 쓰지 않는다.
+
+## 비밀정보 저장 위치
+
+| 값 | 저장 위치 |
+|---|---|
+| 로컬 개발 값 | 개발자 PC의 `.env.development` |
+| staging 값 | staging VPS `/opt/movemap-secrets/.env.staging` |
+| production 값 | production VPS `/opt/movemap/.env.production` |
+| CI 접속 키 | GitHub Environment secrets |
+| EAS 빌드 값 | Expo EAS environment secrets |
+
+각 파일은 `chmod 600`으로 제한한다. staging과 production은 서로 다른 관리자 세션
+비밀값, 관리자 암호 해시, Supabase key를 사용한다.
+
+## 모바일 식별자
+
+`apps/app/app.config.js`와 `apps/app/eas.json`이 다음처럼 분리한다.
+
+| 프로필 | 표시 이름 | iOS bundle ID | Android applicationId |
 |---|---|---|---|
-| development | 개인 컴퓨터 개발 | Local | 샘플 데이터만 사용 |
-| test | 기능 확인과 Preview 배포 | Preview | 테스트 센터·가짜 개인정보만 사용 |
-| production | 실제 서비스 | Production | 운영 프로젝트만 연결 |
+| development | 무브맵 Dev | `com.movemap.app.dev` | `com.movemap.app.dev` |
+| staging | 무브맵 Test | `com.movemap.app.staging` | `com.movemap.app.staging` |
+| production | 무브맵 | `com.movemap.app` | `com.movemap.app` |
 
-`VERCEL_ENV`가 `production`이면 앱은 production, `preview`이면 test로 판단합니다.
-Supabase URL과 service-role key는 Vercel의 Production과 Preview에 각각 별도 항목으로 저장합니다.
-한 Supabase 프로젝트의 키를 두 환경에 중복 입력하지 않습니다.
-
-필수 환경변수:
-
-```text
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_STORAGE_BUCKET=movemap-private
-NAVER_MAP_NCP_KEY_ID
-ADMIN_PASSWORD_SCRYPT
-ADMIN_SESSION_SECRET
-```
-
-Expo 앱 공개 설정:
-
-```text
-# 로컬 테스트
-EXPO_PUBLIC_API_BASE_URL=http://내컴퓨터IP:8090
-
-# 운영 빌드
-EXPO_PUBLIC_API_BASE_URL=https://movemap.vercel.app
-```
-
-`EXPO_PUBLIC_` 값은 앱 사용자에게 보일 수 있으므로 비밀번호나 service-role key를 넣으면 안 됩니다.
-
-각 Supabase 프로젝트에는 `001`, `002`, `003` 마이그레이션을 순서대로 적용합니다.
-
-## 비공개 파일 저장소
-
-Supabase SQL Editor에서 환경별로 아래 마이그레이션을 실행합니다.
-
-```text
-database/migrations/002_private_storage.sql
-```
-
-버킷은 public이 아니며, 브라우저에는 저장 경로만 전달됩니다. 이미지를 볼 때 서버가 짧게 만료되는 signed URL을 발급합니다.
-
-## 관리자 인증
-
-관리자 비밀번호 원문은 저장하지 않습니다.
-
-```bash
-npm run admin:credentials
-```
-
-출력된 두 값을 Vercel 환경변수에 저장합니다. 로그인 후 세션은 `HttpOnly`, `Secure`, `SameSite=Strict` 쿠키로 15분 동안만 유지됩니다. 같은 접속지에서 15분 안에 비밀번호를 5회 틀리면 15분간 로그인을 잠급니다.
+staging/production의 `EXPO_PUBLIC_API_BASE_URL`은 EAS 환경별 변수로 등록한다.

@@ -1,0 +1,23 @@
+name: Validate
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, "feature/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/app/package-lock.json
+      - run: npm run server:test:security
+      - run: docker build -t movemap:${{ github.sha }} .
