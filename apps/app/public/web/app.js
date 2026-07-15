@@ -623,9 +623,30 @@ function locateHeroMap() {
 
 function initHeroMap() {
   if (!heroMapElement || !window.naver?.maps) return;
-  heroMap=new naver.maps.Map(heroMapElement,{center:new naver.maps.LatLng(37.5036,127.0247),zoom:12,minZoom:8,scaleControl:false,logoControl:true,mapDataControl:false,zoomControl:false,draggable:true,scrollWheel:false});
+  heroMap=new naver.maps.Map(heroMapElement,{center:new naver.maps.LatLng(37.5036,127.0247),zoom:12,minZoom:8,mapTypeId:naver.maps.MapTypeId.NORMAL,scaleControl:false,logoControl:true,mapDataControl:false,zoomControl:false,draggable:true,scrollWheel:false});
+  refreshNaverMapLayout(heroMap, heroMapElement);
   renderHeroCenterMarkers();
   locateHeroMap();
+}
+
+function refreshNaverMapLayout(map, element) {
+  if (!map || !element || !window.naver?.maps) return;
+
+  const refresh = () => {
+    if (!element.clientWidth || !element.clientHeight) return;
+    map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
+    naver.maps.Event.trigger(map, "resize");
+  };
+
+  requestAnimationFrame(() => requestAnimationFrame(refresh));
+  window.setTimeout(refresh, 350);
+  window.setTimeout(refresh, 1200);
+
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(refresh);
+    observer.observe(element);
+    window.setTimeout(() => observer.disconnect(), 5000);
+  }
 }
 
 function getNaverMapKey() {
@@ -646,7 +667,7 @@ function loadNaverMapSdk(key) {
     }
 
     const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&v=${Date.now()}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}`;
     script.async = true;
     script.onload = () => {
       if (window.naver?.maps) {
@@ -731,11 +752,14 @@ async function initNaverMap() {
       center: new naver.maps.LatLng(37.5036, 127.0247),
       zoom: 12,
       minZoom: 7,
+      mapTypeId: naver.maps.MapTypeId.NORMAL,
       scaleControl: false,
       logoControl: true,
       mapDataControl: false,
       zoomControl: false,
     });
+
+    refreshNaverMapLayout(naverMap, mapElement);
 
     initHeroMap();
 
