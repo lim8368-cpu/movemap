@@ -7,7 +7,7 @@
   -> Cloudflare DNS, CDN, DDoS 방어
   -> HTTPS 443
   -> VPS Nginx
-  -> Docker 내부망의 Movemap Node 서버
+  -> Docker 내부망의 DAIL Node 서버
   -> Supabase DB와 비공개 Storage
 
 매일 Backup 컨테이너

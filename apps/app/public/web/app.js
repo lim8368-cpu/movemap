@@ -256,16 +256,19 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
+              <span class="badge badge-pt">✓ 물리치료사 기반</span>
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
-            <span class="badge">자격 확인</span>
+            <span class="favorite" aria-hidden="true">♡</span>
           </div>
           <div class="meta-row">
             <span>${escapeHtml(center.area)}</span>
             <span>${escapeHtml(center.distance)}</span>
-            <span>평점 ${escapeHtml(center.rating)}</span>
+            <span class="rating">★ ${escapeHtml(center.rating)}</span>
           </div>
+          <div class="card-tags">${center.tags.slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+          <span class="card-cta">센터 상세 보기 <span aria-hidden="true">→</span></span>
         </button>
       `
     )
