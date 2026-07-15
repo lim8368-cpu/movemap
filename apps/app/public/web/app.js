@@ -333,11 +333,7 @@ async function submitReview(event, centerId) {
 function openCenterDetail(id) {
   detailPanel.hidden = true;
   detailPanel.innerHTML = "";
-  if (!naverMap) {
-    selectedId = id;
-    renderDetail();
-  }
-  selectCenter(id, { showPopup: true });
+  selectCenter(id, { openDetail: true });
 }
 
 function centerPopupContent(center) {
