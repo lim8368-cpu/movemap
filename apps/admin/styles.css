@@ -27,6 +27,10 @@ button {
   cursor: pointer;
 }
 
+.danger-button { border-color: #b42318; background: #fff; color: #b42318; }
+.application-actions, .row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.table-textarea { width: 240px; min-height: 72px; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+
 .admin-shell {
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;

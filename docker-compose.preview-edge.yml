@@ -1,0 +1,33 @@
+services:
+  edge:
+    image: traefik:v3.6.16
+    restart: unless-stopped
+    environment:
+      # Hetzner의 최신 Docker 데몬이 요구하는 최소 API 버전에 맞춘다.
+      DOCKER_API_VERSION: "1.40"
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --api.dashboard=false
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./deploy/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ${STAGING_HTPASSWD_FILE:?required}:/etc/traefik/auth/staging.htpasswd:ro
+      - preview-letsencrypt:/letsencrypt
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - preview-edge
+
+networks:
+  preview-edge:
+    name: movemap-preview-edge
+
+volumes:
+  preview-letsencrypt:

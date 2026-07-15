@@ -1,6 +1,6 @@
-# 무브맵 공통 앱
+# DAIL 공통 앱
 
-물리치료사가 운영하는 운동센터를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
+물리치료사 출신이 운영하는 운동센터 정보를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
 
 이 앱은 iOS, Android, Web을 같은 코드 흐름으로 관리하는 중심 앱입니다.
 
@@ -69,14 +69,20 @@ http://localhost:8090/web/mobile-map.html
 Expo Go에서 네이버 지도를 보려면 네이버 Cloud Platform 콘솔의 `Web 서비스 URL`에 맥북 개발 서버 주소를 추가해야 합니다.
 
 ```text
-http://192.168.150.139:8090
+http://내컴퓨터IP:8090
+```
+
+앱 실행 시 같은 주소를 공개 환경변수로 지정합니다.
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://내컴퓨터IP:8090 npm run app:start
 ```
 
 ## 다음 구현 후보
 
 - 실제 지도 SDK 연결: 네이버 지도, 카카오 지도, Google Maps 중 선택
 - 센터장 회원가입/센터 등록
-- 물리치료사 면허 확인 프로세스
+- 물리치료사 출신 확인 프로세스
 - 상담 예약/문의 채팅
 - 후기, 즐겨찾기, 위치 기반 추천
 - 센터장용 홍보 대시보드

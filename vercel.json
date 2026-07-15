@@ -1,0 +1,85 @@
+{
+  "buildCommand": "npm run vercel:build",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "/api/config"
+    },
+    {
+      "source": "/api/login",
+      "destination": "/api/login"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/stats"
+    },
+    {
+      "source": "/api/access-logs",
+      "destination": "/api/access-logs"
+    },
+    {
+      "source": "/api/approve-center",
+      "destination": "/api/approve-center"
+    },
+    {
+      "source": "/api/centers",
+      "destination": "/api/centers"
+    },
+    {
+      "source": "/api/events",
+      "destination": "/api/events"
+    },
+    {
+      "source": "/api/uploads",
+      "destination": "/api/uploads"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/logout"
+    },
+    {
+      "source": "/api/reviews",
+      "destination": "/api/reviews"
+    },
+    {
+      "source": "/api/center-applications",
+      "destination": "/api/center-applications"
+    },
+    {
+      "source": "/api/centers/:id/location",
+      "destination": "/api/centers/:id/location"
+    },
+    {
+      "source": "/register",
+      "destination": "/register/index.html"
+    },
+    {
+      "source": "/register/",
+      "destination": "/register/index.html"
+    },
+    {
+      "source": "/register/:path*",
+      "destination": "/register/:path*"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/:path*"
+    },
+    {
+      "source": "/web/:path*",
+      "destination": "/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

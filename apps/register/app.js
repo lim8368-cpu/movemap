@@ -1,235 +1,27 @@
-const API_BASE = `${window.location.origin}`;
-const form = document.querySelector("#registrationForm");
-const submitButton = document.querySelector("#submitButton");
-const message = document.querySelector("#formMessage");
-const addressInput = document.querySelector("#addressInput");
-const naverMapLink = document.querySelector("#naverMapLink");
-const naverMapUrlInput = document.querySelector("#naverMapUrlInput");
-const mapLinkHint = document.querySelector("#mapLinkHint");
-const latInput = document.querySelector("#latInput");
-const lngInput = document.querySelector("#lngInput");
-const photoFileInput = document.querySelector("#photoFileInput");
-const photoDataUrlInput = document.querySelector("#photoDataUrlInput");
-const photoPreview = document.querySelector("#photoPreview");
-const licenseFileInput = document.querySelector("#licenseFileInput");
-const licenseImageDataUrlInput = document.querySelector("#licenseImageDataUrlInput");
-const licensePreview = document.querySelector("#licensePreview");
-let publicConfig = {
-  naverMapNcpKeyId: "",
-};
-let geocodeTimer = null;
+const API_BASE=window.location.origin;
+const form=document.querySelector("#registrationForm");
+const message=document.querySelector("#formMessage");
+const submitButton=document.querySelector("#submitButton");
+const licenseFields=document.querySelector("#licenseFields");
+const licenseFileInput=document.querySelector("#licenseFileInput");
+const licenseImagePathInput=document.querySelector("#licenseImagePathInput");
+const photoFileInput=document.querySelector("#photoFileInput");
+const photoPathInput=document.querySelector("#photoPathInput");
+const photoPathsInput=document.querySelector("#photoPathsInput");
+let currentStep=1;
 
-function createNaverMapUrl(address) {
-  const query = String(address || "").trim();
-  if (!query) return "";
-  return `https://map.naver.com/p/search/${encodeURIComponent(query)}`;
-}
+function showStep(step){currentStep=step;document.querySelectorAll(".form-step").forEach(el=>el.classList.toggle("active",Number(el.dataset.step)===step));document.querySelectorAll("[data-step-dot]").forEach(el=>{const n=Number(el.dataset.stepDot);el.classList.toggle("active",n===step);el.classList.toggle("done",n<step)});if(step===3)renderSummary();window.scrollTo({top:360,behavior:"smooth"})}
+function isTherapistBackground(){return new FormData(form).get("therapistBackground")==="yes"}
+function syncBackground(){const yes=isTherapistBackground();licenseFields.hidden=!yes;licenseFields.querySelectorAll("input").forEach(input=>input.required=yes)}
+function validateStep(step){const panel=document.querySelector(`[data-step="${step}"]`);if(step===2&&!document.querySelector('[name="specialties"]:checked')){alert("전문 분야를 하나 이상 선택해주세요.");return false}const invalid=[...panel.querySelectorAll("input,textarea")].find(el=>!el.checkValidity());if(invalid){invalid.reportValidity();invalid.focus();return false}return true}
+function renderSummary(){const data=new FormData(form);const specialties=[...document.querySelectorAll('[name="specialties"]:checked')].map(el=>el.value).join(", ");const rows=[["센터명",data.get("centerName")],["대표자",data.get("ownerName")],["전화번호",data.get("phone")],["이메일",data.get("email")],["주소",data.get("address")],["물리치료사 출신",isTherapistBackground()?"예":"아니오"],["전문 분야",specialties],["운영 시간",data.get("hours")||"미입력"]];document.querySelector("#reviewSummary").innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v||"").replaceAll("<","&lt;")}</dd>`).join("")}
+function validateImage(file,required=false){if(!file&&!required)return;if(!file)throw new Error("확인 서류를 선택해주세요.");if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("JPG, PNG, WEBP 이미지만 올릴 수 있습니다.");if(file.size>3*1024*1024)throw new Error("이미지는 3MB 이하로 올려주세요.")}
+async function upload(file,kind){if(!file)return"";const response=await fetch(`${API_BASE}/api/uploads?kind=${encodeURIComponent(kind)}`,{method:"POST",headers:{"Content-Type":file.type,"X-Movemap-Client":"register"},body:file});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"이미지 업로드에 실패했습니다.");return data.path}
+function mapUrl(address){return address?`https://map.naver.com/p/search/${encodeURIComponent(address)}`:""}
 
-function syncNaverMapLink() {
-  const url = createNaverMapUrl(addressInput.value);
-  naverMapUrlInput.value = url;
-  latInput.value = "";
-  lngInput.value = "";
+document.querySelectorAll('[name="therapistBackground"]').forEach(el=>el.addEventListener("change",syncBackground));
+document.querySelectorAll("[data-next]").forEach(button=>button.addEventListener("click",()=>{if(validateStep(currentStep))showStep(Number(button.dataset.next))}));
+document.querySelectorAll("[data-prev]").forEach(button=>button.addEventListener("click",()=>showStep(Number(button.dataset.prev))));
 
-  if (!url) {
-    naverMapLink.href = "#";
-    naverMapLink.classList.add("disabled");
-    mapLinkHint.textContent = "주소를 입력하면 지도 링크가 자동으로 준비됩니다.";
-    return;
-  }
-
-  naverMapLink.href = url;
-  naverMapLink.classList.remove("disabled");
-  mapLinkHint.textContent = "주소 위치를 확인하는 중입니다.";
-  queueGeocode();
-}
-
-function loadNaverMapSdk() {
-  return new Promise((resolve, reject) => {
-    if (window.naver?.maps?.Service) {
-      resolve();
-      return;
-    }
-
-    const key = publicConfig.naverMapNcpKeyId;
-    if (!key) {
-      reject(new Error("Naver map key is missing"));
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&submodules=geocoder&v=${Date.now()}`;
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
-async function loadPublicConfig() {
-  try {
-    const response = await fetch(`${API_BASE}/api/config`, {
-      headers: { "X-Movemap-Client": "register" },
-    });
-    if (!response.ok) throw new Error("config unavailable");
-    publicConfig = await response.json();
-  } catch {
-    publicConfig = { naverMapNcpKeyId: "" };
-  }
-}
-
-async function geocodeAddress() {
-  const address = addressInput.value.trim();
-  if (!address) return;
-
-  try {
-    await loadNaverMapSdk();
-    if (!window.naver?.maps?.Service) throw new Error("geocoder unavailable");
-
-    window.naver.maps.Service.geocode({ query: address }, (status, response) => {
-      const result = response?.v2?.addresses?.[0];
-      if (status !== window.naver.maps.Service.Status.OK || !result) {
-        mapLinkHint.textContent = "지도 링크는 준비됐지만 좌표는 승인 시 지역 기준으로 잡힙니다.";
-        return;
-      }
-
-      latInput.value = result.y;
-      lngInput.value = result.x;
-      mapLinkHint.textContent = "네이버 지도 위치가 자동으로 연결되었습니다.";
-    });
-  } catch {
-    mapLinkHint.textContent = "지도 링크는 준비됐지만 좌표는 승인 시 지역 기준으로 잡힙니다.";
-  }
-}
-
-function queueGeocode() {
-  window.clearTimeout(geocodeTimer);
-  geocodeTimer = window.setTimeout(geocodeAddress, 700);
-}
-
-function setMessage(text, type = "") {
-  message.textContent = text;
-  message.className = `message ${type}`.trim();
-}
-
-function readImageFile(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve("");
-      return;
-    }
-
-    if (file.size > 850_000) {
-      reject(new Error("사진은 850KB 이하로 올려주세요."));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("사진을 읽지 못했습니다."));
-    reader.readAsDataURL(file);
-  });
-}
-
-function renderPreview(container, dataUrl) {
-  if (!dataUrl) {
-    container.hidden = true;
-    container.innerHTML = "";
-    return;
-  }
-
-  container.hidden = false;
-  container.innerHTML = `<img src="${dataUrl}" alt="" />`;
-}
-
-function formToPayload(formData) {
-  return {
-    centerName: formData.get("centerName"),
-    ownerName: formData.get("ownerName"),
-    phone: formData.get("phone"),
-    area: formData.get("area"),
-    address: formData.get("address"),
-    naverMapUrl: formData.get("naverMapUrl"),
-    lat: formData.get("lat"),
-    lng: formData.get("lng"),
-    website: formData.get("website"),
-    photoUrl: formData.get("photoUrl"),
-    photoDataUrl: formData.get("photoDataUrl"),
-    licenseHolderName: formData.get("licenseHolderName"),
-    licenseNumber: formData.get("licenseNumber"),
-    licenseImageDataUrl: formData.get("licenseImageDataUrl"),
-    services: formData.get("services"),
-    memo: formData.get("memo"),
-    consent: formData.get("consent") === "on",
-  };
-}
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setMessage("");
-  submitButton.disabled = true;
-  submitButton.textContent = "신청 중...";
-
-  try {
-    const response = await fetch(`${API_BASE}/api/center-applications`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Movemap-Client": "register",
-      },
-      body: JSON.stringify(formToPayload(new FormData(form))),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      setMessage(data.error || "등록 신청에 실패했습니다.", "error");
-      return;
-    }
-
-    form.reset();
-    syncNaverMapLink();
-    renderPreview(photoPreview, "");
-    renderPreview(licensePreview, "");
-    setMessage("등록 신청이 접수되었습니다. 운영자 확인 후 연락드릴게요.", "success");
-  } catch (error) {
-    setMessage("서버 연결을 확인해 주세요.", "error");
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "등록 신청하기";
-  }
-});
-
-addressInput.addEventListener("input", syncNaverMapLink);
-photoFileInput.addEventListener("change", async () => {
-  try {
-    const dataUrl = await readImageFile(photoFileInput.files[0]);
-    photoDataUrlInput.value = dataUrl;
-    renderPreview(photoPreview, dataUrl);
-    setMessage("");
-  } catch (error) {
-    photoFileInput.value = "";
-    photoDataUrlInput.value = "";
-    renderPreview(photoPreview, "");
-    setMessage(error.message, "error");
-  }
-});
-licenseFileInput.addEventListener("change", async () => {
-  try {
-    const dataUrl = await readImageFile(licenseFileInput.files[0]);
-    licenseImageDataUrlInput.value = dataUrl;
-    renderPreview(licensePreview, dataUrl);
-    setMessage("");
-  } catch (error) {
-    licenseFileInput.value = "";
-    licenseImageDataUrlInput.value = "";
-    renderPreview(licensePreview, "");
-    setMessage(error.message, "error");
-  }
-});
-naverMapLink.addEventListener("click", (event) => {
-  if (naverMapLink.classList.contains("disabled")) {
-    event.preventDefault();
-    addressInput.focus();
-  }
-});
-loadPublicConfig().finally(syncNaverMapLink);
+form.addEventListener("submit",async event=>{event.preventDefault();if(!validateStep(3))return;message.textContent="";submitButton.disabled=true;submitButton.textContent="신청 중...";try{const photoFiles=[...photoFileInput.files].slice(0,5);if(photoFileInput.files.length>5)throw new Error("센터 사진은 최대 5장까지 올릴 수 있습니다.");photoFiles.forEach(file=>validateImage(file));const licenseFile=licenseFileInput.files[0];validateImage(licenseFile,isTherapistBackground());const photoPaths=[];for(const file of photoFiles)photoPaths.push(await upload(file,"center-photo"));photoPathInput.value=photoPaths[0]||"";photoPathsInput.value=JSON.stringify(photoPaths);licenseImagePathInput.value=await upload(licenseFile,"license");const data=new FormData(form);const address=String(data.get("address")||"");const payload={centerName:data.get("centerName"),ownerName:data.get("ownerName"),phone:data.get("phone"),email:data.get("email"),area:address.split(" ").slice(0,2).join(" "),address,naverMapUrl:mapUrl(address),lat:"",lng:"",website:"",photoUrl:"",photoPath:photoPathInput.value,photoPaths,licenseHolderName:isTherapistBackground()?data.get("licenseHolderName"):"해당 없음",licenseNumber:isTherapistBackground()?data.get("licenseNumber"):"해당 없음",licenseImagePath:isTherapistBackground()?licenseImagePathInput.value:"not-applicable",services:[...document.querySelectorAll('[name="specialties"]:checked')].map(el=>el.value).join(", "),memo:[data.get("hours"),data.get("memo")].filter(Boolean).join("\n"),consent:data.get("consent")==="on",therapistBackground:isTherapistBackground()};const response=await fetch(`${API_BASE}/api/center-applications`,{method:"POST",headers:{"Content-Type":"application/json","X-Movemap-Client":"register"},body:JSON.stringify(payload)});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||"등록 신청에 실패했습니다.");form.reset();syncBackground();showStep(1);message.textContent="등록 신청이 접수되었습니다. 검토 후 안내드리겠습니다.";message.className="message success"}catch(error){message.textContent=error.message||"서버 연결을 확인해주세요.";message.className="message error"}finally{submitButton.disabled=false;submitButton.textContent="등록 신청하기"}});
+syncBackground();

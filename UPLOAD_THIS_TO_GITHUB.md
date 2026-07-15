@@ -1,6 +1,6 @@
-# Movemap GitHub 업로드 안내
+# DAIL GitHub 업로드 안내
 
-이 폴더가 GitHub에 올릴 실제 무브맵 원본입니다.
+이 폴더가 GitHub에 올릴 실제 DAIL 원본입니다.
 
 ```text
 outputs/movemap-github-ready/

@@ -1,58 +1,51 @@
-const ENVIRONMENTS = {
+const PROFILES = {
   development: {
-    name: "무브맵 Dev",
+    name: "DAIL Dev",
     slug: "movemap-dev",
     scheme: "movemap-dev",
-    iosBundleIdentifier: "com.movemap.app.dev",
-    androidPackage: "com.movemap.app.dev",
+    identifier: "com.movemap.app.dev",
   },
   staging: {
-    name: "무브맵 Test",
+    name: "DAIL Test",
     slug: "movemap-staging",
     scheme: "movemap-staging",
-    iosBundleIdentifier: "com.movemap.app.staging",
-    androidPackage: "com.movemap.app.staging",
+    identifier: "com.movemap.app.staging",
   },
   production: {
-    name: "무브맵",
+    name: "DAIL",
     slug: "movemap",
     scheme: "movemap",
-    iosBundleIdentifier: "com.movemap.app",
-    androidPackage: "com.movemap.app",
+    identifier: "com.movemap.app",
   },
 };
 
-function appEnvironment() {
-  const value = process.env.APP_ENV || process.env.EAS_BUILD_PROFILE || "development";
-  return ENVIRONMENTS[value] ? value : "development";
-}
-
 module.exports = () => {
-  const appEnv = appEnvironment();
-  const config = ENVIRONMENTS[appEnv];
+  const appEnv = process.env.APP_ENV || process.env.EAS_BUILD_PROFILE || "development";
+  const profile = PROFILES[appEnv];
+  if (!profile) throw new Error(`Unsupported APP_ENV: ${appEnv}`);
 
   return {
     expo: {
-      name: config.name,
-      slug: config.slug,
-      scheme: config.scheme,
+      name: profile.name,
+      slug: profile.slug,
+      scheme: profile.scheme,
       version: "0.1.0",
       orientation: "portrait",
       userInterfaceStyle: "light",
       assetBundlePatterns: ["**/*"],
-      extra: {
-        appEnv,
-        apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || "",
-      },
+      extra: { appEnv },
       ios: {
         supportsTablet: true,
-        bundleIdentifier: config.iosBundleIdentifier,
+        bundleIdentifier: profile.identifier,
+        infoPlist: {
+          NSCameraUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 촬영할 때 사용합니다.",
+          NSPhotoLibraryUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 선택할 때 사용합니다.",
+        },
       },
       android: {
-        package: config.androidPackage,
-        adaptiveIcon: {
-          backgroundColor: "#2f9b76",
-        },
+        package: profile.identifier,
+        permissions: ["CAMERA"],
+        adaptiveIcon: { backgroundColor: "#0e2a3d" },
       },
     },
   };

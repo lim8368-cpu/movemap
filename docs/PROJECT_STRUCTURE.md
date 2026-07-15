@@ -1,6 +1,6 @@
-# Movemap Project Structure
+# DAIL Project Structure
 
-무브맵은 웹, iOS, Android를 같이 출시하기 위해 Expo React Native + React Native Web 중심 구조로 정리합니다.
+DAIL은 웹, iOS, Android를 같이 출시하기 위해 Expo React Native + React Native Web 중심 구조로 정리합니다.
 
 ```text
 movemap/

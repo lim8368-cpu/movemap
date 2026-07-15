@@ -28,6 +28,9 @@ coverage/
 *.jks
 *.keystore
 *.mobileprovision
+deploy/tls/*.crt
+deploy/tls/*.key
+!deploy/tls/.gitkeep
 service-account*.json
 *-service-account.json
 google-services.json

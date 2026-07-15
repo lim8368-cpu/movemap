@@ -9,7 +9,7 @@ const sampleCenters = [
     reviews: "128",
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
-    therapist: "김민재 센터장 · 물리치료사 9년",
+    therapist: "김민재 센터장 · 물리치료사 출신",
     price: "첫 평가 30,000원",
     conversion: "상담 응답 평균 18분",
     lat: 37.4979,
@@ -27,7 +27,7 @@ const sampleCenters = [
     reviews: "94",
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
-    therapist: "박서연 대표 · 물리치료사 7년",
+    therapist: "박서연 대표 · 물리치료사 출신",
     price: "체험 수업 20,000원",
     conversion: "이번 주 예약 가능",
     lat: 37.5557,
@@ -45,7 +45,7 @@ const sampleCenters = [
     reviews: "76",
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
-    therapist: "이도윤 원장 · 물리치료사 11년",
+    therapist: "이도윤 원장 · 물리치료사 출신",
     price: "방문 상담 무료",
     conversion: "재방문율 71%",
     lat: 37.3827,
@@ -63,7 +63,7 @@ const sampleCenters = [
     reviews: "61",
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
-    therapist: "최하린 대표 · 물리치료사 8년",
+    therapist: "최하린 대표 · 물리치료사 출신",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
     lat: 37.5243,
@@ -73,13 +73,16 @@ const sampleCenters = [
   },
 ];
 
-const API_BASE = "http://localhost:8090";
+const API_BASE =
+  window.MOVEMAP_API_BASE ||
+  (window.location.protocol === "file:" ? "http://localhost:8090" : window.location.origin);
 const centerList = document.querySelector("#centerList");
 const resultCount = document.querySelector("#resultCount");
 const detailPanel = document.querySelector("#detailPanel");
 const searchInput = document.querySelector("#searchInput");
 const regionButtons = document.querySelectorAll("[data-region]");
 const checkboxes = document.querySelectorAll(".filter-grid input");
+const areaSelect = document.querySelector("#areaSelect");
 const mapElement = document.querySelector("#naverMap");
 const mapStatus = document.querySelector("#mapStatus");
 const mapFallback = document.querySelector("#mapFallback");
@@ -87,6 +90,9 @@ const locateButton = document.querySelector("#locateButton");
 const zoomInButton = document.querySelector("#zoomInButton");
 const zoomOutButton = document.querySelector("#zoomOutButton");
 const sidebarPanel = document.querySelector(".sidebar");
+const heroMapElement = document.querySelector("#heroNaverMap");
+const heroMapStatus = document.querySelector("#heroMapStatus");
+const heroLocateButton = document.querySelector("#heroLocateButton");
 
 let selectedRegion = "all";
 let centers = sampleCenters;
@@ -96,6 +102,10 @@ let naverMarkers = [];
 let clusterMarkers = [];
 let lastTrackedViewId = "";
 let userMarker = null;
+let centerInfoWindow = null;
+let heroMap = null;
+let heroUserMarker = null;
+let heroCenterMarkers = [];
 let centerFocusTimers = [];
 let panelGestureActive = false;
 let publicConfig = {
@@ -104,16 +114,22 @@ let publicConfig = {
 const CENTER_MARKER_MIN_ZOOM = 13;
 const CENTER_DETAIL_ZOOM = 16;
 
+function escapeHtml(value) {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+
 function normalizeCenter(center) {
+  const operatorText = String(center.therapist || "운영자 정보 확인 중")
+    .replace(/물리치료사(?:\s*\d+년|\s*운영 확인|\s*면허 확인)?/g, "물리치료사 출신");
   return {
     ...center,
     region: center.region || "other",
     distance: center.distance || "신규",
     rating: center.rating || "신규",
     reviews: center.reviews || "0",
-    lead: center.lead || "물리치료사가 운영하는 운동센터입니다.",
+    lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
-    therapist: center.therapist || "물리치료사 운영 확인",
+    therapist: operatorText,
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
     lat: Number(center.lat) || 37.5665,
@@ -131,10 +147,8 @@ async function loadApprovedCenters() {
     if (!response.ok) throw new Error("centers unavailable");
     const data = await response.json();
     const approvedCenters = (data.centers || []).map(normalizeCenter);
-    if (approvedCenters.length) {
-      centers = approvedCenters;
-      selectedId = centers.some((center) => center.id === selectedId) ? selectedId : "";
-    }
+    centers = approvedCenters;
+    selectedId = centers.some((center) => center.id === selectedId) ? selectedId : "";
   } catch {
     centers = sampleCenters;
     selectedId = "";
@@ -234,10 +248,11 @@ function matchesFilters(center) {
   const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
   const text = [center.name, center.area, center.lead, center.tags.join(" ")].join(" ").toLowerCase();
   const regionMatch = selectedRegion === "all" || center.region === selectedRegion;
+  const areaMatch = !areaSelect || areaSelect.value === "all" || center.area.includes(areaSelect.value);
   const queryMatch = !query || text.includes(query);
   const tagMatch = selectedTags.length === 0 || selectedTags.some((tag) => center.tags.includes(tag));
 
-  return regionMatch && queryMatch && tagMatch;
+  return regionMatch && areaMatch && queryMatch && tagMatch;
 }
 
 function renderList() {
@@ -250,20 +265,23 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
-              <h3>${center.name}</h3>
-              <p>${center.lead}</p>
+              <span class="badge badge-pt">✓ 물리치료사 출신</span>
+              <h3>${escapeHtml(center.name)}</h3>
+              <p>${escapeHtml(center.lead)}</p>
             </div>
-            <span class="badge">자격 확인</span>
+            <span class="favorite" aria-hidden="true">♡</span>
           </div>
           <div class="meta-row">
-            <span>${center.area}</span>
-            <span>${center.distance}</span>
-            <span>평점 ${center.rating}</span>
+            <span>${escapeHtml(center.area)}</span>
+            <span>${escapeHtml(center.distance)}</span>
+            <span class="rating">★ ${escapeHtml(center.rating)}</span>
           </div>
+          <div class="card-tags">${center.tags.slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+          <span class="card-cta">센터 상세 보기 <span aria-hidden="true">→</span></span>
         </button>
       `
     )
-    .join("");
+    .join("") || `<div class="empty-state"><strong>조건에 맞는 센터가 아직 없습니다.</strong><span>센터 등록 신청이 승인되면 이곳에 표시됩니다.</span></div>`;
 
   document.querySelectorAll("[data-card-id]").forEach((card) => {
     card.addEventListener("click", () => openCenterDetail(card.dataset.cardId));
@@ -283,53 +301,70 @@ function renderDetail() {
     return;
   }
 
-  const photoSrc = center.photoDataUrl || center.photoUrl || "";
-  const showPhoto = photoSrc && /^https?:\/\/|^data:image\//.test(photoSrc);
-
   detailPanel.hidden = false;
   document.body.classList.add("detail-open");
-  detailPanel.innerHTML = `
-    <div>
-      <span class="badge">물리치료사 운영 확인</span>
-      <h2>${center.name}</h2>
-      ${
-        showPhoto
-          ? `<img class="center-detail-photo" src="${photoSrc}" alt="${center.name} 대표 사진" />`
-          : ""
-      }
-      <p>${center.lead}</p>
-      <p><strong>${center.therapist}</strong></p>
-      <div class="tag-row">
-        ${center.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}
-      </div>
-    </div>
-    <div class="metric-box">
-      <div class="metric">
-        <strong>${center.rating}</strong>
-        <span>이용자 평점 · 후기 ${center.reviews}개</span>
-      </div>
-      <div class="metric">
-        <strong>${center.price}</strong>
-        <span>진입 장벽을 낮춘 첫 방문 상품</span>
-      </div>
-      <div class="metric">
-        <strong>${center.conversion}</strong>
-        <span>센터장 홍보 성과 지표</span>
-      </div>
-      <button class="primary-button contact-button" type="button" data-contact-id="${center.id}">
-        상담 요청 기록하기
-      </button>
-    </div>
-  `;
+  detailPanel.innerHTML = centerPopupContent(center);
+  detailPanel.querySelector(".map-popup-close").addEventListener("click", clearSelectedCenter);
+  detailPanel.querySelector(".map-popup-cta").addEventListener("click", () => trackEvent("contact_click", center.id, "map_popup"));
+}
 
-  detailPanel.querySelector(".contact-button").addEventListener("click", () => {
-    trackEvent("contact_click", center.id, "detail_panel");
-  });
+async function loadCenterReviews(centerId) {
+  const list = detailPanel.querySelector("#reviewList");
+  if (!list) return;
+  try {
+    const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error();
+    list.innerHTML = data.reviews.map((review) => `<article><strong>${"★".repeat(review.rating)} <span>${escapeHtml(review.nickname)}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
+  } catch { list.innerHTML = "<p>후기를 불러오지 못했습니다.</p>"; }
+}
+
+async function submitReview(event, centerId) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector(".review-message");
+  const values = new FormData(form);
+  const response = await fetch(`${API_BASE}/api/reviews`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ centerId, rating: Number(values.get("rating")), nickname: values.get("nickname"), content: values.get("content") }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) { message.textContent = data.error || "후기 등록에 실패했습니다."; return; }
+  form.reset(); message.textContent = "후기가 등록되었습니다."; await loadCenterReviews(centerId);
 }
 
 function openCenterDetail(id) {
+  detailPanel.hidden = true;
+  detailPanel.innerHTML = "";
   selectCenter(id, { openDetail: true });
 }
+
+function centerPopupContent(center) {
+  return `<article class="map-popup">
+    <button class="map-popup-close" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">×</button>
+    <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
+    <p class="map-popup-category">운동센터 · <b>물리치료사 출신</b></p>
+    <p class="map-popup-location">${escapeHtml(center.area)}</p>
+    <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
+    <div class="map-popup-actions"><button class="map-popup-cta" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">상세보기</button><button class="map-popup-route" type="button">길찾기</button></div>
+  </article>`;
+}
+
+function showCenterInfoWindow(center) {
+  if (!naverMap || !center) return;
+  centerInfoWindow?.close();
+  centerInfoWindow = new naver.maps.InfoWindow({
+    content: centerPopupContent(center),
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    disableAnchor: false,
+    anchorColor: "#ffffff",
+    anchorSize: new naver.maps.Size(14, 10),
+    pixelOffset: new naver.maps.Point(0, -12),
+  });
+  const markerItem = naverMarkers.find(item => item.center.id === center.id);
+  centerInfoWindow.open(naverMap, markerItem?.marker || new naver.maps.LatLng(center.lat, center.lng));
+}
+
+window.closeDailMapPopup = clearSelectedCenter;
+window.trackDailContact = id => trackEvent("contact_click", id, "map_popup");
 
 function renderPins() {
   document.querySelectorAll(".pin").forEach((pin) => {
@@ -521,6 +556,7 @@ function rebuildNaverMarkers() {
 function clearSelectedCenter() {
   if (!selectedId && detailPanel.hidden) return;
   selectedId = "";
+  centerInfoWindow?.close();
   renderDetail();
   renderPins();
   renderList();
@@ -542,7 +578,7 @@ function selectCenter(id, options = {}) {
   const center = centers.find((item) => item.id === id);
   if (naverMap && center) {
     const position = new naver.maps.LatLng(center.lat, center.lng);
-    const targetZoom = options.openDetail ? CENTER_DETAIL_ZOOM : CENTER_MARKER_MIN_ZOOM;
+    const targetZoom = options.openDetail || options.showPopup ? CENTER_DETAIL_ZOOM : CENTER_MARKER_MIN_ZOOM;
     clearCenterFocusTimers();
     naverMap.__forceIndividualMarkers = true;
     naverMap.__clusterAnimating = true;
@@ -555,12 +591,62 @@ function selectCenter(id, options = {}) {
     queueCenterFocusStep(() => {
       naverMap.setCenter(position);
       renderPins();
+      if (options.showPopup) showCenterInfoWindow(center);
       naverMap.__clusterAnimating = false;
       naverMap.__forceIndividualMarkers = true;
       syncMarkerVisibility();
     }, 360);
   }
   syncMarkerVisibility();
+}
+
+function renderHeroCenterMarkers() {
+  heroCenterMarkers.forEach(marker => marker.setMap(null));
+  heroCenterMarkers = centers.slice(0, 5).map(center => {
+    const marker = new naver.maps.Marker({position:new naver.maps.LatLng(center.lat,center.lng),map:heroMap,title:center.name,icon:createMarkerIcon(false,center)});
+    naver.maps.Event.addListener(marker,"click",()=>{document.querySelector("#search").scrollIntoView({behavior:"smooth"});window.setTimeout(()=>openCenterDetail(center.id),500)});
+    return marker;
+  });
+}
+
+function locateHeroMap() {
+  if (!heroMap || !navigator.geolocation) return;
+  heroMapStatus.innerHTML = '<span class="status-pulse"></span> 현재 위치를 확인하고 있어요';
+  navigator.geolocation.getCurrentPosition(position=>{
+    const point=new naver.maps.LatLng(position.coords.latitude,position.coords.longitude);
+    heroMap.setCenter(point);heroMap.setZoom(14,true);
+    heroUserMarker?.setMap(null);
+    heroUserMarker=new naver.maps.Marker({position:point,map:heroMap,title:"현재 위치",icon:createUserMarkerIcon()});
+    heroMapStatus.textContent="현재 위치 주변 센터";
+  },()=>{heroMapStatus.textContent="위치 권한을 허용하면 내 주변에서 시작합니다"},{enableHighAccuracy:true,timeout:7000,maximumAge:120000});
+}
+
+function initHeroMap() {
+  if (!heroMapElement || !window.naver?.maps) return;
+  heroMap=new naver.maps.Map(heroMapElement,{center:new naver.maps.LatLng(37.5036,127.0247),zoom:12,minZoom:8,mapTypeId:naver.maps.MapTypeId.NORMAL,scaleControl:false,logoControl:true,mapDataControl:false,zoomControl:false,draggable:true,scrollWheel:false});
+  refreshNaverMapLayout(heroMap, heroMapElement);
+  renderHeroCenterMarkers();
+  locateHeroMap();
+}
+
+function refreshNaverMapLayout(map, element) {
+  if (!map || !element || !window.naver?.maps) return;
+
+  const refresh = () => {
+    if (!element.clientWidth || !element.clientHeight) return;
+    map.setMapTypeId(naver.maps.MapTypeId.NORMAL);
+    naver.maps.Event.trigger(map, "resize");
+  };
+
+  requestAnimationFrame(() => requestAnimationFrame(refresh));
+  window.setTimeout(refresh, 350);
+  window.setTimeout(refresh, 1200);
+
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(refresh);
+    observer.observe(element);
+    window.setTimeout(() => observer.disconnect(), 5000);
+  }
 }
 
 function getNaverMapKey() {
@@ -581,7 +667,7 @@ function loadNaverMapSdk(key) {
     }
 
     const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&v=${Date.now()}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}`;
     script.async = true;
     script.onload = () => {
       if (window.naver?.maps) {
@@ -650,6 +736,7 @@ async function initNaverMap() {
   const key = getNaverMapKey();
 
   if (!key) {
+    if (heroMapStatus) heroMapStatus.textContent = "지도를 준비하고 있어요";
     showFallbackMap();
     return;
   }
@@ -665,11 +752,16 @@ async function initNaverMap() {
       center: new naver.maps.LatLng(37.5036, 127.0247),
       zoom: 12,
       minZoom: 7,
+      mapTypeId: naver.maps.MapTypeId.NORMAL,
       scaleControl: false,
       logoControl: true,
       mapDataControl: false,
       zoomControl: false,
     });
+
+    refreshNaverMapLayout(naverMap, mapElement);
+
+    initHeroMap();
 
     isolatePanelGesturesFromMap();
     rebuildNaverMarkers();
@@ -729,6 +821,7 @@ regionButtons.forEach((button) => {
 });
 
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
+areaSelect?.addEventListener("change", renderList);
 searchInput.addEventListener("input", renderList);
 mapFallback.addEventListener("click", clearSelectedCenter);
 zoomInButton.addEventListener("click", () => {
@@ -743,6 +836,24 @@ zoomOutButton.addEventListener("click", () => {
 });
 locateButton.addEventListener("click", () => {
   centerMapOnUser();
+});
+heroLocateButton?.addEventListener("click", locateHeroMap);
+document.querySelectorAll("[data-feature-center]").forEach(card => {
+  const showOnMap = () => {
+    const centerName = card.querySelector("h3")?.textContent.trim();
+    const matchedCenter = centers.find(center => center.id === card.dataset.featureCenter) || centers.find(center => center.name === centerName);
+    if (!matchedCenter) return;
+    const searchSection = document.querySelector("#search");
+    searchSection.scrollIntoView({ behavior: "auto", block: "start" });
+    window.setTimeout(() => {
+      openCenterDetail(matchedCenter.id);
+      searchSection.scrollIntoView({ behavior: "auto", block: "start" });
+    }, 80);
+  };
+  card.addEventListener("click", showOnMap);
+  card.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showOnMap(); }
+  });
 });
 
 async function initApp() {

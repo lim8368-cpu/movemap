@@ -1,8 +1,8 @@
-# 무브맵 출시 및 업데이트 절차
+# DAIL 출시 및 업데이트 절차
 
 ## 1. 지금 상태
 
-현재 무브맵은 로컬 MVP 상태다.
+현재 DAIL은 로컬 MVP 상태다.
 
 - 공통 앱 Web: Expo Web에서 테스트
 - iOS/Android 앱: Expo Go에서 테스트

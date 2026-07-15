@@ -16,6 +16,7 @@ const DB_SEED_PATH = path.join(__dirname, "data", "db.example.json");
 const ADMIN_DIR = path.join(ROOT, "apps", "admin");
 const WEB_DIR = path.join(ROOT, "apps", "app", "public", "web");
 const REGISTER_DIR = path.join(ROOT, "apps", "register");
+const PRIVATE_FILES_DIR = path.join(ROOT, "private-files");
 
 const sessions = new Map();
 const rateLimit = security.createRateLimiter({
@@ -98,6 +99,40 @@ function readBody(req) {
       }
     });
   });
+}
+
+function readRawBody(req, maxBytes = 3 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        reject(new Error("Body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function localImageType(buffer, declaredType) {
+  if (declaredType === "image/jpeg" && buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return { type: declaredType, ext: "jpg" };
+  if (declaredType === "image/png" && buffer.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))) return { type: declaredType, ext: "png" };
+  if (declaredType === "image/webp" && buffer.subarray(0, 4).equals(Buffer.from("RIFF")) && buffer.subarray(8, 12).equals(Buffer.from("WEBP"))) return { type: declaredType, ext: "webp" };
+  return null;
+}
+
+function privateFileDataUrl(relativePath) {
+  if (!relativePath) return "";
+  const filePath = path.normalize(path.join(PRIVATE_FILES_DIR, relativePath));
+  if (!filePath.startsWith(PRIVATE_FILES_DIR) || !fs.existsSync(filePath)) return "";
+  const ext = path.extname(filePath).toLowerCase();
+  const type = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+  return `data:${type};base64,${fs.readFileSync(filePath).toString("base64")}`;
 }
 
 function getToken(req) {
@@ -214,7 +249,11 @@ function summarizeStats(db) {
       events: db.events.length,
     },
     centers,
-    centerApplications: (db.centerApplications || []).slice().reverse(),
+    centerApplications: (db.centerApplications || []).slice().reverse().map((item) => ({
+      ...item,
+      photoUrl: item.photoUrl || privateFileDataUrl(item.photoPath),
+      licenseImageUrl: privateFileDataUrl(item.licenseImagePath),
+    })),
     recentEvents: db.events.slice(-20).reverse(),
   };
 }
@@ -285,9 +324,9 @@ function applicationToCenter(db, application) {
     distance: "신규",
     rating: "신규",
     reviews: "0",
-    lead: application.services || application.memo || "물리치료사가 운영하는 운동센터입니다.",
+    lead: application.services || application.memo || "센터가 등록한 운동 프로그램 정보입니다.",
     tags: tagsFromText(application.services),
-    therapist: `${application.licenseHolderName} · 물리치료사 면허 확인`,
+    therapist: `${application.licenseHolderName} · 물리치료사 출신`,
     price: "센터 문의",
     conversion: "신규 등록 센터",
     lat,
@@ -296,7 +335,8 @@ function applicationToCenter(db, application) {
     fallbackY: "50%",
     plan: "free",
     photoUrl: application.photoUrl,
-    photoDataUrl: application.photoDataUrl,
+    photoDataUrl: application.photoDataUrl || privateFileDataUrl(application.photoPath),
+    photoPath: application.photoPath || "",
     naverMapUrl: application.naverMapUrl,
     sourceApplicationId: application.id,
   };
@@ -480,6 +520,26 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === "/api/uploads" && req.method === "POST") {
+      const kind = url.searchParams.get("kind");
+      if (!["center-photo", "license"].includes(kind)) {
+        sendJson(res, 400, { error: "업로드 종류를 확인해 주세요." });
+        return;
+      }
+      const body = await readRawBody(req);
+      const fileType = localImageType(body, String(req.headers["content-type"] || "").split(";")[0]);
+      if (!fileType) {
+        sendJson(res, 400, { error: "JPG, PNG, WEBP 이미지만 올릴 수 있습니다." });
+        return;
+      }
+      const relativePath = `${kind}/${crypto.randomUUID()}.${fileType.ext}`;
+      const filePath = path.join(PRIVATE_FILES_DIR, relativePath);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, body, { flag: "wx", mode: 0o600 });
+      sendJson(res, 201, { ok: true, path: relativePath });
+      return;
+    }
+
     if (url.pathname === "/api/center-applications" && req.method === "POST") {
       const body = await readBody(req);
       if (security.isProduction() && (body.photoDataUrl || body.licenseImageDataUrl)) {
@@ -497,7 +557,7 @@ const server = http.createServer(async (req, res) => {
         "address",
         "licenseHolderName",
         "licenseNumber",
-        "licenseImageDataUrl",
+        "licenseImagePath",
       ];
       const missingField = requiredFields.find((field) => !cleanText(body[field]));
 
@@ -523,9 +583,11 @@ const server = http.createServer(async (req, res) => {
         website: cleanText(body.website, 160),
         photoUrl: cleanText(body.photoUrl, 260),
         photoDataUrl: cleanText(body.photoDataUrl, 1_800_000),
+        photoPath: cleanText(body.photoPath, 240),
         licenseHolderName: cleanText(body.licenseHolderName, 40),
         licenseNumber: cleanText(body.licenseNumber, 60),
         licenseImageDataUrl: cleanText(body.licenseImageDataUrl, 1_800_000),
+        licenseImagePath: cleanText(body.licenseImagePath, 240),
         services: cleanText(body.services, 240),
         memo: cleanText(body.memo, 400),
         consent: Boolean(body.consent),
@@ -698,7 +760,12 @@ const server = http.createServer(async (req, res) => {
         source: requestSource(req, "web"),
       });
       writeDb(db);
-      sendJson(res, 200, { centers: db.centers });
+      sendJson(res, 200, {
+        centers: db.centers.map((center) => ({
+          ...center,
+          photoDataUrl: center.photoDataUrl || privateFileDataUrl(center.photoPath),
+        })),
+      });
       return;
     }
 
@@ -729,7 +796,7 @@ const server = http.createServer(async (req, res) => {
     recordAccess(req, { statusCode: 404, source: requestSource(req, "unknown") });
     sendJson(res, 404, { error: "찾을 수 없습니다." });
   } catch (error) {
-    console.error("Movemap server error", {
+    console.error("DAIL server error", {
       method: req.method,
       path: url.pathname,
       message: security.isProduction() ? "redacted" : error.message,
@@ -739,5 +806,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Movemap backend running locally at http://localhost:${PORT}`);
+  console.log(`DAIL backend running locally at http://localhost:${PORT}`);
 });

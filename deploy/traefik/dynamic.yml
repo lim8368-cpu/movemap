@@ -1,0 +1,12 @@
+http:
+  middlewares:
+    staging-auth:
+      basicAuth:
+        usersFile: /etc/traefik/auth/staging.htpasswd
+        removeHeader: true
+    staging-headers:
+      headers:
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow, noarchive"
+        contentTypeNosniff: true
+        referrerPolicy: no-referrer

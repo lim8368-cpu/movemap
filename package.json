@@ -16,9 +16,10 @@
     "app:android:staging": "npm --prefix apps/app run android:staging",
     "app:android:production": "npm --prefix apps/app run android:production",
     "app:web": "npm --prefix apps/app run web",
-    "app:web:staging": "npm --prefix apps/app run web:staging",
-    "app:web:production": "npm --prefix apps/app run web:production",
+    "vercel:build": "node scripts/build-vercel-static.js",
+    "admin:credentials": "node scripts/generate-admin-credentials.js",
     "server:start": "node server/server.js",
-    "server:test:security": "node server/security.test.js"
+    "server:start:production": "node server/production-server.js",
+    "server:test:security": "node server/security.test.js && node api/security.test.js && node server/environment.test.js"
   }
 }

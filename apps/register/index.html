@@ -1,120 +1,54 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>무브맵 센터 등록</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <main class="registration-shell">
-      <section class="intro-section">
-        <p class="eyebrow">Movemap Partner</p>
-        <h1>물리치료사가 운영하는 운동센터를 무브맵에 등록하세요</h1>
-        <p>
-          제출된 정보는 운영자 확인 후 지도와 앱에 반영됩니다.
-          초기 등록 센터는 기본 노출 테스트에 우선 포함됩니다.
-        </p>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>DAIL 센터 등록</title><link rel="preconnect" href="https://cdn.jsdelivr.net" /><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" /><link rel="stylesheet" href="./styles.css?v=20260715-roomy" /><link rel="stylesheet" href="./layout.css?v=20260715-faq" /></head>
+<body>
+  <header class="site-header"><a class="brand" href="/"><span class="brand-mark"><i></i></span><span>DAIL<small>다시 일상으로</small></span></a><nav><a href="/#search">지도 검색</a><a href="/#centers">센터 목록</a><a href="/#about">서비스 소개</a><a class="active" href="/register/">센터 등록</a></nav><a class="find" href="/#search">센터 찾기</a></header>
+  <main>
+    <section class="hero"><span>센터 파트너 프로그램</span><h1>DAIL에 센터를 등록하세요</h1><p>센터의 위치와 프로그램을 이용자가 쉽게 확인할 수 있도록 정보를 등록해주세요.</p></section>
+    <section class="benefits"><div><b aria-hidden="true">🗺️</b><strong>지도 노출</strong><span>위치 기반 검색 결과에 표시</span></div><div><b aria-hidden="true">🏢</b><strong>센터 정보</strong><span>프로그램과 운영시간 안내</span></div><div><b aria-hidden="true">💬</b><strong>상담 연결</strong><span>센터가 제공한 연락 방법 안내</span></div><div><b aria-hidden="true">✅</b><strong>출신 정보</strong><span>물리치료사 출신 여부 표시</span></div></section>
+
+    <section class="register-area">
+      <ol class="steps"><li class="active" data-step-dot="1"><b>1</b> 기본 정보</li><li data-step-dot="2"><b>2</b> 센터 상세</li><li data-step-dot="3"><b>3</b> 검토 및 제출</li></ol>
+      <form id="registrationForm" novalidate>
+        <section class="form-step active" data-step="1">
+          <h2>기본 정보를 입력해주세요</h2>
+          <label>센터명 *<input name="centerName" placeholder="예: DAIL 스포츠재활센터" required /></label>
+          <label>대표자명 *<input name="ownerName" placeholder="홍길동" required /></label>
+          <div class="two"><label>전화번호 *<input name="phone" inputmode="tel" placeholder="02-0000-0000" required /></label><label>이메일 *<input name="email" type="email" placeholder="center@example.com" required /></label></div>
+          <label>센터 주소 *<input id="addressInput" name="address" placeholder="서울 강남구 테헤란로 212, 3층" required /></label>
+          <input name="area" type="hidden" /><input id="naverMapUrlInput" name="naverMapUrl" type="hidden" /><input id="latInput" name="lat" type="hidden" /><input id="lngInput" name="lng" type="hidden" />
+          <fieldset><legend>물리치료사 출신이 운영하는 센터인가요?</legend><div class="choice"><label><input type="radio" name="therapistBackground" value="yes" required /><span>예, 물리치료사 출신입니다</span></label><label><input type="radio" name="therapistBackground" value="no" required /><span>아니오, 일반 운동센터입니다</span></label></div></fieldset>
+          <button class="next" type="button" data-next="2">다음 단계</button>
+        </section>
+
+        <section class="form-step" data-step="2">
+          <h2>센터를 자세히 소개해주세요</h2>
+          <fieldset><legend>전문 분야 *</legend><div class="chips"><label><input type="checkbox" name="specialties" value="재활운동" /><span>재활운동</span></label><label><input type="checkbox" name="specialties" value="통증관리" /><span>통증관리</span></label><label><input type="checkbox" name="specialties" value="자세교정" /><span>자세교정</span></label><label><input type="checkbox" name="specialties" value="체형관리" /><span>체형관리</span></label><label><input type="checkbox" name="specialties" value="스포츠재활" /><span>스포츠재활</span></label><label><input type="checkbox" name="specialties" value="시니어운동" /><span>시니어운동</span></label><label><input type="checkbox" name="specialties" value="산전산후" /><span>산전산후</span></label><label><input type="checkbox" name="specialties" value="다이어트" /><span>다이어트</span></label></div></fieldset>
+          <label>운영 시간<input name="hours" placeholder="평일 07:00–21:00 / 토 09:00–18:00" /></label>
+          <label>센터 소개<textarea name="memo" placeholder="센터의 특징, 프로그램 등을 소개해주세요. 이 내용은 센터 상세 페이지에 표시됩니다."></textarea></label>
+          <div id="licenseFields" class="license-box" hidden><h3>물리치료사 출신 확인 정보</h3><p>관리자 확인용이며 공개 화면에는 ‘물리치료사 출신’으로만 표시됩니다.</p><div class="two"><label>성명 *<input name="licenseHolderName" /></label><label>면허번호 *<input name="licenseNumber" /></label></div><label>확인 서류 *<input id="licenseFileInput" type="file" accept="image/jpeg,image/png,image/webp" /></label><input id="licenseImagePathInput" name="licenseImagePath" type="hidden" /></div>
+          <label>센터 사진 (선택, 최대 5장)<input id="photoFileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label><input id="photoPathInput" name="photoPath" type="hidden" /><input id="photoPathsInput" name="photoPaths" type="hidden" value="[]" />
+          <div class="actions"><button class="back" type="button" data-prev="1">이전</button><button class="next" type="button" data-next="3">다음 단계</button></div>
+        </section>
+
+        <section class="form-step" data-step="3">
+          <h2>신청 내용을 확인해주세요</h2><p class="sub">아래 내용으로 등록 신청됩니다. 전송 전 다시 확인해주세요.</p><dl id="reviewSummary"></dl>
+          <label class="consent"><input name="consent" type="checkbox" required /><span>DAIL <a href="/terms.html" target="_blank">이용약관</a> 및 <a href="/privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다. 입력한 정보는 센터 등록 심사에만 사용됩니다.</span></label>
+          <div class="actions"><button class="back" type="button" data-prev="2">이전</button><button id="submitButton" type="submit">등록 신청하기</button></div><p id="formMessage" class="message" role="status"></p>
+        </section>
+      </form>
+      <section class="faq" aria-labelledby="faq-title">
+        <header class="faq-heading"><span>FAQ</span><h2 id="faq-title">센터 등록 전, 궁금한 점을 확인해보세요</h2><p>등록 신청과 검토 과정에서 자주 묻는 내용을 모았습니다.</p></header>
+        <div class="faq-list">
+          <details><summary><span>센터 등록에 비용이 드나요?</span><i aria-hidden="true"></i></summary><p>현재 센터 등록 검토 신청에는 별도의 비용이 없습니다.</p></details>
+          <details><summary><span>신청하면 바로 지도에 표시되나요?</span><i aria-hidden="true"></i></summary><p>아니요. 입력한 정보는 관리자 검토 후 승인된 센터만 DAIL 지도와 센터 목록에 표시됩니다. 보완이 필요한 경우 신청 시 입력한 연락처로 안내드립니다.</p></details>
+          <details><summary><span>어떤 센터가 등록할 수 있나요?</span><i aria-hidden="true"></i></summary><p>이용자에게 운동 프로그램을 제공하고, 센터 위치와 연락처 등 운영 정보를 확인할 수 있는 센터가 신청할 수 있습니다.</p></details>
+          <details><summary><span>물리치료사 출신 정보는 어떻게 확인하나요?</span><i aria-hidden="true"></i></summary><p>물리치료사 출신으로 표시하려면 면허 확인을 위한 서류를 제출해야 합니다. 확인 서류는 관리자 검토에만 사용되며 공개 화면에는 ‘물리치료사 출신’으로 표시됩니다.</p></details>
+          <details><summary><span>제출한 센터 정보를 수정할 수 있나요?</span><i aria-hidden="true"></i></summary><p>검토 과정에서 정보를 수정하거나 보완할 수 있습니다. 이미 제출한 신청의 변경이 필요하면 안내받은 연락 방법을 통해 요청해주세요.</p></details>
+        </div>
+        <div class="faq-note"><span aria-hidden="true">💬</span><p><strong>원하는 답변을 찾지 못하셨나요?</strong>등록 신청을 완료하면 검토 과정에서 필요한 내용을 담당자가 안내해드립니다.</p></div>
       </section>
-
-      <section class="form-section">
-        <form id="registrationForm">
-          <div class="field-grid">
-            <label>
-              센터명
-              <input name="centerName" placeholder="예: 코어핏 무브센터" required />
-            </label>
-            <label>
-              대표자명
-              <input name="ownerName" placeholder="예: 임석준" required />
-            </label>
-            <label>
-              연락처
-              <input name="phone" inputmode="tel" placeholder="예: 010-0000-0000" required />
-            </label>
-            <label>
-              지역
-              <input name="area" placeholder="예: 서울 강남구" required />
-            </label>
-          </div>
-
-          <label>
-            상세 주소
-            <input id="addressInput" name="address" placeholder="도로명 주소를 입력해 주세요" required />
-          </label>
-          <div class="map-link-row">
-            <a id="naverMapLink" class="map-link disabled" href="#" target="_blank" rel="noreferrer">
-              네이버 지도에서 확인
-            </a>
-            <span id="mapLinkHint">주소를 입력하면 지도 링크가 자동으로 준비됩니다.</span>
-          </div>
-          <input id="naverMapUrlInput" name="naverMapUrl" type="hidden" />
-          <input id="latInput" name="lat" type="hidden" />
-          <input id="lngInput" name="lng" type="hidden" />
-
-          <label>
-            홈페이지 또는 인스타그램
-            <input name="website" placeholder="선택 입력" />
-          </label>
-
-          <div class="field-grid">
-            <label>
-              대표 사진 링크
-              <input name="photoUrl" placeholder="선택 입력: 이미지 URL" />
-            </label>
-            <label>
-              대표 사진 파일
-              <input id="photoFileInput" name="photoFile" type="file" accept="image/*" />
-            </label>
-          </div>
-          <div id="photoPreview" class="image-preview" hidden></div>
-          <input id="photoDataUrlInput" name="photoDataUrl" type="hidden" />
-
-          <section class="verification-section">
-            <div>
-              <p class="section-kicker">면허 인증</p>
-              <h2>물리치료사 면허 확인</h2>
-              <p>관리자 검토용으로만 사용됩니다. 주민등록번호 등 민감정보는 가리고 올려주세요.</p>
-            </div>
-            <div class="field-grid">
-              <label>
-                면허자 이름
-                <input name="licenseHolderName" placeholder="예: 임석준" required />
-              </label>
-              <label>
-                면허번호
-                <input name="licenseNumber" placeholder="예: 제00000호" required />
-              </label>
-            </div>
-            <label>
-              면허증 또는 증빙 사진
-              <input id="licenseFileInput" name="licenseFile" type="file" accept="image/*" required />
-            </label>
-            <div id="licensePreview" class="image-preview" hidden></div>
-            <input id="licenseImageDataUrlInput" name="licenseImageDataUrl" type="hidden" />
-          </section>
-
-          <label>
-            주요 프로그램
-            <textarea name="services" placeholder="예: 체형 평가, 통증 이후 운동 관리, 수술 후 운동, 필라테스"></textarea>
-          </label>
-
-          <label>
-            운영자에게 남길 말
-            <textarea name="memo" placeholder="센터 소개, 물리치료사 경력, 등록 희망 플랜 등을 적어주세요"></textarea>
-          </label>
-
-          <label class="consent-row">
-            <input name="consent" type="checkbox" required />
-            <span>등록 검토와 연락을 위해 위 정보를 무브맵 운영자가 확인하는 것에 동의합니다.</span>
-          </label>
-
-          <button id="submitButton" type="submit">등록 신청하기</button>
-          <p id="formMessage" class="message" role="status"></p>
-        </form>
-      </section>
-    </main>
-
-    <script src="./app.js"></script>
-  </body>
-</html>
+    </section>
+  </main>
+  <script src="./app.js?v=20260715-figma"></script>
+</body></html>
