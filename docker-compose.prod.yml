@@ -36,8 +36,10 @@ services:
     cap_drop:
       - ALL
     networks:
-      - private
-      - egress
+      private:
+        aliases:
+          - production-app
+      egress:
 
   nginx:
     image: nginx:1.27-alpine

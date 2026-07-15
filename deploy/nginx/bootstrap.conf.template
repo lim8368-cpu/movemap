@@ -7,7 +7,7 @@ limit_req_zone $movemap_client_ip zone=login_limit:10m rate=10r/m;
 limit_req_zone $movemap_client_ip zone=upload_limit:10m rate=30r/m;
 
 upstream movemap_app {
-  server app:3000;
+  server production-app:3000;
   keepalive 32;
 }
 
