@@ -18,14 +18,21 @@ async function centerData(centerId) {
   const paths = row.photo_paths?.length ? row.photo_paths : [row.photo_path].filter(Boolean);
   const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
   const approvedReviews = reviews.filter((review) => review.status === "approved");
+  const now = Date.now();
+  const last30Days = events.filter((event) => now - new Date(event.created_at).getTime() <= 30 * 24 * 60 * 60 * 1000);
+  const views = events.filter((event) => event.event_type === "view").length;
+  const contactClicks = events.filter((event) => event.event_type === "contact").length;
   const ratingAverage = approvedReviews.length
     ? approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / approvedReviews.length
     : 0;
   return {
-    center: { ...centerFromRow(row, photoUrls[0] || "", photoUrls), phone: row.phone || "", website: row.website || "", openingHours: row.opening_hours || "", status: row.status },
+    center: { ...centerFromRow(row, photoUrls[0] || "", photoUrls), phone: row.phone || "", website: row.website || "", openingHours: row.opening_hours || "", status: row.status, updatedAt: row.updated_at },
     totals: {
-      views: events.filter((event) => event.event_type === "view").length,
-      contactClicks: events.filter((event) => event.event_type === "contact").length,
+      views,
+      contactClicks,
+      contactRate: views ? Number(((contactClicks / views) * 100).toFixed(1)) : 0,
+      last30Views: last30Days.filter((event) => event.event_type === "view").length,
+      last30Contacts: last30Days.filter((event) => event.event_type === "contact").length,
       reviews: approvedReviews.length,
       ratingAverage: Number(ratingAverage.toFixed(1)),
     },
