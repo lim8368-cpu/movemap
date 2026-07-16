@@ -276,4 +276,5 @@ module.exports = {
   supabaseStorageRequest,
   verifyAdminPassword,
   verifyAdminSession,
+  requestUsesHttps,
 };

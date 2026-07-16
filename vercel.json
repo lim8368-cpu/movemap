@@ -46,6 +46,22 @@
       "destination": "/api/logout"
     },
     {
+      "source": "/api/owner-accounts",
+      "destination": "/api/owner-accounts"
+    },
+    {
+      "source": "/api/owner-dashboard",
+      "destination": "/api/owner-dashboard"
+    },
+    {
+      "source": "/api/owner-login",
+      "destination": "/api/owner-login"
+    },
+    {
+      "source": "/api/owner-logout",
+      "destination": "/api/owner-logout"
+    },
+    {
       "source": "/api/reviews",
       "destination": "/api/reviews"
     },
@@ -72,6 +88,14 @@
     {
       "source": "/admin/:path*",
       "destination": "/admin/:path*"
+    },
+    {
+      "source": "/center-dashboard",
+      "destination": "/center-dashboard/index.html"
+    },
+    {
+      "source": "/center-dashboard/:path*",
+      "destination": "/center-dashboard/:path*"
     },
     {
       "source": "/web/:path*",
