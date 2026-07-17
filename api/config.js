@@ -1,4 +1,5 @@
 const { runtimeEnvironment, sendJson } = require("./_shared");
+const { publicAuthConfig } = require("./_user-auth");
 
 module.exports = function handler(req, res) {
   if (req.method !== "GET") {
@@ -8,6 +9,7 @@ module.exports = function handler(req, res) {
 
   sendJson(res, 200, {
     naverMapNcpKeyId: process.env.NAVER_MAP_NCP_KEY_ID || "",
+    auth: publicAuthConfig(),
     environment: runtimeEnvironment(),
   });
 };

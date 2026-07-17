@@ -3,12 +3,29 @@
   "outputDirectory": "dist",
   "redirects": [
     {
+      "source": "/auth/callback",
+      "destination": "/auth/callback/",
+      "permanent": true
+    },
+    {
       "source": "/admin",
       "destination": "/admin/",
       "permanent": true
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/auth/start",
+      "destination": "/api/auth-start"
+    },
+    {
+      "source": "/api/auth/naver/callback",
+      "destination": "/api/auth-naver-callback"
+    },
+    {
+      "source": "/api/auth/profile",
+      "destination": "/api/auth-profile"
+    },
     {
       "source": "/api/config",
       "destination": "/api/config"

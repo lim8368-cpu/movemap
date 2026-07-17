@@ -271,6 +271,7 @@ module.exports = {
   ADMIN_SESSION_TTL_SECONDS,
   isAdminRequest,
   runtimeEnvironment,
+  requestUsesHttps,
   signAdminSession,
   storageBucket,
   supabaseStorageRequest,

@@ -110,6 +110,7 @@ let centerFocusTimers = [];
 let panelGestureActive = false;
 let publicConfig = {
   naverMapNcpKeyId: "",
+  auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
 };
 const CENTER_MARKER_MIN_ZOOM = 13;
 const CENTER_DETAIL_ZOOM = 16;
@@ -163,7 +164,7 @@ async function loadPublicConfig() {
     if (!response.ok) throw new Error("config unavailable");
     publicConfig = await response.json();
   } catch {
-    publicConfig = { naverMapNcpKeyId: "" };
+    publicConfig = { naverMapNcpKeyId: "", auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
   }
 }
 
@@ -858,6 +859,7 @@ document.querySelectorAll("[data-feature-center]").forEach(card => {
 
 async function initApp() {
   await loadPublicConfig();
+  await initUserAuth();
   await loadApprovedCenters();
   renderDetail();
   renderList();
@@ -865,3 +867,39 @@ async function initApp() {
 }
 
 initApp();
+
+const AUTH_STORAGE_KEY="dail_auth_session";
+const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton");
+let currentUserProfile=null;
+function storedAuthSession(){try{return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)||"null")}catch{return null}}
+function setAuthView(view){authLoginView.hidden=view!=="login";onboardingForm.hidden=view!=="onboarding";accountView.hidden=view!=="account"}
+function openAuth(view="login"){setAuthView(view);authOverlay.hidden=false;document.body.style.overflow="hidden"}
+function closeAuth(){authOverlay.hidden=true;document.body.style.overflow=""}
+async function refreshAuthSession(session){
+  if(!session?.refresh_token||!publicConfig.auth?.supabaseUrl)return null;
+  const response=await fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:session.refresh_token})});
+  if(!response.ok)return null;const next=await response.json();next.expires_at=Math.floor(Date.now()/1000)+(Number(next.expires_in)||3600);localStorage.setItem(AUTH_STORAGE_KEY,JSON.stringify(next));return next;
+}
+async function activeAuthSession(){let session=storedAuthSession();if(!session)return null;if(Number(session.expires_at||0)<Math.floor(Date.now()/1000)+60)session=await refreshAuthSession(session);if(!session)localStorage.removeItem(AUTH_STORAGE_KEY);return session}
+async function loadUserProfile(){
+  const session=await activeAuthSession();if(!session)return null;
+  const response=await fetch("/api/auth/profile",{headers:{Authorization:`Bearer ${session.access_token}`}});if(response.status===401){localStorage.removeItem(AUTH_STORAGE_KEY);return null}if(!response.ok)return null;return response.json();
+}
+function renderAuthState(data){
+  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));
+  if(!data)return;document.querySelector("#accountNickname").textContent=nickname;document.querySelector("#accountEmail").textContent=data.user?.email||`${data.user?.provider||"소셜"} 계정`;
+}
+async function initUserAuth(){
+  const providers=publicConfig.auth?.providers||{};document.querySelectorAll("[data-auth-provider]").forEach(button=>{const ready=Boolean(providers[button.dataset.authProvider]);button.dataset.ready=String(ready);button.title=ready?"":"개발자 로그인 키 설정 후 사용할 수 있습니다."});
+  const data=await loadUserProfile();renderAuthState(data);
+  if(data?.needsOnboarding){onboardingForm.elements.nickname.value=data.profile?.nickname||"";openAuth("onboarding")}
+  const params=new URLSearchParams(location.search);if(params.get("auth")==="success"){history.replaceState(null,"",`${location.pathname}${location.hash}`);if(data?.needsOnboarding)openAuth("onboarding");else if(data)openAuth("account")}
+  if(params.get("login")==="1"){history.replaceState(null,"",location.pathname);openAuth(data?"account":"login")}
+}
+userMenuButton?.addEventListener("click",()=>openAuth(currentUserProfile?"account":"login"));
+document.querySelector("#authCloseButton")?.addEventListener("click",closeAuth);authOverlay?.addEventListener("click",event=>{if(event.target===authOverlay)closeAuth()});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!authOverlay.hidden)closeAuth()});
+document.querySelectorAll("[data-auth-provider]").forEach(button=>button.addEventListener("click",()=>{const provider=button.dataset.authProvider;if(button.dataset.ready!=="true"){document.querySelector("#authMessage").textContent=`${provider==='kakao'?'카카오':provider==='naver'?'네이버':'Apple'} 개발자 설정이 필요합니다.`;return}location.href=`/api/auth/start?provider=${encodeURIComponent(provider)}`}));
+onboardingForm?.addEventListener("submit",async event=>{event.preventDefault();const message=document.querySelector("#onboardingMessage"),session=await activeAuthSession();if(!session)return openAuth("login");const submit=onboardingForm.querySelector("[type=submit]");submit.disabled=true;message.textContent="";const response=await fetch("/api/auth/profile",{method:"PATCH",headers:{Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({nickname:onboardingForm.elements.nickname.value.trim(),acceptRequired:onboardingForm.elements.requiredAgreement.checked,marketingAgreed:onboardingForm.elements.marketingAgreement.checked})});const data=await response.json().catch(()=>({}));submit.disabled=false;if(!response.ok){message.textContent=data.error||"회원 정보를 저장하지 못했습니다.";return}renderAuthState(data);openAuth("account")});
+document.querySelector("#logoutButton")?.addEventListener("click",async()=>{const session=storedAuthSession();if(session?.access_token&&publicConfig.auth?.supabaseUrl)fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/logout`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,Authorization:`Bearer ${session.access_token}`}}).catch(()=>{});localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth()});
+document.querySelector("#deleteAccountButton")?.addEventListener("click",async()=>{if(!confirm("회원 정보와 계정을 삭제할까요? 삭제 후에는 복구할 수 없습니다."))return;const session=await activeAuthSession();if(!session)return;const response=await fetch("/api/auth/profile",{method:"DELETE",headers:{Authorization:`Bearer ${session.access_token}`}});if(!response.ok)return alert("회원 탈퇴를 처리하지 못했습니다.");localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth();alert("회원 탈퇴가 완료되었습니다.")});

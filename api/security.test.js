@@ -9,6 +9,7 @@ process.env.ADMIN_SESSION_SECRET = crypto.randomBytes(32).toString("base64url");
 
 const shared = require("./_shared");
 const ownerAuth = require("./_owner-auth");
+const userAuth = require("./_user-auth");
 
 assert.strictEqual(shared.verifyAdminPassword(password), true);
 assert.strictEqual(shared.verifyAdminPassword("wrong password"), false);
@@ -30,5 +31,10 @@ const ownerSession = ownerAuth.verifyOwnerSession(ownerToken, now + 1000);
 assert.strictEqual(ownerSession.role, "center_owner");
 assert.strictEqual(ownerSession.centerId, "center-1");
 assert.strictEqual(ownerAuth.verifyOwnerSession(`${ownerToken}tampered`, now), null);
+
+const oauthState = userAuth.createOAuthState(now);
+assert.strictEqual(userAuth.verifyOAuthState(oauthState, now + 1000), true);
+assert.strictEqual(userAuth.verifyOAuthState(`${oauthState}tampered`, now), false);
+assert.strictEqual(userAuth.verifyOAuthState(oauthState, now + 10 * 60 * 1000 + 1), false);
 
 console.log("API security tests passed");

@@ -12,6 +12,9 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 const apiRoutes = new Map([
   ["/api/access-logs", require("../api/access-logs")],
+  ["/api/auth/start", require("../api/auth-start")],
+  ["/api/auth/naver/callback", require("../api/auth-naver-callback")],
+  ["/api/auth/profile", require("../api/auth-profile")],
   ["/api/approve-center", require("../api/approve-center")],
   ["/api/center-applications", require("../api/center-applications")],
   ["/api/centers", require("../api/centers")],
