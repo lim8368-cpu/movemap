@@ -19,6 +19,10 @@ const apiRoutes = new Map([
   ["/api/events", require("../api/events")],
   ["/api/login", require("../api/login")],
   ["/api/logout", require("../api/logout")],
+  ["/api/owner-accounts", require("../api/owner-accounts")],
+  ["/api/owner-dashboard", require("../api/owner-dashboard")],
+  ["/api/owner-login", require("../api/owner-login")],
+  ["/api/owner-logout", require("../api/owner-logout")],
   ["/api/reviews", require("../api/reviews")],
   ["/api/stats", require("../api/stats")],
   ["/api/uploads", require("../api/uploads")],
@@ -130,6 +134,7 @@ function staticPathFor(pathname) {
   if (requested === "/") requested = "/index.html";
   if (requested === "/admin/") requested = "/admin/index.html";
   if (requested === "/register/") requested = "/register/index.html";
+  if (requested === "/center-dashboard/") requested = "/center-dashboard/index.html";
   if (requested.startsWith("/web/")) requested = requested.slice(4);
 
   const decoded = decodeURIComponent(requested);
@@ -139,7 +144,7 @@ function staticPathFor(pathname) {
 }
 
 function serveStatic(req, res, url) {
-  if (url.pathname === "/admin" || url.pathname === "/register") {
+  if (url.pathname === "/admin" || url.pathname === "/register" || url.pathname === "/center-dashboard") {
     res.statusCode = 308;
     res.setHeader("Location", `${url.pathname}/${url.search}`);
     res.end();

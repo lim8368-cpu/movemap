@@ -244,7 +244,7 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     reviews: row.reviews || "0",
     lead: row.lead,
     tags: row.tags || [],
-    therapist: row.therapist,
+    therapist: String(row.therapist || "").replace(/물리치료사(?!\s*출신)/g, "물리치료사 출신"),
     price: row.price,
     conversion: row.conversion,
     lat: row.lat,
@@ -276,4 +276,5 @@ module.exports = {
   supabaseStorageRequest,
   verifyAdminPassword,
   verifyAdminSession,
+  requestUsesHttps,
 };

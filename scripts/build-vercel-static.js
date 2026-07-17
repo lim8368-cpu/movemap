@@ -5,9 +5,11 @@ const root = path.resolve(__dirname, "..");
 const source = path.join(root, "apps", "app", "public", "web");
 const registerSource = path.join(root, "apps", "register");
 const adminSource = path.join(root, "apps", "admin");
+const ownerSource = path.join(root, "apps", "owner");
 const target = path.join(root, "dist");
 const registerTarget = path.join(target, "register");
 const adminTarget = path.join(target, "admin");
+const ownerTarget = path.join(target, "center-dashboard");
 
 function copyDirectory(from, to) {
   fs.mkdirSync(to, { recursive: true });
@@ -29,4 +31,5 @@ fs.rmSync(target, { recursive: true, force: true });
 copyDirectory(source, target);
 copyDirectory(registerSource, registerTarget);
 copyDirectory(adminSource, adminTarget);
+copyDirectory(ownerSource, ownerTarget);
 console.log(`Vercel static web assets copied to ${target}`);
