@@ -121,6 +121,21 @@ async function deleteCenter(centerId, centerName) {
   await loadStats();
 }
 
+async function createOwnerAccount(centerId, centerName) {
+  const email = window.prompt(`‘${centerName}’ 센터장 로그인 이메일을 입력해 주세요.`);
+  if (!email) return;
+  const password = window.prompt("임시 비밀번호를 입력해 주세요. 10자 이상이어야 합니다.");
+  if (!password) return;
+  const response = await fetch(`${API_BASE}/api/owner-accounts`, {
+    method: "POST",
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ centerId, email, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) return window.alert(data.error || "센터장 계정을 저장하지 못했습니다.");
+  window.alert(`센터장 계정이 저장되었습니다.\n로그인: ${email}\n주소: ${window.location.origin}/center-dashboard/`);
+}
+
 function naverMapUrlFor(center) {
   return (
     center.naverMapUrl ||
@@ -272,7 +287,7 @@ async function loadStats() {
           <td>${center.views}</td>
           <td>${center.contactClicks}</td>
           <td>${formatDate(center.lastEventAt)}</td>
-          <td><div class="row-actions"><button type="button" data-update-center="${escapeHtml(center.id)}">수정 저장</button><button class="danger-button" type="button" data-delete-center="${escapeHtml(center.id)}" data-center-name="${escapeHtml(center.name)}">삭제</button></div></td>
+          <td><div class="row-actions"><button type="button" data-update-center="${escapeHtml(center.id)}">수정 저장</button><button type="button" data-owner-account="${escapeHtml(center.id)}" data-center-name="${escapeHtml(center.name)}">센터장 계정</button><button class="danger-button" type="button" data-delete-center="${escapeHtml(center.id)}" data-center-name="${escapeHtml(center.name)}">삭제</button></div></td>
         </tr>
       `
     )
@@ -300,6 +315,7 @@ async function loadStats() {
   document.querySelectorAll("[data-reject-id]").forEach((button) => button.addEventListener("click", () => rejectApplication(button.dataset.rejectId)));
   document.querySelectorAll("[data-update-center]").forEach((button) => button.addEventListener("click", () => updateCenter(button.dataset.updateCenter)));
   document.querySelectorAll("[data-delete-center]").forEach((button) => button.addEventListener("click", () => deleteCenter(button.dataset.deleteCenter, button.dataset.centerName)));
+  document.querySelectorAll("[data-owner-account]").forEach((button) => button.addEventListener("click", () => createOwnerAccount(button.dataset.ownerAccount, button.dataset.centerName)));
 
   document.querySelectorAll("[data-save-location-id]").forEach((button) => {
     button.addEventListener("click", () => updateCenterLocation(button.dataset.saveLocationId));

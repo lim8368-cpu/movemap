@@ -18,13 +18,13 @@ const API_BASE = String(
 const SCREENS = [
   { id: "centers", label: "센터 찾기", icon: "⌖", path: "/" },
   { id: "register", label: "센터 등록", icon: "+", path: "/register/" },
-  { id: "admin", label: "관리자", icon: "⚙", path: "/admin/" },
+  { id: "account", label: "내 정보", icon: "○", path: "/?login=1" },
 ];
 
 function screenForUrl(url) {
   try {
     const path = new URL(url).pathname;
-    if (path.startsWith("/admin")) return "admin";
+    if (new URL(url).searchParams.get("login") === "1") return "account";
     if (path.startsWith("/register")) return "register";
     return "centers";
   } catch {
@@ -51,7 +51,9 @@ export default function App() {
       const requested = new URL(request.url);
       const appOrigin = new URL(API_BASE).origin;
 
-      if (["http:", "https:"].includes(requested.protocol) && requested.origin !== appOrigin) {
+      const authHosts = ["kauth.kakao.com", "accounts.kakao.com", "nid.naver.com", "appleid.apple.com"];
+      const isAuthHost = authHosts.includes(requested.hostname) || requested.hostname.endsWith(".supabase.co");
+      if (["http:", "https:"].includes(requested.protocol) && requested.origin !== appOrigin && !isAuthHost) {
         Linking.openURL(request.url).catch(() => {});
         return false;
       }
