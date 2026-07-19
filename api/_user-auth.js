@@ -64,7 +64,10 @@ function cookieValue(req) {
 async function userFromAccessToken(token) {
   if (!token || !process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null;
   const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    console.warn("Supabase user token verification failed", response.status);
+    return null;
+  }
   return response.json();
 }
 
