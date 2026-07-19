@@ -894,6 +894,7 @@ document.querySelectorAll("[data-feature-center]").forEach(card => {
 
 async function initApp() {
   await loadPublicConfig();
+  captureAuthSessionFromHash();
   await initUserAuth();
   await loadApprovedCenters();
   renderDetail();
@@ -906,6 +907,15 @@ initApp();
 const AUTH_STORAGE_KEY="dail_auth_session";
 const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerLogoutButton=document.querySelector("#headerLogoutButton");
 let currentUserProfile=null;
+function captureAuthSessionFromHash(){
+  const hash=new URLSearchParams(location.hash.slice(1));
+  const accessToken=hash.get("access_token"),refreshToken=hash.get("refresh_token");
+  if(!accessToken||!refreshToken)return false;
+  const expiresIn=Number(hash.get("expires_in")||3600);
+  localStorage.setItem(AUTH_STORAGE_KEY,JSON.stringify({access_token:accessToken,refresh_token:refreshToken,expires_in:expiresIn,expires_at:Number(hash.get("expires_at"))||Math.floor(Date.now()/1000)+expiresIn,token_type:hash.get("token_type")||"bearer"}));
+  history.replaceState(null,"",`${location.pathname}?auth=success`);
+  return true;
+}
 function storedAuthSession(){try{return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)||"null")}catch{return null}}
 function setAuthView(view){authLoginView.hidden=view!=="login";onboardingForm.hidden=view!=="onboarding";accountView.hidden=view!=="account"}
 function openAuth(view="login"){setAuthView(view);authOverlay.hidden=false;document.body.style.overflow="hidden"}
