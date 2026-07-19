@@ -1,7 +1,7 @@
 const { centerFromRow, createSignedStorageUrl, sendJson, supabaseRequest } = require("./_shared");
 const { ownerSessionFromRequest } = require("./_owner-auth");
 
-const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "categories", "therapist", "price", "conversion", "phone", "website", "opening_hours"];
+const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "categories", "therapist", "price", "phone", "website", "opening_hours"];
 const ALLOWED_CATEGORIES = new Set(["재활운동", "통증관리", "자세교정", "체형관리", "스포츠재활", "시니어운동", "산전산후", "다이어트"]);
 
 function cleanText(value, maxLength) {
