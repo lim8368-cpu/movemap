@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>DAIL 센터 등록</title><link rel="preconnect" href="https://cdn.jsdelivr.net" /><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" /><link rel="stylesheet" href="./styles.css?v=20260715-roomy" /><link rel="stylesheet" href="./registration-ui.css?v=20260719-owner-onboarding" /></head>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>DAIL 센터 등록</title><link rel="preconnect" href="https://cdn.jsdelivr.net" /><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" /><link rel="stylesheet" href="./styles.css?v=20260715-roomy" /><link rel="stylesheet" href="./registration-ui.css?v=20260719-owner-password" /></head>
 <body>
   <header class="site-header"><a class="brand" href="/"><span class="brand-mark"><i></i></span><span>DAIL<small>다시 일상으로</small></span></a><nav><a href="/#search">지도 검색</a><a href="/#centers">센터 목록</a><a href="/#about">서비스 소개</a><a class="active" href="/register/">센터 등록</a></nav><a class="find" href="/#search">센터 찾기</a></header>
   <main>
@@ -15,6 +15,14 @@
           <label>센터명 *<input name="centerName" placeholder="예: DAIL 스포츠재활센터" required /></label>
           <label>대표자명 *<input name="ownerName" placeholder="홍길동" required /></label>
           <div class="two"><label>전화번호 *<input name="phone" inputmode="tel" placeholder="02-0000-0000" required /></label><label>센터장 로그인 이메일 *<input name="email" type="email" autocomplete="email" placeholder="owner@example.com" required /><small class="field-note">승인 후 센터 관리자 계정의 아이디로 사용됩니다.</small></label></div>
+          <section class="owner-account-setup" aria-labelledby="owner-account-title">
+            <div class="owner-account-title"><span aria-hidden="true">🔒</span><div><h3 id="owner-account-title">센터장 로그인 비밀번호 설정</h3><p>센터가 승인되면 아래 이메일과 비밀번호로 바로 로그인할 수 있습니다.</p></div></div>
+            <div class="two">
+              <label>비밀번호 *<span class="registration-password"><input id="ownerPassword" name="ownerPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="10자 이상 입력" required /><button class="password-visibility" type="button" data-password-toggle aria-label="비밀번호 표시">보기</button></span></label>
+              <label>비밀번호 확인 *<input id="ownerPasswordConfirm" name="ownerPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="한 번 더 입력" required /></label>
+            </div>
+            <p id="passwordMatchMessage" class="password-match-message" aria-live="polite">10자 이상으로 설정해주세요. 비밀번호는 암호화되어 저장됩니다.</p>
+          </section>
           <div class="address-field">
             <label for="addressInput">센터 도로명 주소 *</label>
             <p class="field-help">도로명과 건물번호를 입력하면 네이버 지도에서 정확한 위치를 확인합니다.</p>
@@ -52,12 +60,12 @@
 
         <section class="form-step" data-step="3">
           <h2>신청 내용을 확인해주세요</h2><p class="sub">아래 내용으로 등록 신청됩니다. 전송 전 다시 확인해주세요.</p><dl id="reviewSummary"></dl>
-          <aside class="owner-signup-guide" aria-labelledby="owner-signup-title"><div class="owner-signup-heading"><span aria-hidden="true">◉</span><div><small>센터장 회원가입 절차</small><h3 id="owner-signup-title">승인 후 대시보드에서 직접 관리하세요</h3><p>입력한 이메일을 센터장 로그인 아이디로 사용합니다.</p></div></div><ol><li><b>1</b><span><strong>센터 등록 신청</strong><small>현재 작성한 센터 정보와 이메일을 제출합니다.</small></span></li><li><b>2</b><span><strong>검토·계정 발급</strong><small>승인 후 DAIL 운영팀이 센터장 계정을 발급해 안내합니다.</small></span></li><li><b>3</b><span><strong>대시보드 로그인</strong><small>센터 정보, 전문 분야와 이용자 반응을 직접 관리합니다.</small></span></li></ol><p class="owner-signup-note">승인 및 계정 발급 전에는 센터 관리자 로그인이 활성화되지 않습니다.</p></aside>
+          <aside class="owner-signup-guide" aria-labelledby="owner-signup-title"><div class="owner-signup-heading"><span aria-hidden="true">◉</span><div><small>센터장 회원가입 절차</small><h3 id="owner-signup-title">승인 후 대시보드에서 직접 관리하세요</h3><p>등록 신청에서 설정한 이메일과 비밀번호가 센터장 계정이 됩니다.</p></div></div><ol><li><b>1</b><span><strong>로그인 정보 설정</strong><small>현재 입력한 이메일과 비밀번호로 센터장 계정을 신청합니다.</small></span></li><li><b>2</b><span><strong>센터 검토·계정 활성화</strong><small>DAIL 운영팀이 센터를 승인하면 계정도 함께 활성화됩니다.</small></span></li><li><b>3</b><span><strong>대시보드 로그인</strong><small>설정한 계정으로 센터 정보와 전문 분야를 직접 관리합니다.</small></span></li></ol><p class="owner-signup-note">센터 승인 전에는 계정이 활성화되지 않으며, 승인 후 별도의 임시 비밀번호 없이 로그인할 수 있습니다.</p></aside>
           <label class="consent"><input name="consent" type="checkbox" required /><span>DAIL <a href="/terms.html" target="_blank">이용약관</a> 및 <a href="/privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다. 입력한 정보는 센터 등록 심사에만 사용됩니다.</span></label>
           <div class="actions"><button class="back" type="button" data-prev="2">이전</button><button id="submitButton" type="submit">등록 신청하기</button></div><p id="formMessage" class="message" role="status"></p>
         </section>
       </form>
-      <section id="registrationSuccess" class="registration-success" tabindex="-1" hidden><span class="success-symbol" aria-hidden="true">✓</span><p class="success-eyebrow">APPLICATION RECEIVED</p><h2>센터 등록 신청이 접수되었습니다</h2><p>센터 검토가 완료되면 입력한 이메일로 센터장 계정 발급 절차를 안내합니다.</p><div class="success-email"><small>센터장 로그인 이메일</small><strong id="successEmail"></strong></div><ol><li><b>1</b><span><strong>센터 정보 검토</strong><small>제출한 정보와 확인 서류를 검토합니다.</small></span></li><li><b>2</b><span><strong>센터장 계정 안내</strong><small>승인 후 로그인 이메일과 임시 비밀번호를 안내합니다.</small></span></li><li><b>3</b><span><strong>대시보드 관리 시작</strong><small>센터 소개, 운영시간과 전문 분야를 직접 관리합니다.</small></span></li></ol><div class="success-actions"><a id="successDashboardLink" class="success-primary" href="/center-dashboard/">센터 관리 로그인 화면</a><a class="success-secondary" href="/">DAIL 홈으로</a></div><small class="success-caution">계정 발급 안내를 받기 전에는 로그인이 되지 않습니다.</small></section>
+      <section id="registrationSuccess" class="registration-success" tabindex="-1" hidden><span class="success-symbol" aria-hidden="true">✓</span><p class="success-eyebrow">APPLICATION RECEIVED</p><h2>센터 등록 신청이 접수되었습니다</h2><p>센터 승인 후 신청할 때 설정한 이메일과 비밀번호로 센터장 대시보드에 로그인할 수 있습니다.</p><div class="success-email"><small>센터장 로그인 이메일</small><strong id="successEmail"></strong></div><ol><li><b>1</b><span><strong>센터 정보 검토</strong><small>제출한 정보와 확인 서류를 검토합니다.</small></span></li><li><b>2</b><span><strong>센터장 계정 활성화</strong><small>센터 승인과 동시에 신청한 계정이 활성화됩니다.</small></span></li><li><b>3</b><span><strong>대시보드 관리 시작</strong><small>설정한 이메일과 비밀번호로 로그인해 센터를 관리합니다.</small></span></li></ol><div class="success-actions"><a id="successDashboardLink" class="success-primary" href="/center-dashboard/">센터 관리 로그인 화면</a><a class="success-secondary" href="/">DAIL 홈으로</a></div><small class="success-caution">센터 승인 전에는 로그인이 되지 않습니다.</small></section>
       <section class="faq" aria-labelledby="faq-title">
         <header class="faq-heading"><span>FAQ</span><h2 id="faq-title">센터 등록 전, 궁금한 점을 확인해보세요</h2><p>등록 신청과 검토 과정에서 자주 묻는 내용을 모았습니다.</p></header>
         <div class="faq-list">
@@ -66,11 +74,11 @@
           <details><summary><span>어떤 센터가 등록할 수 있나요?</span><i aria-hidden="true"></i></summary><p>이용자에게 운동 프로그램을 제공하고, 센터 위치와 연락처 등 운영 정보를 확인할 수 있는 센터가 신청할 수 있습니다.</p></details>
           <details><summary><span>물리치료사 출신 정보는 어떻게 확인하나요?</span><i aria-hidden="true"></i></summary><p>물리치료사 출신으로 표시하려면 면허 확인을 위한 서류를 제출해야 합니다. 확인 서류는 관리자 검토에만 사용되며 공개 화면에는 ‘물리치료사 출신’으로 표시됩니다.</p></details>
           <details><summary><span>제출한 센터 정보를 수정할 수 있나요?</span><i aria-hidden="true"></i></summary><p>검토 과정에서 정보를 수정하거나 보완할 수 있습니다. 이미 제출한 신청의 변경이 필요하면 안내받은 연락 방법을 통해 요청해주세요.</p></details>
-          <details><summary><span>센터장 대시보드는 언제 사용할 수 있나요?</span><i aria-hidden="true"></i></summary><p>센터 승인 후 DAIL 운영팀이 신청 이메일로 센터장 계정을 발급합니다. 계정 안내를 받은 뒤 센터 관리 페이지에서 로그인해 센터 정보를 직접 수정할 수 있습니다.</p></details>
+          <details><summary><span>센터장 대시보드는 언제 사용할 수 있나요?</span><i aria-hidden="true"></i></summary><p>센터 승인과 동시에 신청할 때 설정한 이메일과 비밀번호가 활성화됩니다. 승인 안내를 받은 뒤 센터 관리 페이지에서 로그인해 센터 정보를 직접 수정할 수 있습니다.</p></details>
         </div>
         <div class="faq-note"><span aria-hidden="true">💬</span><p><strong>원하는 답변을 찾지 못하셨나요?</strong>등록 신청을 완료하면 검토 과정에서 필요한 내용을 담당자가 안내해드립니다.</p></div>
       </section>
     </section>
   </main>
-  <script src="./app.js?v=20260719-owner-onboarding"></script>
+  <script src="./app.js?v=20260719-owner-password"></script>
 </body></html>

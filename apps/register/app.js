@@ -28,6 +28,10 @@ const registrationSteps = document.querySelector(".steps");
 const registrationSuccess = document.querySelector("#registrationSuccess");
 const successEmail = document.querySelector("#successEmail");
 const successDashboardLink = document.querySelector("#successDashboardLink");
+const ownerPassword = document.querySelector("#ownerPassword");
+const ownerPasswordConfirm = document.querySelector("#ownerPasswordConfirm");
+const passwordMatchMessage = document.querySelector("#passwordMatchMessage");
+const passwordToggle = document.querySelector("[data-password-toggle]");
 
 let currentStep = 1;
 let geocoderState = "loading";
@@ -44,6 +48,7 @@ function escapeHtml(value) {
 }
 
 function showStep(step) {
+  syncBackground();
   currentStep = step;
   document.querySelectorAll(".form-step").forEach(function (element) {
     element.classList.toggle("active", Number(element.dataset.step) === step);
@@ -66,7 +71,33 @@ function syncBackground() {
   licenseFields.hidden = !yes;
   licenseFields.querySelectorAll("input").forEach(function (input) {
     input.required = yes;
+    if (!yes) input.value = "";
   });
+}
+
+function validatePasswords() {
+  ownerPassword.setCustomValidity("");
+  ownerPasswordConfirm.setCustomValidity("");
+  if (!ownerPassword.value || !ownerPasswordConfirm.value) {
+    passwordMatchMessage.textContent = "10자 이상으로 설정해주세요. 비밀번호는 암호화되어 저장됩니다.";
+    passwordMatchMessage.className = "password-match-message";
+    return false;
+  }
+  if (ownerPassword.value.length < 10 || ownerPassword.value.length > 128) {
+    ownerPassword.setCustomValidity("비밀번호는 10자 이상 128자 이하로 입력해 주세요.");
+    passwordMatchMessage.textContent = "비밀번호는 10자 이상 128자 이하로 입력해 주세요.";
+    passwordMatchMessage.className = "password-match-message error";
+    return false;
+  }
+  if (ownerPassword.value !== ownerPasswordConfirm.value) {
+    ownerPasswordConfirm.setCustomValidity("비밀번호가 일치하지 않습니다.");
+    passwordMatchMessage.textContent = "비밀번호가 일치하지 않습니다.";
+    passwordMatchMessage.className = "password-match-message error";
+    return false;
+  }
+  passwordMatchMessage.textContent = "비밀번호가 일치합니다. 센터 승인 후 이 비밀번호로 로그인합니다.";
+  passwordMatchMessage.className = "password-match-message success";
+  return true;
 }
 
 function setAddressStatus(text, tone) {
@@ -282,6 +313,14 @@ async function loadNaverGeocoder() {
 
 function validateStep(step) {
   const panel = document.querySelector('[data-step="' + step + '"]');
+  if (step === 1 && ownerPassword.value && ownerPasswordConfirm.value && !validatePasswords()) {
+    const invalidPassword = [ownerPassword, ownerPasswordConfirm].find(function (element) {
+      return !element.checkValidity();
+    }) || ownerPasswordConfirm;
+    invalidPassword.reportValidity();
+    invalidPassword.focus();
+    return false;
+  }
   if (step === 2 && !document.querySelector('[name="specialties"]:checked')) {
     window.alert("전문 분야를 하나 이상 선택해주세요.");
     return false;
@@ -331,6 +370,7 @@ function renderSummary() {
     ["대표자", data.get("ownerName")],
     ["전화번호", data.get("phone")],
     ["센터장 로그인 이메일", data.get("email")],
+    ["센터장 로그인 비밀번호", "설정 완료 (보안상 표시하지 않음)"],
     ["주소", fullAddress()],
     ["지도 위치", latInput.value && lngInput.value ? "네이버 지도 확인 완료" : "운영팀 확인 예정"],
     ["물리치료사 출신", isTherapistBackground() ? "예" : "아니오"],
@@ -368,6 +408,22 @@ async function upload(file, kind) {
 
 document.querySelectorAll('[name="therapistBackground"]').forEach(function (element) {
   element.addEventListener("change", syncBackground);
+});
+
+[ownerPassword, ownerPasswordConfirm].forEach(function (element) {
+  element.addEventListener("input", function () {
+    ownerPassword.setCustomValidity("");
+    ownerPasswordConfirm.setCustomValidity("");
+    if (ownerPassword.value && ownerPasswordConfirm.value) validatePasswords();
+  });
+});
+
+passwordToggle.addEventListener("click", function () {
+  const reveal = ownerPassword.type === "password";
+  ownerPassword.type = reveal ? "text" : "password";
+  ownerPasswordConfirm.type = reveal ? "text" : "password";
+  passwordToggle.textContent = reveal ? "숨기기" : "보기";
+  passwordToggle.setAttribute("aria-label", reveal ? "비밀번호 숨기기" : "비밀번호 표시");
 });
 
 document.querySelectorAll("[data-next]").forEach(function (button) {
@@ -408,6 +464,15 @@ manualAddressButton.addEventListener("click", function () {
 form.addEventListener("submit", async function (event) {
   event.preventDefault();
   if (!validateStep(3)) return;
+  if (!validatePasswords()) {
+    showStep(1);
+    const invalidPassword = [ownerPassword, ownerPasswordConfirm].find(function (element) {
+      return !element.checkValidity();
+    }) || ownerPasswordConfirm;
+    invalidPassword.reportValidity();
+    invalidPassword.focus();
+    return;
+  }
   message.textContent = "";
   submitButton.disabled = true;
   submitButton.textContent = "신청 중...";
@@ -435,6 +500,7 @@ form.addEventListener("submit", async function (event) {
       ownerName: data.get("ownerName"),
       phone: data.get("phone"),
       email: signupEmail,
+      password: ownerPassword.value,
       area: areaInput.value || baseAddress.split(" ").slice(0, 2).join(" "),
       address: address,
       naverMapUrl: naverMapUrlInput.value || mapUrl(baseAddress),

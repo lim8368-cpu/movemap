@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const security = require("./security");
+const { hashOwnerPassword } = require("../api/_owner-auth");
 
 loadLocalEnv(path.resolve(__dirname, "..", ".env"));
 
@@ -243,11 +244,15 @@ function summarizeStats(db) {
       events: db.events.length,
     },
     centers,
-    centerApplications: (db.centerApplications || []).slice().reverse().map((item) => ({
-      ...item,
-      photoUrl: item.photoUrl || privateFileDataUrl(item.photoPath),
-      licenseImageUrl: privateFileDataUrl(item.licenseImagePath),
-    })),
+    centerApplications: (db.centerApplications || []).slice().reverse().map((item) => {
+      const { ownerPasswordScrypt, ...safeItem } = item;
+      return {
+        ...safeItem,
+        ownerPasswordSet: Boolean(ownerPasswordScrypt),
+        photoUrl: item.photoUrl || privateFileDataUrl(item.photoPath),
+        licenseImageUrl: item.therapistBackground ? privateFileDataUrl(item.licenseImagePath) : "",
+      };
+    }),
     recentEvents: db.events.slice(-20).reverse(),
   };
 }
@@ -320,7 +325,9 @@ function applicationToCenter(db, application) {
     reviews: "0",
     lead: application.services || application.memo || "센터가 등록한 운동 프로그램 정보입니다.",
     tags: tagsFromText(application.services),
-    therapist: `${application.licenseHolderName} · 물리치료사 출신`,
+    therapist: application.therapistBackground
+      ? `${application.licenseHolderName} · 물리치료사 출신`
+      : `${application.ownerName} 센터장`,
     price: "센터 문의",
     conversion: "신규 등록 센터",
     lat,
@@ -548,11 +555,9 @@ const server = http.createServer(async (req, res) => {
         "ownerName",
         "phone",
         "email",
+        "password",
         "area",
         "address",
-        "licenseHolderName",
-        "licenseNumber",
-        "licenseImagePath",
       ];
       const missingField = requiredFields.find((field) => !cleanText(body[field]));
 
@@ -567,6 +572,25 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const therapistBackground = body.therapistBackground === true;
+      const missingLicense = therapistBackground && [
+        "licenseHolderName",
+        "licenseNumber",
+        "licenseImagePath",
+      ].some((field) => !cleanText(body[field]));
+      if (missingLicense) {
+        sendJson(res, 400, { error: "물리치료사 출신 센터는 면허 확인 정보를 모두 입력해 주세요." });
+        return;
+      }
+
+      let ownerPasswordScrypt;
+      try {
+        ownerPasswordScrypt = hashOwnerPassword(String(body.password || ""));
+      } catch (error) {
+        sendJson(res, 400, { error: error.message });
+        return;
+      }
+
       const db = readDb();
       if (!Array.isArray(db.centerApplications)) db.centerApplications = [];
 
@@ -577,6 +601,8 @@ const server = http.createServer(async (req, res) => {
         ownerName: cleanText(body.ownerName, 40),
         phone: cleanText(body.phone, 40),
         email,
+        ownerPasswordScrypt,
+        therapistBackground,
         area: cleanText(body.area, 80),
         address: cleanText(body.address, 160),
         naverMapUrl: cleanText(body.naverMapUrl, 260),
@@ -586,10 +612,10 @@ const server = http.createServer(async (req, res) => {
         photoUrl: cleanText(body.photoUrl, 260),
         photoDataUrl: cleanText(body.photoDataUrl, 1_800_000),
         photoPath: cleanText(body.photoPath, 240),
-        licenseHolderName: cleanText(body.licenseHolderName, 40),
-        licenseNumber: cleanText(body.licenseNumber, 60),
+        licenseHolderName: therapistBackground ? cleanText(body.licenseHolderName, 40) : "해당 없음",
+        licenseNumber: therapistBackground ? cleanText(body.licenseNumber, 60) : "해당 없음",
         licenseImageDataUrl: cleanText(body.licenseImageDataUrl, 1_800_000),
-        licenseImagePath: cleanText(body.licenseImagePath, 240),
+        licenseImagePath: therapistBackground ? cleanText(body.licenseImagePath, 240) : "",
         services: cleanText(body.services, 240),
         memo: cleanText(body.memo, 400),
         consent: Boolean(body.consent),
@@ -601,7 +627,8 @@ const server = http.createServer(async (req, res) => {
         source: requestSource(req, "register"),
       });
       writeDb(db);
-      sendJson(res, 201, { ok: true, application });
+      const { ownerPasswordScrypt: _ownerPasswordScrypt, ...safeApplication } = application;
+      sendJson(res, 201, { ok: true, application: safeApplication });
       return;
     }
 
@@ -639,7 +666,8 @@ const server = http.createServer(async (req, res) => {
           status: "success",
         });
         writeDb(db);
-        sendJson(res, 200, { ok: true, center, application });
+        const { ownerPasswordScrypt: _ownerPasswordScrypt, ...safeApplication } = application;
+        sendJson(res, 200, { ok: true, center, application: safeApplication });
         return;
       }
 
@@ -661,7 +689,8 @@ const server = http.createServer(async (req, res) => {
         status: "success",
       });
       writeDb(db);
-      sendJson(res, 200, { ok: true, center, application });
+      const { ownerPasswordScrypt: _ownerPasswordScrypt, ...safeApplication } = application;
+      sendJson(res, 200, { ok: true, center, application: safeApplication });
       return;
     }
 

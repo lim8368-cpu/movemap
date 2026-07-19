@@ -1,4 +1,5 @@
 const { sendJson, hasSupabaseConfig, supabaseRequest } = require("./_shared");
+const { hashOwnerPassword } = require("./_owner-auth");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -48,9 +49,7 @@ module.exports = async function handler(req, res) {
       "email",
       "area",
       "address",
-      "licenseHolderName",
-      "licenseNumber",
-      "licenseImagePath",
+      "password",
     ];
 
     const missing = requiredFields.filter((field) => !requiredString(body[field]));
@@ -58,6 +57,17 @@ module.exports = async function handler(req, res) {
       sendJson(res, 400, {
         error: "필수 정보를 모두 입력하고 개인정보 확인 동의에 체크해 주세요.",
       });
+      return;
+    }
+
+    const therapistBackground = body.therapistBackground === true;
+    const missingLicense = therapistBackground && [
+      "licenseHolderName",
+      "licenseNumber",
+      "licenseImagePath",
+    ].some((field) => !requiredString(body[field]));
+    if (missingLicense) {
+      sendJson(res, 400, { error: "물리치료사 출신 센터는 면허 확인 정보를 모두 입력해 주세요." });
       return;
     }
 
@@ -72,6 +82,23 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    const [ownerAccounts, activeApplications] = await Promise.all([
+      supabaseRequest("center_owner_accounts", {
+        query: `?select=id&email=eq.${encodeURIComponent(email)}&limit=1`,
+      }).catch(() => []),
+      supabaseRequest("center_applications", {
+        query: `?select=id,status&email=eq.${encodeURIComponent(email)}&status=in.(pending,approved)&limit=1`,
+      }),
+    ]);
+    if (ownerAccounts[0] || activeApplications[0]) {
+      sendJson(res, 409, {
+        error: "이미 등록 신청 또는 센터장 계정에 사용 중인 이메일입니다. 기존 계정으로 로그인하거나 운영팀에 문의해 주세요.",
+      });
+      return;
+    }
+
+    const passwordScrypt = hashOwnerPassword(String(body.password || ""));
+
     const rows = await supabaseRequest("center_applications", {
       method: "POST",
       body: {
@@ -79,6 +106,7 @@ module.exports = async function handler(req, res) {
         owner_name: body.ownerName.trim(),
         phone: body.phone.trim(),
         email,
+        owner_password_scrypt: passwordScrypt,
         area: body.area.trim(),
         address: body.address.trim(),
         naver_map_url: body.naverMapUrl || null,
@@ -88,9 +116,10 @@ module.exports = async function handler(req, res) {
         photo_url: body.photoUrl || null,
         photo_path: body.photoPath || null,
         photo_paths: Array.isArray(body.photoPaths) ? body.photoPaths.slice(0, 5) : [],
-        license_holder_name: body.licenseHolderName.trim(),
-        license_number: body.licenseNumber.trim(),
-        license_image_path: body.licenseImagePath,
+        therapist_background: therapistBackground,
+        license_holder_name: therapistBackground ? body.licenseHolderName.trim() : "해당 없음",
+        license_number: therapistBackground ? body.licenseNumber.trim() : "해당 없음",
+        license_image_path: therapistBackground ? body.licenseImagePath : null,
         services: body.services || null,
         memo: body.memo || null,
         consent: true,
@@ -105,6 +134,10 @@ module.exports = async function handler(req, res) {
       message: "등록 신청이 접수되었습니다. 운영자 확인 후 연락드릴게요.",
     });
   } catch (error) {
-    sendJson(res, 400, { error: "등록 신청 데이터를 확인해 주세요." });
+    console.error("center application api failed", error);
+    const message = /비밀번호는/.test(String(error.message || ""))
+      ? error.message
+      : "등록 신청을 저장하지 못했습니다. 입력 내용을 확인한 뒤 다시 시도해 주세요.";
+    sendJson(res, 400, { error: message });
   }
 };

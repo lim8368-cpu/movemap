@@ -542,13 +542,98 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 .field-note {
   margin-top: -2px;
   color: #718096;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 550;
   line-height: 1.45;
 }
 
+.license-box[hidden] {
+  display: none !important;
+}
+
+.owner-account-setup {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid #c9e4df;
+  border-radius: 13px;
+  background: #f5fbfa;
+}
+
+.owner-account-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.owner-account-title > span {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #e2f5f1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-size: 16px;
+}
+
+.owner-account-title h3 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.owner-account-title p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.registration-password {
+  position: relative;
+  display: block;
+}
+
+.registration-password input {
+  padding-right: 58px;
+}
+
+.password-visibility {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  min-width: 42px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: #e7f4f2;
+  color: var(--teal);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.password-match-message {
+  margin: -4px 0 0;
+  color: #5f7774;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.password-match-message.error {
+  color: #b42318;
+}
+
+.password-match-message.success {
+  color: var(--teal);
+}
+
 .owner-signup-guide {
-  padding: 19px;
+  padding: 24px;
   border: 1px solid #b8ded9;
   border-radius: 13px;
   background: linear-gradient(135deg, #f1fbf9 0%, #f9fdfc 100%);
@@ -561,34 +646,36 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 }
 
 .owner-signup-heading > span {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   display: grid;
   place-items: center;
   border-radius: 10px;
   background: var(--navy);
   color: var(--accent);
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .owner-signup-heading small {
   color: var(--teal);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: .06em;
 }
 
 .owner-signup-heading h3 {
-  margin: 3px 0 4px;
+  margin: 4px 0 6px;
   color: var(--navy);
-  font-size: 16px;
+  font-size: 20px;
+  line-height: 1.35;
 }
 
 .owner-signup-heading p {
   margin: 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .owner-signup-guide ol,
@@ -601,10 +688,19 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
   list-style: none;
 }
 
+.owner-signup-guide ol {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.owner-signup-guide li {
+  align-items: center;
+}
+
 .owner-signup-guide li,
 .registration-success li {
   min-width: 0;
-  padding: 11px;
+  padding: 16px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -615,15 +711,15 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 
 .owner-signup-guide li > b,
 .registration-success li > b {
-  width: 21px;
-  height: 21px;
-  flex: 0 0 21px;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: #dff5f1;
   color: var(--teal);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .owner-signup-guide li span,
@@ -638,25 +734,27 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 .owner-signup-guide li strong,
 .registration-success li strong {
   color: #243449;
-  font-size: 10px;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .owner-signup-guide li small,
 .registration-success li small {
-  margin-top: 4px;
+  margin-top: 5px;
   color: #718096;
-  font-size: 8.5px;
+  font-size: 12.5px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
 .owner-signup-note {
-  margin: 12px 0 0;
-  padding-top: 10px;
+  margin: 16px 0 0;
+  padding-top: 14px;
   border-top: 1px solid #d6ebe8;
   color: #53716d;
-  font-size: 9px;
-  line-height: 1.5;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
 }
 
 .registration-success[hidden],
@@ -777,6 +875,15 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 }
 
 @media (max-width: 620px) {
+  .owner-account-setup,
+  .owner-signup-guide {
+    padding: 18px;
+  }
+
+  .owner-signup-heading h3 {
+    font-size: 18px;
+  }
+
   .owner-signup-guide ol,
   .registration-success ol,
   .success-actions {

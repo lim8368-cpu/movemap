@@ -308,7 +308,9 @@ function renderApplications() {
     const mapUrl = item.naverMapUrl || "https://map.naver.com/p/search/" + encodeURIComponent(item.address || "");
     const media = centerImages.map(function (src, index) {
       return imageMarkup(src, item.centerName + " 사진 " + (index + 1), "센터 사진");
-    }).join("") + imageMarkup(item.licenseImageUrl, item.centerName + " 면허 인증", "면허 인증");
+    }).join("") + (item.therapistBackground
+      ? imageMarkup(item.licenseImageUrl, item.centerName + " 면허 인증", "면허 인증")
+      : "");
     const detailParts = [item.services, item.memo].filter(Boolean).map(function (value) {
       return "<p>" + escapeHtml(value) + "</p>";
     }).join("");
@@ -324,7 +326,10 @@ function renderApplications() {
       ' · <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noreferrer">지도에서 확인 ↗</a></p>' +
       '<div class="application-meta"><span>신청자 ' + escapeHtml(item.ownerName) + "</span><span>" +
       escapeHtml(item.phone) + "</span><span>계정 이메일 " + escapeHtml(item.email || "미입력") +
-      "</span><span>면허 " + escapeHtml(item.licenseHolderName) + " · " + escapeHtml(item.licenseNumber) +
+      "</span><span>로그인 " + (item.ownerPasswordSet ? "설정 완료" : "관리자 발급 필요") +
+      "</span><span>" + (item.therapistBackground
+        ? "면허 " + escapeHtml(item.licenseHolderName) + " · " + escapeHtml(item.licenseNumber)
+        : "일반 운동센터") +
       "</span><span>접수 " + formatDate(item.createdAt, true) + "</span></div>" +
       (media ? '<div class="application-media">' + media + "</div>" : "") + detailParts +
       (item.status === "rejected" && item.rejectionReason ? "<p>반려 사유: " + escapeHtml(item.rejectionReason) + "</p>" : "") +
@@ -432,11 +437,14 @@ async function approveApplication(applicationId) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) return showToast(data.error || "승인에 실패했습니다.", true);
-  showToast("센터를 승인하고 지도 등록을 완료했습니다.");
+  showToast(data.ownerAccountCreated
+    ? "센터 승인과 센터장 계정 활성화를 완료했습니다."
+    : "센터를 승인하고 지도 등록을 완료했습니다.");
   await loadStats();
   if (
     data.centerId &&
     application &&
+    !data.ownerAccountCreated &&
     window.confirm("센터 승인이 완료되었습니다. 이어서 센터장 대시보드 계정을 발급할까요?")
   ) {
     await createOwnerAccount(data.centerId, application.centerName, application.email);

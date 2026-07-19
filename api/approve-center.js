@@ -47,7 +47,12 @@ module.exports = async function handler(req, res) {
       await supabaseRequest("center_applications", {
         method: "PATCH",
         query: `?id=eq.${encodeURIComponent(item.id)}`,
-        body: { status: "rejected", rejection_reason: reason, reviewed_at: new Date().toISOString() },
+        body: {
+          status: "rejected",
+          rejection_reason: reason,
+          owner_password_scrypt: null,
+          reviewed_at: new Date().toISOString(),
+        },
       });
       return sendJson(res, 200, { ok: true });
     }
@@ -65,7 +70,9 @@ module.exports = async function handler(req, res) {
         lng: item.lng,
         lead: item.services || "센터가 등록한 운동 프로그램 정보입니다.",
         tags: [],
-        therapist: `${item.license_holder_name} · 물리치료사 출신`,
+        therapist: item.therapist_background
+          ? `${item.license_holder_name} · 물리치료사 출신`
+          : `${item.owner_name} 센터장`,
         price: "센터 문의",
         conversion: "신규 등록 센터",
         plan: "free",
@@ -75,15 +82,58 @@ module.exports = async function handler(req, res) {
       },
     });
 
-    await supabaseRequest("center_applications", {
-      method: "PATCH",
-      query: `?id=eq.${encodeURIComponent(item.id)}`,
-      body: { status: "approved", reviewed_at: new Date().toISOString() },
-    });
+    const center = centers[0];
+    let ownerAccountCreated = false;
+    try {
+      if (item.email && item.owner_password_scrypt) {
+        const existingAccounts = await supabaseRequest("center_owner_accounts", {
+          query: `?select=id&email=eq.${encodeURIComponent(item.email)}&limit=1`,
+        });
+        if (existingAccounts[0]) {
+          throw new Error("이미 다른 센터장 계정에 사용 중인 이메일입니다.");
+        }
+        await supabaseRequest("center_owner_accounts", {
+          method: "POST",
+          body: {
+            center_id: center.id,
+            email: item.email,
+            password_scrypt: item.owner_password_scrypt,
+            status: "active",
+          },
+        });
+        ownerAccountCreated = true;
+      }
 
-    sendJson(res, 200, { ok: true, centerId: centers[0].id });
+      await supabaseRequest("center_applications", {
+        method: "PATCH",
+        query: `?id=eq.${encodeURIComponent(item.id)}`,
+        body: {
+          status: "approved",
+          owner_password_scrypt: null,
+          reviewed_at: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      if (ownerAccountCreated) {
+        await supabaseRequest("center_owner_accounts", {
+          method: "DELETE",
+          query: `?center_id=eq.${encodeURIComponent(center.id)}`,
+        }).catch(() => null);
+      }
+      await supabaseRequest("centers", {
+        method: "DELETE",
+        query: `?id=eq.${encodeURIComponent(center.id)}`,
+      }).catch(() => null);
+      throw error;
+    }
+
+    sendJson(res, 200, { ok: true, centerId: center.id, ownerAccountCreated });
   } catch (error) {
     console.error("approve api failed", error);
-    sendJson(res, 500, { error: "승인 처리에 실패했습니다." });
+    sendJson(res, 500, {
+      error: /이미 다른 센터장 계정/.test(String(error.message || ""))
+        ? error.message
+        : "승인 처리에 실패했습니다.",
+    });
   }
 };

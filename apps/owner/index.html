@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260719-owner-onboarding" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260719-owner-password" />
 </head>
 <body>
   <header class="topbar">
@@ -15,7 +15,7 @@
   <main>
     <section id="loginPanel" class="login-layout">
       <div class="login-copy"><p class="eyebrow">DAIL FOR CENTER</p><h1>센터의 좋은 정보를<br />이용자에게 더 선명하게</h1><p>등록 정보를 관리하고, 이용자가 센터를 확인한 흐름을 한곳에서 살펴보세요.</p><ul><li>내 센터 정보만 안전하게 관리</li><li>지도 상세 조회와 상담 클릭 확인</li><li>등록 후기와 프로필 상태 점검</li></ul></div>
-      <div class="login-card"><p class="eyebrow">PARTNER SIGN IN</p><h2>센터 관리자 로그인</h2><p>센터 승인 후 발급받은 계정으로 로그인하세요.</p><form id="loginForm"><label>센터장 로그인 이메일<input id="email" type="email" autocomplete="username" required placeholder="owner@example.com" /></label><label>비밀번호<span class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="togglePassword" type="button" aria-label="비밀번호 표시">보기</button></span></label><button type="submit">대시보드 들어가기</button><p id="loginMessage" class="message" aria-live="polite"></p></form><div class="owner-join-info"><b>아직 센터장 계정이 없나요?</b><p><span>1</span>센터 등록 신청 <i>→</i> <span>2</span>센터 승인·계정 발급 <i>→</i> <span>3</span>대시보드 로그인</p><a href="/register/">센터 등록 신청하기 →</a></div><small class="support">승인 후에도 계정 안내를 받지 못했거나 로그인이 필요한 경우 DAIL 운영팀에 문의하세요.</small></div>
+      <div class="login-card"><p class="eyebrow">PARTNER SIGN IN</p><h2>센터 관리자 로그인</h2><p>센터 승인 후 등록 신청 때 설정한 계정으로 로그인하세요.</p><form id="loginForm"><label>센터장 로그인 이메일<input id="email" type="email" autocomplete="username" required placeholder="owner@example.com" /></label><label>비밀번호<span class="password-field"><input id="password" type="password" autocomplete="current-password" required /><button id="togglePassword" type="button" aria-label="비밀번호 표시">보기</button></span></label><button type="submit">대시보드 들어가기</button><p id="loginMessage" class="message" aria-live="polite"></p></form><div class="owner-join-info"><b>아직 센터장 계정이 없나요?</b><p><span>1</span>이메일·비밀번호 설정 <i>→</i> <span>2</span>센터 승인·계정 활성화 <i>→</i> <span>3</span>대시보드 로그인</p><a href="/register/">센터 등록 신청하기 →</a></div><small class="support">승인 후 로그인이 되지 않거나 비밀번호 도움이 필요한 경우 DAIL 운영팀에 문의하세요.</small></div>
     </section>
 
     <section id="dashboard" class="dashboard" hidden>
@@ -52,6 +52,6 @@
       <section class="activity-grid"><div class="panel"><div class="section-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>최근 이용자 활동</h2></div></div><div id="eventList" class="activity-list"></div></div><div id="reviewsSection" class="panel"><div class="section-heading"><div><p class="eyebrow">CUSTOMER REVIEWS</p><h2>최근 후기</h2></div><span class="period">승인된 후기</span></div><div id="reviewList" class="review-list"></div></div></section>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260719-owner-onboarding"></script>
+  <script src="/center-dashboard/app.js?v=20260719-owner-password"></script>
 </body>
 </html>

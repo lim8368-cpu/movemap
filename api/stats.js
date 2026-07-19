@@ -50,6 +50,8 @@ module.exports = async function handler(req, res) {
       ownerName: item.owner_name,
       phone: item.phone,
       email: item.email || "",
+      ownerPasswordSet: Boolean(item.owner_password_scrypt),
+      therapistBackground: Boolean(item.therapist_background),
       area: item.area,
       address: item.address,
       naverMapUrl: item.naver_map_url,
