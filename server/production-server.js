@@ -138,6 +138,7 @@ function staticPathFor(pathname) {
   if (requested === "/admin/") requested = "/admin/index.html";
   if (requested === "/register/") requested = "/register/index.html";
   if (requested === "/center-dashboard/") requested = "/center-dashboard/index.html";
+  if (requested === "/auth/callback/") requested = "/auth/callback/index.html";
   if (requested.startsWith("/web/")) requested = requested.slice(4);
 
   const decoded = decodeURIComponent(requested);
@@ -147,7 +148,12 @@ function staticPathFor(pathname) {
 }
 
 function serveStatic(req, res, url) {
-  if (url.pathname === "/admin" || url.pathname === "/register" || url.pathname === "/center-dashboard") {
+  if (
+    url.pathname === "/admin" ||
+    url.pathname === "/register" ||
+    url.pathname === "/center-dashboard" ||
+    url.pathname === "/auth/callback"
+  ) {
     res.statusCode = 308;
     res.setHeader("Location", `${url.pathname}/${url.search}`);
     res.end();
