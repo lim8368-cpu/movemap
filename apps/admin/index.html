@@ -3,114 +3,165 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DAIL 관리자</title>
-    <link rel="stylesheet" href="/admin/styles.css" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>DAIL 최고 관리자</title>
+    <link rel="stylesheet" href="/admin/styles.css?v=20260719-operations" />
   </head>
   <body>
-    <main class="admin-shell">
-      <section class="login-panel" id="loginPanel">
-        <p class="eyebrow">DAIL Admin</p>
-        <h1>센터 조회와 상담 클릭을 확인합니다</h1>
-        <p class="intro">초기 MVP용 운영자 관리자입니다.</p>
-        <label>
-          비밀번호
-          <input id="loginPassword" type="password" autocomplete="current-password" />
-        </label>
-        <button id="loginButton" type="button">로그인</button>
-        <p id="loginMessage" class="message"></p>
+    <header class="topbar">
+      <a href="/" class="brand">
+        <span class="brand-symbol">◉</span>
+        <b>DAIL</b>
+        <small>최고 관리자</small>
+      </a>
+      <div class="top-actions">
+        <a href="/" target="_blank" rel="noreferrer">DAIL 홈 ↗</a>
+        <button id="logoutButton" class="ghost" type="button" hidden>로그아웃</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="login-layout" id="loginPanel">
+        <div class="login-copy">
+          <p class="eyebrow">DAIL OPERATIONS</p>
+          <h1>센터와 이용자의 흐름을<br />한곳에서 관리하세요</h1>
+          <p>센터 등록 심사부터 운영 상태, 이용자 활동과 접속 기록까지 DAIL 운영에 필요한 정보를 확인합니다.</p>
+          <ul>
+            <li>승인 대기 업무를 놓치지 않는 운영함</li>
+            <li>센터 검색·필터와 상세 편집</li>
+            <li>핵심 지표와 활동·보안 로그 점검</li>
+          </ul>
+        </div>
+        <div class="login-card">
+          <p class="eyebrow">SUPER ADMIN SIGN IN</p>
+          <h2>최고 관리자 로그인</h2>
+          <p>DAIL 운영팀 전용 공간입니다.</p>
+          <form id="loginForm">
+            <label>
+              관리자 비밀번호
+              <span class="password-field">
+                <input id="loginPassword" type="password" autocomplete="current-password" required />
+                <button id="togglePassword" type="button" aria-label="비밀번호 표시">보기</button>
+              </span>
+            </label>
+            <button id="loginButton" type="submit">운영 대시보드 들어가기</button>
+            <p id="loginMessage" class="message" aria-live="polite"></p>
+          </form>
+          <small class="support">보안을 위해 로그인 세션은 15분 후 만료됩니다.</small>
+        </div>
       </section>
 
       <section class="dashboard" id="dashboard" hidden>
-        <header class="dashboard-header">
+        <div class="welcome">
           <div>
-            <p class="eyebrow">DAIL Admin</p>
-            <h1>운영 대시보드</h1>
+            <p class="eyebrow">OPERATIONS OVERVIEW</p>
+            <h1>DAIL 운영 현황</h1>
+            <p><span class="status-dot"></span> 관리 API 연결 정상 · <span id="lastRefreshedAt">방금 확인</span></p>
           </div>
-          <div>
-            <button id="refreshButton" type="button">새로고침</button>
-            <button id="logoutButton" type="button">로그아웃</button>
+          <div class="welcome-actions">
+            <a class="secondary-button" href="/" target="_blank" rel="noreferrer">공개 페이지 보기 ↗</a>
+            <button id="refreshButton" class="primary-button" type="button">데이터 새로고침</button>
           </div>
-        </header>
-
-        <div class="summary-grid">
-          <article>
-            <span>등록 센터</span>
-            <strong id="totalCenters">0</strong>
-          </article>
-          <article>
-            <span>승인 대기</span>
-            <strong id="totalPending">0</strong>
-          </article>
-          <article>
-            <span>상세 조회</span>
-            <strong id="totalViews">0</strong>
-          </article>
-          <article>
-            <span>상담 클릭</span>
-            <strong id="totalContacts">0</strong>
-          </article>
-          <article>
-            <span>전체 이벤트</span>
-            <strong id="totalEvents">0</strong>
-          </article>
-          <article>
-            <span>접속 기록</span>
-            <strong id="totalAccessLogs">0</strong>
-          </article>
         </div>
 
-        <section class="table-section">
-          <h2>센터 등록 신청</h2>
+        <nav class="section-nav" aria-label="최고 관리자 메뉴">
+          <a href="#overview" class="active">운영 요약</a>
+          <a href="#applicationsSection">승인함 <span id="navPendingCount" class="nav-count">0</span></a>
+          <a href="#centersSection">센터 관리</a>
+          <a href="#activitySection">활동·보안 로그</a>
+        </nav>
+
+        <section id="overview">
+          <div class="summary-grid">
+            <article>
+              <span class="metric-icon">⌖</span>
+              <div><small>운영 센터</small><strong id="totalCenters">0</strong><p id="centerHealthCopy">센터 정보를 확인 중입니다.</p></div>
+            </article>
+            <article class="attention-card">
+              <span class="metric-icon">!</span>
+              <div><small>승인 대기</small><strong id="totalPending">0</strong><p>처리가 필요한 센터 신청</p></div>
+            </article>
+            <article>
+              <span class="metric-icon">◎</span>
+              <div><small>센터 상세 조회</small><strong id="totalViews">0</strong><p>최근 수집 이벤트 기준</p></div>
+            </article>
+            <article>
+              <span class="metric-icon">↗</span>
+              <div><small>상담 연결 클릭</small><strong id="totalContacts">0</strong><p>이용자가 상담을 시도한 횟수</p></div>
+            </article>
+            <article class="accent-card">
+              <span class="metric-icon">%</span>
+              <div><small>조회 대비 상담 클릭</small><strong id="contactRate">0%</strong><p>상세 조회 중 상담 버튼 클릭 비율</p></div>
+            </article>
+          </div>
+
+          <div class="overview-grid">
+            <section class="panel action-panel">
+              <div class="section-heading">
+                <div><p class="eyebrow">ACTION CENTER</p><h2>오늘 확인할 운영 업무</h2><p>우선순위가 높은 항목부터 처리하세요.</p></div>
+                <span class="period">실시간</span>
+              </div>
+              <div id="actionChecklist" class="action-checklist"></div>
+            </section>
+            <section class="panel">
+              <div class="section-heading">
+                <div><p class="eyebrow">LATEST ACTIVITY</p><h2>최근 이용자 활동</h2><p>센터 상세 조회와 상담 흐름입니다.</p></div>
+                <a href="#activitySection" class="text-link">전체 보기 →</a>
+              </div>
+              <div id="overviewEvents" class="compact-events"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="applicationsSection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">CENTER APPLICATIONS</p><h2>센터 등록 승인함</h2><p>신청 정보와 자격 자료를 확인한 뒤 승인하거나 보완 요청을 보내세요.</p></div>
+            <div class="segmented-control" id="applicationFilters" aria-label="신청 상태 필터">
+              <button class="active" type="button" data-application-filter="pending">승인 대기</button>
+              <button type="button" data-application-filter="all">전체</button>
+            </div>
+          </div>
           <div id="centerApplications" class="application-list"></div>
         </section>
 
-        <section class="table-section">
-          <h2>센터별 성과</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>센터</th>
-                  <th>지역</th>
-                  <th>주소</th>
-                  <th>좌표 수정</th>
-                  <th>플랜</th>
-                  <th>소개</th>
-                  <th>태그</th>
-                  <th>운영자</th>
-                  <th>가격</th>
-                  <th>조회</th>
-                  <th>상담 클릭</th>
-                  <th>최근 이벤트</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="centerStats"></tbody>
-            </table>
+        <section id="centersSection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">CENTER DIRECTORY</p><h2>센터 디렉터리</h2><p>검색과 상태 필터로 센터를 찾고 필요한 정보만 상세 편집합니다.</p></div>
+            <span id="centerResultCount" class="period">0개 센터</span>
           </div>
+          <div class="directory-tools">
+            <label class="search-field"><span>⌕</span><input id="centerSearch" type="search" placeholder="센터명, 지역, 태그, 센터장 이메일 검색" /></label>
+            <select id="centerStatusFilter" aria-label="노출 상태">
+              <option value="all">모든 노출 상태</option>
+              <option value="approved">지도 노출 중</option>
+              <option value="hidden">숨김</option>
+            </select>
+            <select id="centerPlanFilter" aria-label="플랜">
+              <option value="all">모든 플랜</option>
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+            </select>
+          </div>
+          <div class="directory-list" id="centerDirectory"></div>
         </section>
 
-        <section class="table-section">
-          <h2>최근 이벤트</h2>
-          <div id="recentEvents" class="event-list"></div>
-        </section>
-
-        <section class="table-section">
-          <h2>접속 기록</h2>
-          <div class="table-wrap">
+        <section id="activitySection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">ACTIVITY & SECURITY</p><h2>활동·보안 로그</h2><p>이용자 행동과 관리자 접속 기록을 시간순으로 확인합니다.</p></div>
+            <span id="totalAccessLogsLabel" class="period">접속 기록 0건</span>
+          </div>
+          <div class="log-toolbar">
+            <div class="segmented-control" id="logTabs" aria-label="로그 종류">
+              <button class="active" type="button" data-log-tab="events">이용자 활동</button>
+              <button type="button" data-log-tab="access">접속 기록</button>
+            </div>
+            <label class="search-field compact"><span>⌕</span><input id="logSearch" type="search" placeholder="센터, 이벤트, 요청 경로 검색" /></label>
+          </div>
+          <div id="eventLogPanel" class="log-list"></div>
+          <div id="accessLogPanel" class="log-table-wrap" hidden>
             <table>
-              <thead>
-                <tr>
-                  <th>시간</th>
-                  <th>사용자</th>
-                  <th>역할</th>
-                  <th>출처</th>
-                  <th>요청</th>
-                  <th>상태</th>
-                  <th>IP</th>
-                  <th>기기/브라우저</th>
-                </tr>
-              </thead>
+              <thead><tr><th>시간</th><th>사용자·역할</th><th>출처</th><th>요청</th><th>상태</th><th>IP·기기</th></tr></thead>
               <tbody id="accessLogs"></tbody>
             </table>
           </div>
@@ -118,6 +169,44 @@
       </section>
     </main>
 
-    <script src="/admin/app.js"></script>
+    <dialog id="centerDialog" class="center-dialog">
+      <div class="dialog-header">
+        <div><p class="eyebrow">CENTER DETAILS</p><h2 id="dialogCenterTitle">센터 상세 관리</h2><p id="dialogCenterMeta">센터 정보를 확인하고 저장합니다.</p></div>
+        <button id="closeCenterDialog" class="icon-button" type="button" aria-label="닫기">×</button>
+      </div>
+      <form id="centerForm" class="center-form">
+        <input id="centerId" type="hidden" />
+        <fieldset>
+          <legend><span>01</span><div>기본 정보<small>지도와 검색 결과에 표시되는 정보</small></div></legend>
+          <div class="field-grid">
+            <label>센터명<input id="centerName" required maxlength="200" /></label>
+            <label>지역<input id="centerArea" required maxlength="200" /></label>
+            <label class="wide">상세 주소<input id="centerAddress" maxlength="200" /></label>
+            <label>위도<input id="centerLat" inputmode="decimal" /></label>
+            <label>경도<input id="centerLng" inputmode="decimal" /></label>
+            <label>노출 상태<select id="centerStatus"><option value="approved">지도 노출 중</option><option value="hidden">숨김</option></select></label>
+            <label>플랜<select id="centerPlan"><option value="free">Free</option><option value="basic">Basic</option><option value="pro">Pro</option></select></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend><span>02</span><div>소개와 이용 안내<small>이용자가 센터를 선택할 때 확인하는 정보</small></div></legend>
+          <label>센터 소개<textarea id="centerLead" rows="4" maxlength="800"></textarea></label>
+          <label>전문 분야 태그<input id="centerTags" placeholder="쉼표로 구분" /></label>
+          <label>운영자 소개<input id="centerTherapist" maxlength="200" /></label>
+          <label>가격 안내<input id="centerPrice" maxlength="200" /></label>
+        </fieldset>
+        <section class="account-card">
+          <div><small>CENTER MANAGER ACCOUNT</small><strong id="dialogOwnerAccount">센터장 계정 미등록</strong><p id="dialogOwnerLogin">센터장에게 전용 대시보드 계정을 발급할 수 있습니다.</p></div>
+          <button id="dialogOwnerButton" class="secondary-button" type="button">계정 발급·재설정</button>
+        </section>
+        <div class="dialog-actions">
+          <button id="deleteCenterButton" class="danger-text-button" type="button">센터 삭제</button>
+          <div><button id="cancelCenterButton" class="secondary-button" type="button">취소</button><button class="primary-button" type="submit">변경사항 저장</button></div>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script src="/admin/app.js?v=20260719-operations"></script>
   </body>
 </html>

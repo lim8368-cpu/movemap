@@ -10,20 +10,38 @@ module.exports = async function handler(req, res) {
   if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
   if (!isAdminRequest(req)) return sendJson(res, 401, { error: "Unauthorized" });
   try {
-    const [applications, centerRows, events] = await Promise.all([
+    const [applications, centerRows, events, ownerAccounts] = await Promise.all([
       supabaseRequest("center_applications", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
-      supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=100" }),
+      supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=1000" }),
+      supabaseRequest("center_owner_accounts", {
+        query: "?select=id,center_id,email,status,last_login_at,created_at&order=created_at.desc",
+      }).catch(() => []),
     ]);
     const centers = await Promise.all(centerRows.map(async (row) => {
       const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
       const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
+      const ownerAccount = ownerAccounts.find((account) => account.center_id === row.id);
       return ({
-      ...centerFromRow(row, photoUrls[0] || "", photoUrls),
-      views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
-      contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
-      lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
-    }); }));
+        ...centerFromRow(row, photoUrls[0] || "", photoUrls),
+        status: row.status || "approved",
+        phone: row.phone || "",
+        website: row.website || "",
+        openingHours: row.opening_hours || "",
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
+        contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
+        lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
+        ownerAccount: ownerAccount ? {
+          id: ownerAccount.id,
+          email: ownerAccount.email,
+          status: ownerAccount.status,
+          lastLoginAt: ownerAccount.last_login_at,
+          createdAt: ownerAccount.created_at,
+        } : null,
+      });
+    }));
     const applicationItems = await Promise.all(applications.map(async (item) => ({
       id: item.id,
       centerName: item.center_name,
@@ -52,6 +70,7 @@ module.exports = async function handler(req, res) {
         views: events.filter((item) => item.event_type === "view").length,
         contactClicks: events.filter((item) => item.event_type === "contact").length,
         events: events.length,
+        activeOwnerAccounts: ownerAccounts.filter((item) => item.status === "active").length,
       },
       centerApplications: applicationItems,
       centers,
