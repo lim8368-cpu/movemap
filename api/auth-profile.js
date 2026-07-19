@@ -1,5 +1,5 @@
 const { sendJson, supabaseRequest } = require("./_shared");
-const { syncUserProfile, userFromAccessToken } = require("./_user-auth");
+const { authSupabaseServiceRoleKey, authSupabaseUrl, syncUserProfile, userFromAccessToken } = require("./_user-auth");
 
 function bearer(req) { const value = String(req.headers.authorization || ""); return value.startsWith("Bearer ") ? value.slice(7) : ""; }
 
@@ -11,8 +11,9 @@ module.exports = async function handler(req, res) {
     if (!user) return sendJson(res, 401, { error: "로그인이 필요합니다." });
 
     if (req.method === "DELETE") {
-      const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
-        method: "DELETE", headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+      const serviceRoleKey = authSupabaseServiceRoleKey();
+      const response = await fetch(`${authSupabaseUrl()}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
+        method: "DELETE", headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
       });
       if (!response.ok) throw new Error(`Account deletion failed (${response.status})`);
       return sendJson(res, 200, { deleted: true });

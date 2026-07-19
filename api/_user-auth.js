@@ -11,6 +11,10 @@ function authSupabaseAnonKey() {
   return process.env.AUTH_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
 }
 
+function authSupabaseServiceRoleKey() {
+  return process.env.AUTH_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+}
+
 function publicAuthConfig() {
   const supabaseUrl = authSupabaseUrl();
   const supabaseAnonKey = authSupabaseAnonKey();
@@ -108,4 +112,4 @@ async function syncUserProfile(user, input = {}) {
   return { ...existing[0], ...body };
 }
 
-module.exports = { cookie, cookieValue, createOAuthState, publicAuthConfig, safeOrigin, syncUserProfile, userFromAccessToken, verifyOAuthState };
+module.exports = { authSupabaseServiceRoleKey, authSupabaseUrl, cookie, cookieValue, createOAuthState, publicAuthConfig, safeOrigin, syncUserProfile, userFromAccessToken, verifyOAuthState };
