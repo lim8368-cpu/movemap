@@ -16,6 +16,14 @@ function publicAuthConfig() {
 }
 
 function safeOrigin(req) {
+  const configuredOrigin = String(process.env.PUBLIC_APP_ORIGIN || "").trim();
+  if (configuredOrigin) {
+    const url = new URL(configuredOrigin);
+    if (!/^https?:$/.test(url.protocol) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+      throw new Error("Invalid PUBLIC_APP_ORIGIN");
+    }
+    return url.origin;
+  }
   const proto = String(req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http")).split(",")[0];
   const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0];
   if (!host || /[\r\n]/.test(host)) throw new Error("Invalid host");

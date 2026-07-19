@@ -9,6 +9,7 @@ services:
       APP_ENV: staging
       DATA_ENVIRONMENT: staging
       PORT: "3000"
+      PUBLIC_APP_ORIGIN: https://${PREVIEW_HOST:?required}
       NAVER_MAP_NCP_KEY_ID: ${NAVER_MAP_NCP_KEY_ID:?required}
       SUPABASE_URL: ${SUPABASE_URL:?required}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?required}
