@@ -27,7 +27,9 @@ module.exports = function handler(req, res) {
     }
 
     const url = new URL(`${config.supabaseUrl}/auth/v1/authorize`);
-    url.search = new URLSearchParams({ provider, redirect_to: `${origin}/auth/callback/` }).toString();
+    const params = new URLSearchParams({ provider, redirect_to: `${origin}/auth/callback/` });
+    if (provider === "kakao") params.set("scopes", "profile_nickname profile_image");
+    url.search = params.toString();
     return redirect(res, url.toString());
   } catch (error) {
     console.error("social auth start failed", error);
