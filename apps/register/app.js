@@ -10,6 +10,7 @@ const photoPathInput = document.querySelector("#photoPathInput");
 const photoPathsInput = document.querySelector("#photoPathsInput");
 const addressInput = document.querySelector("#addressInput");
 const addressSearchButton = document.querySelector("#addressSearchButton");
+const addressSearchButtonLabel = addressSearchButton.querySelector("span");
 const addressSearchStatus = document.querySelector("#addressSearchStatus");
 const addressResults = document.querySelector("#addressResults");
 const selectedAddress = document.querySelector("#selectedAddress");
@@ -139,9 +140,10 @@ function selectAddressResult(result) {
   selectedAddress.hidden = false;
   detailAddressLabel.hidden = false;
   addressResults.hidden = true;
+  addressInput.setAttribute("aria-expanded", "false");
   addressResults.innerHTML = "";
   manualAddressButton.hidden = true;
-  setAddressStatus("네이버 지도에서 센터 위치를 확인했습니다.", "success");
+  setAddressStatus("선택한 위치가 맞는지 확인하고 상세 주소를 입력해주세요.", "success");
   detailAddressInput.focus();
 }
 
@@ -152,6 +154,7 @@ function renderAddressResults(results) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "address-result";
+    button.setAttribute("role", "option");
     button.innerHTML = "<strong>" + escapeHtml(roadAddress) + "</strong>" +
       (result.jibunAddress && result.jibunAddress !== roadAddress
         ? "<small>지번 " + escapeHtml(result.jibunAddress) + "</small>"
@@ -163,6 +166,7 @@ function renderAddressResults(results) {
     addressResults.appendChild(button);
   });
   addressResults.hidden = false;
+  addressInput.setAttribute("aria-expanded", "true");
 }
 
 function geocodeAddress(query) {
@@ -193,9 +197,10 @@ async function searchAddress() {
     return;
   }
   addressSearchButton.disabled = true;
-  addressSearchButton.textContent = "주소 확인 중...";
+  addressSearchButtonLabel.textContent = "확인 중...";
   manualAddressMode = false;
   addressResults.hidden = true;
+  addressInput.setAttribute("aria-expanded", "false");
   manualAddressButton.hidden = true;
   setAddressStatus("네이버 지도에서 도로명 주소를 찾고 있습니다.", "loading");
   try {
@@ -218,7 +223,7 @@ async function searchAddress() {
     manualAddressButton.hidden = false;
   } finally {
     addressSearchButton.disabled = false;
-    addressSearchButton.textContent = "네이버 지도에서 확인";
+    addressSearchButtonLabel.textContent = "주소 확인";
   }
 }
 
