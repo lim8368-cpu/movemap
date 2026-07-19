@@ -56,9 +56,6 @@ services:
         condition: service_healthy
     environment:
       MOVEMAP_DOMAIN: ${MOVEMAP_DOMAIN:-_}
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
       - ./deploy/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./deploy/tls:/etc/nginx/tls:ro
