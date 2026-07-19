@@ -87,6 +87,13 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
   background: #f8fafc;
 }
 
+.address-results[hidden],
+.selected-address[hidden],
+.detail-address[hidden],
+.manual-address-button[hidden] {
+  display: none !important;
+}
+
 .address-field > label:first-child {
   display: block;
   color: #243449;
