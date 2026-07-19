@@ -45,6 +45,7 @@ module.exports = async function handler(req, res) {
       "centerName",
       "ownerName",
       "phone",
+      "email",
       "area",
       "address",
       "licenseHolderName",
@@ -60,6 +61,12 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      sendJson(res, 400, { error: "센터장 계정에 사용할 올바른 이메일을 입력해 주세요." });
+      return;
+    }
+
     if (!hasSupabaseConfig()) {
       sendJson(res, 503, { error: "테스트 DB가 아직 연결되지 않았습니다." });
       return;
@@ -71,6 +78,7 @@ module.exports = async function handler(req, res) {
         center_name: body.centerName.trim(),
         owner_name: body.ownerName.trim(),
         phone: body.phone.trim(),
+        email,
         area: body.area.trim(),
         address: body.address.trim(),
         naver_map_url: body.naverMapUrl || null,

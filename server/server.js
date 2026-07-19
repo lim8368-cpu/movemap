@@ -210,8 +210,12 @@ function summarizeStats(db) {
   const byCenter = new Map();
 
   for (const center of db.centers) {
+    const registration = (db.centerApplications || []).find(
+      (application) => application.id === center.sourceApplicationId
+    );
     byCenter.set(center.id, {
       ...center,
+      registrationEmail: registration?.email || "",
       views: 0,
       contactClicks: 0,
       lastEventAt: "",
@@ -543,6 +547,7 @@ const server = http.createServer(async (req, res) => {
         "centerName",
         "ownerName",
         "phone",
+        "email",
         "area",
         "address",
         "licenseHolderName",
@@ -556,6 +561,12 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const email = cleanText(body.email, 254).toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        sendJson(res, 400, { error: "센터장 계정에 사용할 올바른 이메일을 입력해 주세요." });
+        return;
+      }
+
       const db = readDb();
       if (!Array.isArray(db.centerApplications)) db.centerApplications = [];
 
@@ -565,6 +576,7 @@ const server = http.createServer(async (req, res) => {
         centerName: cleanText(body.centerName, 80),
         ownerName: cleanText(body.ownerName, 40),
         phone: cleanText(body.phone, 40),
+        email,
         area: cleanText(body.area, 80),
         address: cleanText(body.address, 160),
         naverMapUrl: cleanText(body.naverMapUrl, 260),

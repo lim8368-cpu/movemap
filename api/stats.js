@@ -22,6 +22,7 @@ module.exports = async function handler(req, res) {
       const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
       const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
       const ownerAccount = ownerAccounts.find((account) => account.center_id === row.id);
+      const registration = applications.find((application) => application.id === row.application_id);
       return ({
         ...centerFromRow(row, photoUrls[0] || "", photoUrls),
         status: row.status || "approved",
@@ -30,6 +31,7 @@ module.exports = async function handler(req, res) {
         openingHours: row.opening_hours || "",
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        registrationEmail: registration?.email || "",
         views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
         contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
         lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
@@ -47,6 +49,7 @@ module.exports = async function handler(req, res) {
       centerName: item.center_name,
       ownerName: item.owner_name,
       phone: item.phone,
+      email: item.email || "",
       area: item.area,
       address: item.address,
       naverMapUrl: item.naver_map_url,

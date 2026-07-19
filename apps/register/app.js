@@ -24,6 +24,10 @@ const areaInput = document.querySelector("#areaInput");
 const naverMapUrlInput = document.querySelector("#naverMapUrlInput");
 const latInput = document.querySelector("#latInput");
 const lngInput = document.querySelector("#lngInput");
+const registrationSteps = document.querySelector(".steps");
+const registrationSuccess = document.querySelector("#registrationSuccess");
+const successEmail = document.querySelector("#successEmail");
+const successDashboardLink = document.querySelector("#successDashboardLink");
 
 let currentStep = 1;
 let geocoderState = "loading";
@@ -307,6 +311,16 @@ function fullAddress() {
   return [addressInput.value.trim(), detailAddressInput.value.trim()].filter(Boolean).join(" ");
 }
 
+function showRegistrationSuccess(email) {
+  successEmail.textContent = email;
+  successDashboardLink.href = "/center-dashboard/?from=register&email=" + encodeURIComponent(email);
+  registrationSteps.hidden = true;
+  form.hidden = true;
+  registrationSuccess.hidden = false;
+  registrationSuccess.focus({ preventScroll: true });
+  registrationSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function renderSummary() {
   const data = new FormData(form);
   const specialties = Array.from(document.querySelectorAll('[name="specialties"]:checked'))
@@ -316,7 +330,7 @@ function renderSummary() {
     ["센터명", data.get("centerName")],
     ["대표자", data.get("ownerName")],
     ["전화번호", data.get("phone")],
-    ["이메일", data.get("email")],
+    ["센터장 로그인 이메일", data.get("email")],
     ["주소", fullAddress()],
     ["지도 위치", latInput.value && lngInput.value ? "네이버 지도 확인 완료" : "운영팀 확인 예정"],
     ["물리치료사 출신", isTherapistBackground() ? "예" : "아니오"],
@@ -413,13 +427,14 @@ form.addEventListener("submit", async function (event) {
     photoPathsInput.value = JSON.stringify(photoPaths);
     licenseImagePathInput.value = await upload(licenseFile, "license");
     const data = new FormData(form);
+    const signupEmail = String(data.get("email") || "").trim().toLowerCase();
     const address = fullAddress();
     const baseAddress = addressInput.value.trim();
     const payload = {
       centerName: data.get("centerName"),
       ownerName: data.get("ownerName"),
       phone: data.get("phone"),
-      email: data.get("email"),
+      email: signupEmail,
       area: areaInput.value || baseAddress.split(" ").slice(0, 2).join(" "),
       address: address,
       naverMapUrl: naverMapUrlInput.value || mapUrl(baseAddress),
@@ -449,8 +464,7 @@ form.addEventListener("submit", async function (event) {
     form.reset();
     clearSelectedAddress();
     syncBackground();
-    showStep(1);
-    window.alert("등록 신청이 접수되었습니다. 검토 후 안내드리겠습니다.");
+    showRegistrationSuccess(signupEmail);
   } catch (error) {
     message.textContent = error.message || "서버 연결을 확인해주세요.";
     message.className = "message error";

@@ -323,8 +323,9 @@ function renderApplications() {
       escapeHtml(statusLabel(item.status)) + "</span></div><p>" + escapeHtml(item.address) +
       ' · <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noreferrer">지도에서 확인 ↗</a></p>' +
       '<div class="application-meta"><span>신청자 ' + escapeHtml(item.ownerName) + "</span><span>" +
-      escapeHtml(item.phone) + "</span><span>면허 " + escapeHtml(item.licenseHolderName) + " · " +
-      escapeHtml(item.licenseNumber) + "</span><span>접수 " + formatDate(item.createdAt, true) + "</span></div>" +
+      escapeHtml(item.phone) + "</span><span>계정 이메일 " + escapeHtml(item.email || "미입력") +
+      "</span><span>면허 " + escapeHtml(item.licenseHolderName) + " · " + escapeHtml(item.licenseNumber) +
+      "</span><span>접수 " + formatDate(item.createdAt, true) + "</span></div>" +
       (media ? '<div class="application-media">' + media + "</div>" : "") + detailParts +
       (item.status === "rejected" && item.rejectionReason ? "<p>반려 사유: " + escapeHtml(item.rejectionReason) + "</p>" : "") +
       "</div>" + actions + "</article>";
@@ -422,6 +423,9 @@ function updateLogTab() {
 }
 
 async function approveApplication(applicationId) {
+  const application = (dashboardData.centerApplications || []).find(function (item) {
+    return item.id === applicationId;
+  });
   const response = await fetch(API_BASE + "/api/approve-center?id=" + encodeURIComponent(applicationId), {
     method: "POST",
     headers: adminHeaders(),
@@ -430,6 +434,13 @@ async function approveApplication(applicationId) {
   if (!response.ok) return showToast(data.error || "승인에 실패했습니다.", true);
   showToast("센터를 승인하고 지도 등록을 완료했습니다.");
   await loadStats();
+  if (
+    data.centerId &&
+    application &&
+    window.confirm("센터 승인이 완료되었습니다. 이어서 센터장 대시보드 계정을 발급할까요?")
+  ) {
+    await createOwnerAccount(data.centerId, application.centerName, application.email);
+  }
 }
 
 async function rejectApplication(applicationId) {
@@ -528,9 +539,11 @@ async function deleteCenter(centerId, centerName) {
   await loadStats();
 }
 
-async function createOwnerAccount(centerId, centerName) {
+async function createOwnerAccount(centerId, centerName, suggestedEmail) {
   const currentCenter = (dashboardData.centers || []).find(function (item) { return item.id === centerId; });
-  const existingEmail = currentCenter && currentCenter.ownerAccount ? currentCenter.ownerAccount.email : "";
+  const existingEmail = currentCenter && currentCenter.ownerAccount
+    ? currentCenter.ownerAccount.email
+    : (currentCenter && currentCenter.registrationEmail) || suggestedEmail || "";
   const email = window.prompt("‘" + centerName + "’ 센터장 로그인 이메일을 입력해 주세요.", existingEmail);
   if (!email) return;
   const password = window.prompt("임시 비밀번호를 입력해 주세요. 10자 이상이어야 합니다.");
@@ -542,7 +555,7 @@ async function createOwnerAccount(centerId, centerName) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) return showToast(data.error || "센터장 계정을 저장하지 못했습니다.", true);
-  centerDialog.close();
+  if (centerDialog.open) centerDialog.close();
   showToast("센터장 계정을 저장했습니다.");
   await loadStats();
   openCenterDialog(centerId);
