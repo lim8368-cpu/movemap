@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>DAIL 센터 등록</title><link rel="preconnect" href="https://cdn.jsdelivr.net" /><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" /><link rel="stylesheet" href="./styles.css?v=20260715-roomy" /><link rel="stylesheet" href="./layout.css?v=20260715-faq" /></head>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>DAIL 센터 등록</title><link rel="preconnect" href="https://cdn.jsdelivr.net" /><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" /><link rel="stylesheet" href="./styles.css?v=20260715-roomy" /><link rel="stylesheet" href="./layout.css?v=20260715-faq" /><link rel="stylesheet" href="./address.css?v=20260719-address" /></head>
 <body>
   <header class="site-header"><a class="brand" href="/"><span class="brand-mark"><i></i></span><span>DAIL<small>다시 일상으로</small></span></a><nav><a href="/#search">지도 검색</a><a href="/#centers">센터 목록</a><a href="/#about">서비스 소개</a><a class="active" href="/register/">센터 등록</a></nav><a class="find" href="/#search">센터 찾기</a></header>
   <main>
@@ -15,8 +15,24 @@
           <label>센터명 *<input name="centerName" placeholder="예: DAIL 스포츠재활센터" required /></label>
           <label>대표자명 *<input name="ownerName" placeholder="홍길동" required /></label>
           <div class="two"><label>전화번호 *<input name="phone" inputmode="tel" placeholder="02-0000-0000" required /></label><label>이메일 *<input name="email" type="email" placeholder="center@example.com" required /></label></div>
-          <label>센터 주소 *<input id="addressInput" name="address" placeholder="서울 강남구 테헤란로 212, 3층" required /></label>
-          <input name="area" type="hidden" /><input id="naverMapUrlInput" name="naverMapUrl" type="hidden" /><input id="latInput" name="lat" type="hidden" /><input id="lngInput" name="lng" type="hidden" />
+          <div class="address-field">
+            <label for="addressInput">센터 도로명 주소 *</label>
+            <p class="field-help">도로명 주소를 검색하고 네이버 지도 결과에서 센터 위치를 선택해주세요.</p>
+            <div class="address-search-row">
+              <input id="addressInput" name="address" autocomplete="street-address" placeholder="예: 서울 강남구 테헤란로 212" required />
+              <button id="addressSearchButton" type="button">네이버 지도에서 확인</button>
+            </div>
+            <p id="addressSearchStatus" class="address-status" role="status">주소 검색을 준비하고 있습니다.</p>
+            <div id="addressResults" class="address-results" hidden></div>
+            <div id="selectedAddress" class="selected-address" hidden>
+              <span class="selected-address-icon">✓</span>
+              <div><small>네이버 지도 위치 확인 완료</small><strong id="selectedRoadAddress"></strong><span id="selectedJibunAddress"></span></div>
+              <a id="selectedMapLink" href="#" target="_blank" rel="noreferrer">지도 확인 ↗</a>
+            </div>
+            <label id="detailAddressLabel" class="detail-address" hidden>상세 주소 <span>선택</span><input id="detailAddressInput" placeholder="건물명, 층 또는 호수" /></label>
+            <button id="manualAddressButton" class="manual-address-button" type="button" hidden>검색이 안 되면 주소 직접 입력</button>
+          </div>
+          <input id="areaInput" name="area" type="hidden" /><input id="naverMapUrlInput" name="naverMapUrl" type="hidden" /><input id="latInput" name="lat" type="hidden" /><input id="lngInput" name="lng" type="hidden" />
           <fieldset><legend>물리치료사 출신이 운영하는 센터인가요?</legend><div class="choice"><label><input type="radio" name="therapistBackground" value="yes" required /><span>예, 물리치료사 출신입니다</span></label><label><input type="radio" name="therapistBackground" value="no" required /><span>아니오, 일반 운동센터입니다</span></label></div></fieldset>
           <button class="next" type="button" data-next="2">다음 단계</button>
         </section>
@@ -50,5 +66,5 @@
       </section>
     </section>
   </main>
-  <script src="./app.js?v=20260715-figma"></script>
+  <script src="./app.js?v=20260719-address"></script>
 </body></html>
