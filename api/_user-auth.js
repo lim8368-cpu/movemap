@@ -3,13 +3,23 @@ const { requestUsesHttps, supabaseRequest } = require("./_shared");
 
 const STATE_COOKIE = "dail_oauth_state";
 
+function authSupabaseUrl() {
+  return process.env.AUTH_SUPABASE_URL || process.env.SUPABASE_URL || "";
+}
+
+function authSupabaseAnonKey() {
+  return process.env.AUTH_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+}
+
 function publicAuthConfig() {
+  const supabaseUrl = authSupabaseUrl();
+  const supabaseAnonKey = authSupabaseAnonKey();
   return {
-    supabaseUrl: process.env.SUPABASE_URL || "",
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "",
+    supabaseUrl,
+    supabaseAnonKey,
     providers: {
-      kakao: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && process.env.KAKAO_AUTH_ENABLED === "true"),
-      apple: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && process.env.APPLE_AUTH_ENABLED === "true"),
+      kakao: Boolean(supabaseUrl && supabaseAnonKey && process.env.KAKAO_AUTH_ENABLED === "true"),
+      apple: Boolean(supabaseUrl && supabaseAnonKey && process.env.APPLE_AUTH_ENABLED === "true"),
       naver: Boolean(process.env.NAVER_LOGIN_CLIENT_ID && process.env.NAVER_LOGIN_CLIENT_SECRET),
     },
   };
@@ -62,8 +72,10 @@ function cookieValue(req) {
 }
 
 async function userFromAccessToken(token) {
-  if (!token || !process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null;
-  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } });
+  const supabaseUrl = authSupabaseUrl();
+  const supabaseAnonKey = authSupabaseAnonKey();
+  if (!token || !supabaseUrl || !supabaseAnonKey) return null;
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${token}` } });
   if (!response.ok) {
     console.warn("Supabase user token verification failed", response.status);
     return null;
