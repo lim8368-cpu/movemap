@@ -230,6 +230,20 @@ async function loadNaverGeocoder() {
     const key = String(config.naverMapNcpKeyId || "").trim();
     if (!key) throw new Error("네이버 지도 설정이 필요합니다.");
     await new Promise(function (resolve, reject) {
+      const startedAt = Date.now();
+      let timer;
+      function waitUntilReady() {
+        if (window.naver && window.naver.maps && window.naver.maps.Service) {
+          window.clearTimeout(timer);
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt >= 10000) {
+          reject(new Error("네이버 주소 검색 모듈을 불러오지 못했습니다."));
+          return;
+        }
+        timer = window.setTimeout(waitUntilReady, 100);
+      }
       if (window.naver && window.naver.maps && window.naver.maps.Service) {
         resolve();
         return;
@@ -238,11 +252,9 @@ async function loadNaverGeocoder() {
       script.src = "https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=" +
         encodeURIComponent(key) + "&submodules=geocoder";
       script.async = true;
-      script.onload = function () {
-        if (window.naver && window.naver.maps && window.naver.maps.Service) resolve();
-        else reject(new Error("네이버 주소 검색 모듈을 불러오지 못했습니다."));
-      };
+      script.onload = waitUntilReady;
       script.onerror = function () {
+        window.clearTimeout(timer);
         reject(new Error("네이버 주소 검색에 연결하지 못했습니다."));
       };
       document.head.appendChild(script);
