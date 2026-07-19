@@ -33,7 +33,7 @@ git switch -c feature/기능명
 도메인 구입 전에는 `sslip.io`의 자동 DNS를 사용한다. IP의 점을 하이픈으로 바꿔 다음
 주소를 쓴다.
 
-- develop: `https://staging.157-90-26-205.sslip.io`
+- develop: `https://develop.157-90-26-205.sslip.io`
 - feature: `https://feature-name.157-90-26-205.sslip.io`
 
 Traefik이 Let's Encrypt 인증서를 자동 발급하므로 Preview 비밀번호가 암호화되어 전송된다.
@@ -105,7 +105,8 @@ docker compose --env-file /opt/movemap-secrets/.env.staging \
 ```
 
 `develop`은 `PREVIEW_SLUG=develop`,
-`PREVIEW_HOST=staging.157-90-26-205.sslip.io`로 배포한다.
+`PREVIEW_HOST=develop.157-90-26-205.sslip.io`로 배포한다. 이 주소는 Supabase Auth의
+staging Site URL 및 Redirect URL과 동일하게 유지한다.
 PR을 닫거나 병합한 feature stack은 다음 명령으로 제거한다.
 
 ```bash
