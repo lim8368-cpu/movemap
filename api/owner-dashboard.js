@@ -1,7 +1,8 @@
 const { centerFromRow, createSignedStorageUrl, sendJson, supabaseRequest } = require("./_shared");
 const { ownerSessionFromRequest } = require("./_owner-auth");
 
-const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "therapist", "price", "conversion", "phone", "website", "opening_hours"];
+const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "categories", "therapist", "price", "conversion", "phone", "website", "opening_hours"];
+const ALLOWED_CATEGORIES = new Set(["재활운동", "통증관리", "자세교정", "체형관리", "스포츠재활", "시니어운동", "산전산후", "다이어트"]);
 
 function cleanText(value, maxLength) {
   return String(value || "").trim().slice(0, maxLength);
@@ -64,6 +65,8 @@ module.exports = async function handler(req, res) {
       if (body[field] === undefined) continue;
       if (field === "tags") {
         patch.tags = Array.isArray(body.tags) ? body.tags.map((tag) => cleanText(tag, 30)).filter(Boolean).slice(0, 12) : [];
+      } else if (field === "categories") {
+        patch.categories = Array.isArray(body.categories) ? [...new Set(body.categories.map((value) => cleanText(value, 20)).filter((value) => ALLOWED_CATEGORIES.has(value)))].slice(0, 8) : [];
       } else {
         const limit = field === "lead" ? 800 : field === "opening_hours" ? 500 : 200;
         patch[field] = cleanText(body[field], limit);

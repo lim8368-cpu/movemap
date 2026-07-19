@@ -44,7 +44,7 @@ services:
       - traefik.http.routers.${PREVIEW_SLUG}.entrypoints=websecure
       - traefik.http.routers.${PREVIEW_SLUG}.tls=true
       - traefik.http.routers.${PREVIEW_SLUG}.tls.certresolver=letsencrypt
-      - traefik.http.routers.${PREVIEW_SLUG}.middlewares=staging-auth@file,staging-headers@file
+      - traefik.http.routers.${PREVIEW_SLUG}.middlewares=${PREVIEW_MIDDLEWARES:-staging-auth@file,staging-headers@file}
       - traefik.http.services.${PREVIEW_SLUG}.loadbalancer.server.port=3000
     networks:
       - preview-edge

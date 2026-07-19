@@ -138,6 +138,7 @@ function staticPathFor(pathname) {
   if (requested === "/admin/") requested = "/admin/index.html";
   if (requested === "/register/") requested = "/register/index.html";
   if (requested === "/center-dashboard/") requested = "/center-dashboard/index.html";
+  if (requested === "/account/") requested = "/account/index.html";
   if (requested === "/auth/callback/") requested = "/auth/callback/index.html";
   if (requested.startsWith("/web/")) requested = requested.slice(4);
 
@@ -152,6 +153,7 @@ function serveStatic(req, res, url) {
     url.pathname === "/admin" ||
     url.pathname === "/register" ||
     url.pathname === "/center-dashboard" ||
+    url.pathname === "/account" ||
     url.pathname === "/auth/callback"
   ) {
     res.statusCode = 308;

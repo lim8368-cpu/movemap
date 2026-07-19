@@ -24,7 +24,7 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260717-social-auth" />
+  <link rel="stylesheet" href="./styles.css?v=20260719-account-page" />
 </head>
 <body>
   <header class="site-header">
@@ -36,7 +36,7 @@
     <nav id="mainNav" class="main-nav" aria-label="주요 메뉴">
       <a href="#search">지도 검색</a><a href="#centers">센터 목록</a><a href="#about">서비스 소개</a><a href="/register/">센터 등록</a><a href="#app">모바일 앱</a>
     </nav>
-    <div class="header-actions"><a class="text-link center-login-link" href="/center-dashboard/">센터 관리</a><button id="userMenuButton" class="user-login-button" type="button">로그인</button><a class="button primary small" href="#search">센터 찾기</a></div>
+    <div class="header-actions"><a class="text-link center-login-link" href="/center-dashboard/">센터 관리</a><button id="userMenuButton" class="user-login-button" type="button">로그인</button><button id="headerLogoutButton" class="header-logout-button" type="button" hidden>로그아웃</button><a class="button primary small" href="#search">센터 찾기</a></div>
   </header>
 
   <main id="top">
@@ -63,7 +63,7 @@
     <section class="section specialties" id="centers">
       <p class="kicker">전문 분야</p><h2>원하는 분야를 선택하세요</h2><p class="section-lead">해당 전문 분야 센터를 즉시 찾을 수 있어요</p>
       <div class="specialty-grid">
-        <a href="#search"><b>🏃</b><span>재활운동<small>기능 회복과 일상 복귀</small></span></a><a href="#search"><b>✚</b><span>통증관리<small>원인 중심의 맞춤 운동</small></span></a><a href="#search"><b>🧍</b><span>자세교정<small>움직임 분석과 균형 개선</small></span></a><a href="#search"><b>⌁</b><span>체형관리<small>건강한 신체 밸런스</small></span></a><a href="#search"><b>⚽</b><span>스포츠재활<small>부상 예방과 경기 복귀</small></span></a><a href="#search"><b>♧</b><span>시니어운동<small>안전한 근력과 보행 관리</small></span></a><a href="#search"><b>♡</b><span>산전산후<small>회복 단계별 전문 관리</small></span></a><a href="#search"><b>🥗</b><span>다이어트<small>지속 가능한 생활 습관</small></span></a>
+        <a href="#search" data-category="재활운동"><b>🏃</b><span>재활운동<small>기능 회복과 일상 복귀</small></span></a><a href="#search" data-category="통증관리"><b>✚</b><span>통증관리<small>원인 중심의 맞춤 운동</small></span></a><a href="#search" data-category="자세교정"><b>🧍</b><span>자세교정<small>움직임 분석과 균형 개선</small></span></a><a href="#search" data-category="체형관리"><b>⌁</b><span>체형관리<small>건강한 신체 밸런스</small></span></a><a href="#search" data-category="스포츠재활"><b>⚽</b><span>스포츠재활<small>부상 예방과 경기 복귀</small></span></a><a href="#search" data-category="시니어운동"><b>♧</b><span>시니어운동<small>안전한 근력과 보행 관리</small></span></a><a href="#search" data-category="산전산후"><b>♡</b><span>산전산후<small>회복 단계별 전문 관리</small></span></a><a href="#search" data-category="다이어트"><b>🥗</b><span>다이어트<small>지속 가능한 생활 습관</small></span></a>
       </div>
     </section>
 
@@ -90,6 +90,7 @@
               <div class="filter-row"><button class="chip active" type="button" data-region="all">전체</button><button class="chip" type="button" data-region="gangnam">강남</button><button class="chip" type="button" data-region="mapo">마포</button><button class="chip" type="button" data-region="bundang">분당</button></div>
               <label class="search-box compact-filter"><span>시·도 필터</span><select id="areaSelect"><option value="all">전국</option><option>서울</option><option>경기</option><option>인천</option><option>부산</option><option>대구</option><option>대전</option><option>광주</option><option>울산</option><option>세종</option><option>강원</option><option>충북</option><option>충남</option><option>전북</option><option>전남</option><option>경북</option><option>경남</option><option>제주</option></select></label>
               <div class="filter-grid"><label><input type="checkbox" value="허리" /> 허리</label><label><input type="checkbox" value="어깨" /> 어깨</label><label><input type="checkbox" value="수술 후" /> 수술 후</label><label><input type="checkbox" value="골프" /> 골프</label></div>
+              <div id="activeFilters" class="active-filters" aria-live="polite"></div>
             </section>
             <section class="results-panel"><div class="section-heading"><h2>센터 목록</h2><span id="resultCount">0곳</span></div><div id="centerList" class="center-list"></div></section>
           </aside>
@@ -128,11 +129,11 @@
       </form>
       <div id="accountView" class="account-view" hidden>
         <span class="auth-logo"><i></i> DAIL</span><p class="auth-kicker">MY DAIL</p><h2><span id="accountNickname">회원</span>님, 반가워요</h2>
-        <p id="accountEmail" class="account-email"></p><div class="account-links"><a href="#search">내 주변 센터 찾기</a><button id="logoutButton" type="button">로그아웃</button><button id="deleteAccountButton" class="danger" type="button">회원 탈퇴</button></div>
+        <p id="accountEmail" class="account-email"></p><div class="account-links"><a id="accountFindCenters" href="#search">내 주변 센터 찾기</a></div>
       </div>
     </section>
   </div>
-  <script src="./app.js?v=20260717-social-auth"></script>
+  <script src="./app.js?v=20260719-center-categories"></script>
   <script>document.querySelector('.menu-toggle').addEventListener('click',function(){const open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));document.querySelector('.main-nav').classList.toggle('open',!open)});</script>
 </body>
 </html>

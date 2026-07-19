@@ -93,8 +93,10 @@ const sidebarPanel = document.querySelector(".sidebar");
 const heroMapElement = document.querySelector("#heroNaverMap");
 const heroMapStatus = document.querySelector("#heroMapStatus");
 const heroLocateButton = document.querySelector("#heroLocateButton");
+const activeFilters = document.querySelector("#activeFilters");
 
 let selectedRegion = "all";
+let selectedCategory = "";
 let centers = sampleCenters;
 let selectedId = "";
 let naverMap = null;
@@ -130,6 +132,7 @@ function normalizeCenter(center) {
     reviews: center.reviews || "0",
     lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
+    categories: Array.isArray(center.categories) ? center.categories : [],
     therapist: operatorText,
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
@@ -247,18 +250,31 @@ function isolatePanelGesturesFromMap() {
 function matchesFilters(center) {
   const query = searchInput.value.trim().toLowerCase();
   const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
-  const text = [center.name, center.area, center.lead, center.tags.join(" ")].join(" ").toLowerCase();
+  const text = [center.name, center.area, center.lead, center.tags.join(" "), center.categories.join(" ")].join(" ").toLowerCase();
   const regionMatch = selectedRegion === "all" || center.region === selectedRegion;
   const areaMatch = !areaSelect || areaSelect.value === "all" || center.area.includes(areaSelect.value);
   const queryMatch = !query || text.includes(query);
   const tagMatch = selectedTags.length === 0 || selectedTags.some((tag) => center.tags.includes(tag));
+  const categoryMatch = !selectedCategory || center.categories.includes(selectedCategory);
 
-  return regionMatch && areaMatch && queryMatch && tagMatch;
+  return regionMatch && areaMatch && queryMatch && tagMatch && categoryMatch;
 }
 
 function renderList() {
   const filtered = centers.filter(matchesFilters);
   resultCount.textContent = `${filtered.length}곳`;
+
+  const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
+  const filterLabels = [
+    searchInput.value.trim() && `검색: ${searchInput.value.trim()}`,
+    selectedRegion !== "all" && document.querySelector(`[data-region="${selectedRegion}"]`)?.textContent.trim(),
+    areaSelect?.value !== "all" && areaSelect.value,
+    selectedCategory,
+    ...selectedTags,
+  ].filter(Boolean);
+  activeFilters.innerHTML = filterLabels.length
+    ? `<span>적용된 조건</span>${filterLabels.map((label) => `<b>${escapeHtml(label)}</b>`).join("")}<button id="resetFiltersButton" type="button">모두 지우기</button>`
+    : `<span>센터명·지역·불편한 부위로 검색해보세요.</span>`;
 
   centerList.innerHTML = filtered
     .map(
@@ -277,12 +293,24 @@ function renderList() {
             <span>${escapeHtml(center.distance)}</span>
             <span class="rating">★ ${escapeHtml(center.rating)}</span>
           </div>
-          <div class="card-tags">${center.tags.slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+          <div class="card-tags">${[...center.categories,...center.tags].slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
           <span class="card-cta">센터 상세 보기 <span aria-hidden="true">→</span></span>
         </button>
       `
     )
-    .join("") || `<div class="empty-state"><strong>조건에 맞는 센터가 아직 없습니다.</strong><span>센터 등록 신청이 승인되면 이곳에 표시됩니다.</span></div>`;
+    .join("") || `<div class="empty-state"><strong>조건에 맞는 센터를 찾지 못했어요.</strong><span>지역을 넓히거나 조건을 지우면 더 많은 센터를 볼 수 있습니다.</span><button id="emptyResetButton" type="button">검색 조건 초기화</button></div>`;
+
+  const resetFilters = () => {
+    searchInput.value = "";
+    selectedRegion = "all";
+    selectedCategory = "";
+    if (areaSelect) areaSelect.value = "all";
+    checkboxes.forEach((box) => { box.checked = false; });
+    regionButtons.forEach((button) => button.classList.toggle("active", button.dataset.region === "all"));
+    renderList();
+  };
+  document.querySelector("#resetFiltersButton")?.addEventListener("click", resetFilters);
+  document.querySelector("#emptyResetButton")?.addEventListener("click", resetFilters);
 
   document.querySelectorAll("[data-card-id]").forEach((card) => {
     card.addEventListener("click", () => openCenterDetail(card.dataset.cardId));
@@ -821,6 +849,13 @@ regionButtons.forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-category]").forEach((link) => {
+  link.addEventListener("click", () => {
+    selectedCategory = link.dataset.category;
+    window.setTimeout(renderList, 0);
+  });
+});
+
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
 areaSelect?.addEventListener("change", renderList);
 searchInput.addEventListener("input", renderList);
@@ -869,7 +904,7 @@ async function initApp() {
 initApp();
 
 const AUTH_STORAGE_KEY="dail_auth_session";
-const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton");
+const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerLogoutButton=document.querySelector("#headerLogoutButton");
 let currentUserProfile=null;
 function storedAuthSession(){try{return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)||"null")}catch{return null}}
 function setAuthView(view){authLoginView.hidden=view!=="login";onboardingForm.hidden=view!=="onboarding";accountView.hidden=view!=="account"}
@@ -886,7 +921,7 @@ async function loadUserProfile(){
   const response=await fetch("/api/auth/profile",{headers:{Authorization:`Bearer ${session.access_token}`}});if(response.status===401){localStorage.removeItem(AUTH_STORAGE_KEY);return null}if(!response.ok)return null;return response.json();
 }
 function renderAuthState(data){
-  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));
+  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));headerLogoutButton.hidden=!data;
   if(!data)return;document.querySelector("#accountNickname").textContent=nickname;document.querySelector("#accountEmail").textContent=data.user?.email||`${data.user?.provider||"소셜"} 계정`;
 }
 async function initUserAuth(){
@@ -896,10 +931,13 @@ async function initUserAuth(){
   const params=new URLSearchParams(location.search);if(params.get("auth")==="success"){history.replaceState(null,"",`${location.pathname}${location.hash}`);if(data?.needsOnboarding)openAuth("onboarding");else if(data)openAuth("account")}
   if(params.get("login")==="1"){history.replaceState(null,"",location.pathname);openAuth(data?"account":"login")}
 }
-userMenuButton?.addEventListener("click",()=>openAuth(currentUserProfile?"account":"login"));
+userMenuButton?.addEventListener("click",()=>{if(currentUserProfile)location.href="/account/";else openAuth("login")});
 document.querySelector("#authCloseButton")?.addEventListener("click",closeAuth);authOverlay?.addEventListener("click",event=>{if(event.target===authOverlay)closeAuth()});
+document.querySelector("#accountFindCenters")?.addEventListener("click",closeAuth);
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!authOverlay.hidden)closeAuth()});
 document.querySelectorAll("[data-auth-provider]").forEach(button=>button.addEventListener("click",()=>{const provider=button.dataset.authProvider;if(button.dataset.ready!=="true"){document.querySelector("#authMessage").textContent=`${provider==='kakao'?'카카오':provider==='naver'?'네이버':'Apple'} 개발자 설정이 필요합니다.`;return}location.href=`/api/auth/start?provider=${encodeURIComponent(provider)}`}));
 onboardingForm?.addEventListener("submit",async event=>{event.preventDefault();const message=document.querySelector("#onboardingMessage"),session=await activeAuthSession();if(!session)return openAuth("login");const submit=onboardingForm.querySelector("[type=submit]");submit.disabled=true;message.textContent="";const response=await fetch("/api/auth/profile",{method:"PATCH",headers:{Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({nickname:onboardingForm.elements.nickname.value.trim(),acceptRequired:onboardingForm.elements.requiredAgreement.checked,marketingAgreed:onboardingForm.elements.marketingAgreement.checked})});const data=await response.json().catch(()=>({}));submit.disabled=false;if(!response.ok){message.textContent=data.error||"회원 정보를 저장하지 못했습니다.";return}renderAuthState(data);openAuth("account")});
-document.querySelector("#logoutButton")?.addEventListener("click",async()=>{const session=storedAuthSession();if(session?.access_token&&publicConfig.auth?.supabaseUrl)fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/logout`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,Authorization:`Bearer ${session.access_token}`}}).catch(()=>{});localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth()});
+async function logoutUser(){const session=storedAuthSession();if(session?.access_token&&publicConfig.auth?.supabaseUrl)fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/logout`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,Authorization:`Bearer ${session.access_token}`}}).catch(()=>{});localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth()}
+headerLogoutButton?.addEventListener("click",logoutUser);
+document.querySelector("#logoutButton")?.addEventListener("click",logoutUser);
 document.querySelector("#deleteAccountButton")?.addEventListener("click",async()=>{if(!confirm("회원 정보와 계정을 삭제할까요? 삭제 후에는 복구할 수 없습니다."))return;const session=await activeAuthSession();if(!session)return;const response=await fetch("/api/auth/profile",{method:"DELETE",headers:{Authorization:`Bearer ${session.access_token}`}});if(!response.ok)return alert("회원 탈퇴를 처리하지 못했습니다.");localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth();alert("회원 탈퇴가 완료되었습니다.")});
