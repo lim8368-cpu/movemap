@@ -15,6 +15,30 @@ const {
   userFromAccessToken,
 } = require("./_user-auth");
 
+function mfaFriendlyName(value, suffix = "") {
+  const base = String(value || "DAIL 관리자 인증").trim() || "DAIL 관리자 인증";
+  const normalizedSuffix = String(suffix || "").trim();
+  if (!normalizedSuffix) return base.slice(0, 64);
+  return `${base.slice(0, Math.max(1, 63 - normalizedSuffix.length))} ${normalizedSuffix}`.slice(0, 64);
+}
+
+async function enrollTotpFactor(accessToken, friendlyName) {
+  const enroll = (name) => authRequest("/factors", {
+    method: "POST",
+    accessToken,
+    body: {
+      factor_type: "totp",
+      friendly_name: name,
+    },
+  });
+  try {
+    return await enroll(mfaFriendlyName(friendlyName));
+  } catch (error) {
+    if (error?.authData?.error_code !== "mfa_factor_name_conflict") throw error;
+    return enroll(mfaFriendlyName(friendlyName, Date.now().toString(36)));
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
   if (!enforceRateLimit(req, res, { bucket: "admin-mfa", max: 15, windowMs: 15 * 60 * 1000 })) return;
@@ -47,14 +71,7 @@ module.exports = async function handler(req, res) {
       });
       return sendJson(res, 200, { ok: true });
     } else if (action === "enroll") {
-      result = await authRequest("/factors", {
-        method: "POST",
-        accessToken,
-        body: {
-          factor_type: "totp",
-          friendly_name: String(body.friendlyName || "DAIL 관리자 인증").slice(0, 64),
-        },
-      });
+      result = await enrollTotpFactor(accessToken, body.friendlyName);
     } else if (action === "challenge") {
       const factorId = String(body.factorId || "");
       result = await authRequest(`/factors/${encodeURIComponent(factorId)}/challenge`, {

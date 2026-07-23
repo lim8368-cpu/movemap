@@ -266,9 +266,9 @@ async function login() {
     sessionToken = data.token || "";
     loginPassword.value = "";
     await loadStats();
-  } catch {
+  } catch (error) {
     const target = mfaPanel.hidden ? loginMessage : document.querySelector("#mfaMessage");
-    target.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    target.textContent = error?.message || "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "운영 대시보드 들어가기";
