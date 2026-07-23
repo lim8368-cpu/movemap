@@ -204,6 +204,16 @@ function mfaFactors(value) {
   });
 }
 
+function mfaQrImageSource(value) {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  if (/^(?:data:image|https?:|blob:)/i.test(source)) return source;
+  if (source.startsWith("<svg") || source.startsWith("<?xml")) {
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+  }
+  return "";
+}
+
 async function beginMfa(mfa) {
   pendingMfaAccessToken = mfa.accessToken || "";
   loginForm.hidden = true;
@@ -219,9 +229,9 @@ async function beginMfa(mfa) {
     document.querySelector("#mfaGuide").textContent =
       "처음 한 번만 인증 앱에 QR 코드를 등록한 뒤 6자리 코드를 입력하세요.";
     const qr = document.querySelector("#mfaQrCode");
-    const qrValue = String(totp.qr_code || "");
-    qr.hidden = !qrValue;
-    if (qrValue) qr.src = qrValue;
+    const qrSource = mfaQrImageSource(totp.qr_code);
+    qr.hidden = !qrSource;
+    if (qrSource) qr.src = qrSource;
     document.querySelector("#mfaSecret").textContent = totp.secret || "";
     enrollment.hidden = false;
   } else {
