@@ -32,14 +32,21 @@ module.exports = () => {
       version: "0.1.0",
       orientation: "portrait",
       userInterfaceStyle: "light",
+      icon: "./public/web/assets/dail-kakao-app-icon.png",
       assetBundlePatterns: ["**/*"],
       extra: { appEnv },
       ios: {
         supportsTablet: true,
         bundleIdentifier: profile.identifier,
+        icon: "./public/web/assets/dail-kakao-app-icon.png",
         infoPlist: {
           NSCameraUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 촬영할 때 사용합니다.",
           NSPhotoLibraryUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 선택할 때 사용합니다.",
+          NSLocalNetworkUsageDescription: "개발 중인 DAIL 웹사이트를 같은 Wi-Fi의 Mac에서 불러올 때 사용합니다.",
+          NSAppTransportSecurity: {
+            NSAllowsLocalNetworking: true,
+            NSAllowsArbitraryLoadsInWebContent: true,
+          },
         },
       },
       android: {

@@ -16,6 +16,7 @@ COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --chown=node:node api ./api
 COPY --chown=node:node server/production-server.js ./server/production-server.js
 COPY --chown=node:node server/environment.js ./server/environment.js
+COPY --chown=node:node server/monitoring.js ./server/monitoring.js
 
 USER node
 EXPOSE 3000

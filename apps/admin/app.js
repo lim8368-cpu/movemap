@@ -2,8 +2,13 @@ const API_BASE = window.location.protocol === "file:" ? "http://localhost:8090" 
 const loginPanel = document.querySelector("#loginPanel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#loginForm");
+const loginEmail = document.querySelector("#loginEmail");
 const loginPassword = document.querySelector("#loginPassword");
 const loginMessage = document.querySelector("#loginMessage");
+const mfaPanel = document.querySelector("#mfaPanel");
+const mfaForm = document.querySelector("#mfaForm");
+const adminInvitePanel = document.querySelector("#adminInvitePanel");
+const adminInviteForm = document.querySelector("#adminInviteForm");
 const togglePassword = document.querySelector("#togglePassword");
 const refreshButton = document.querySelector("#refreshButton");
 const logoutButton = document.querySelector("#logoutButton");
@@ -16,9 +21,18 @@ localStorage.removeItem("MOVEMAP_ADMIN_TOKEN");
 let sessionToken = "";
 let dashboardData = null;
 let accessData = { totals: { accessLogs: 0 }, accessLogs: [] };
+let operationsData = null;
+let platformRolesData = { roles: [] };
+let currentAdminRole = "";
 let applicationFilter = "pending";
 let activeLogTab = "events";
 let toastTimer = 0;
+let pendingMfaAccessToken = "";
+let pendingMfaFactorId = "";
+let pendingMfaChallengeId = "";
+const adminInviteHash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+const adminInviteAccessToken = String(adminInviteHash.get("access_token") || "");
+const adminInviteType = String(adminInviteHash.get("type") || "");
 
 function adminHeaders(extra) {
   return Object.assign(
@@ -36,6 +50,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function uiIcon(name, className) {
+  return '<svg class="ui-icon ' + (className || "") + '" aria-hidden="true"><use href="/assets/ui-icons.svg#' + name + '"></use></svg>';
 }
 
 function formatNumber(value) {
@@ -72,10 +90,10 @@ function eventLabel(type) {
 }
 
 function eventIcon(type) {
-  if (type === "contact") return "↗";
-  if (type === "favorite") return "♡";
-  if (type === "review") return "★";
-  return "◎";
+  if (type === "contact") return uiIcon("phone-call");
+  if (type === "favorite") return uiIcon("heart");
+  if (type === "review") return uiIcon("star");
+  return uiIcon("mouse-pointer-click");
 }
 
 function sourceLabel(source) {
@@ -84,6 +102,10 @@ function sourceLabel(source) {
     app: "앱",
     admin: "최고 관리자",
     owner: "센터 관리자",
+    "center-dashboard": "센터 관리자",
+    register: "센터 등록",
+    ios: "iOS 앱",
+    android: "Android 앱",
     "admin-page": "관리자 페이지",
   };
   return labels[source] || String(source || "-");
@@ -112,7 +134,7 @@ function showToast(message, isError) {
 }
 
 function emptyState(title, copy) {
-  return '<div class="empty-state"><span>✓</span><strong>' + escapeHtml(title) + "</strong><p>" + escapeHtml(copy) + "</p></div>";
+  return '<div class="empty-state"><span>' + uiIcon("circle-check") + '</span><strong>' + escapeHtml(title) + "</strong><p>" + escapeHtml(copy) + "</p></div>";
 }
 
 function centerNameFor(centerId) {
@@ -141,6 +163,9 @@ function imageMarkup(src, label, typeLabel) {
 }
 
 function showLogin() {
+  loginForm.hidden = false;
+  mfaPanel.hidden = true;
+  adminInvitePanel.hidden = true;
   loginPanel.hidden = false;
   dashboard.hidden = true;
   logoutButton.hidden = true;
@@ -152,6 +177,62 @@ function showDashboard() {
   logoutButton.hidden = false;
 }
 
+async function mfaRequest(action, body) {
+  const response = await fetch(API_BASE + "/api/admin-mfa", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + pendingMfaAccessToken,
+      "X-Movemap-Client": "admin",
+    },
+    body: JSON.stringify(Object.assign({ action: action }, body || {})),
+  });
+  const data = await response.json().catch(function () { return {}; });
+  if (!response.ok) throw new Error(data.error || "MFA 인증을 처리하지 못했습니다.");
+  return data;
+}
+
+function mfaFactors(value) {
+  const factors = value && value.factors || {};
+  const candidates = Array.isArray(factors.totp)
+    ? factors.totp
+    : Array.isArray(factors.all) ? factors.all.filter(function (item) {
+      return item.factor_type === "totp";
+    }) : [];
+  return candidates.filter(function (item) {
+    return !item.status || item.status === "verified";
+  });
+}
+
+async function beginMfa(mfa) {
+  pendingMfaAccessToken = mfa.accessToken || "";
+  loginForm.hidden = true;
+  mfaPanel.hidden = false;
+  document.querySelector("#mfaMessage").textContent = "";
+  const enrollment = document.querySelector("#mfaEnrollment");
+  enrollment.hidden = true;
+  let factor = mfaFactors(mfa)[0];
+  if (!factor) {
+    const enrolled = await mfaRequest("enroll", { friendlyName: "DAIL 최고 관리자" });
+    factor = enrolled.result || {};
+    const totp = factor.totp || {};
+    document.querySelector("#mfaGuide").textContent =
+      "처음 한 번만 인증 앱에 QR 코드를 등록한 뒤 6자리 코드를 입력하세요.";
+    const qr = document.querySelector("#mfaQrCode");
+    const qrValue = String(totp.qr_code || "");
+    qr.hidden = !qrValue;
+    if (qrValue) qr.src = qrValue;
+    document.querySelector("#mfaSecret").textContent = totp.secret || "";
+    enrollment.hidden = false;
+  } else {
+    document.querySelector("#mfaGuide").textContent = "인증 앱에 표시된 6자리 코드를 입력하세요.";
+  }
+  pendingMfaFactorId = factor.id || factor.factor_id || "";
+  const challenged = await mfaRequest("challenge", { factorId: pendingMfaFactorId });
+  pendingMfaChallengeId = challenged.result?.id || challenged.result?.challenge_id || "";
+  document.querySelector("#mfaCode").focus();
+}
+
 async function login() {
   loginMessage.textContent = "";
   const submitButton = loginForm.querySelector('button[type="submit"]');
@@ -161,9 +242,13 @@ async function login() {
     const response = await fetch(API_BASE + "/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Movemap-Client": "admin" },
-      body: JSON.stringify({ password: loginPassword.value }),
+      body: JSON.stringify({ email: loginEmail.value.trim(), password: loginPassword.value }),
     });
     const data = await response.json().catch(function () { return {}; });
+    if (data.code === "mfa_required" && data.mfa) {
+      await beginMfa(data.mfa);
+      return;
+    }
     if (!response.ok) {
       loginMessage.textContent = data.error || "로그인에 실패했습니다.";
       return;
@@ -172,7 +257,8 @@ async function login() {
     loginPassword.value = "";
     await loadStats();
   } catch {
-    loginMessage.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    const target = mfaPanel.hidden ? loginMessage : document.querySelector("#mfaMessage");
+    target.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "운영 대시보드 들어가기";
@@ -187,6 +273,8 @@ async function loadStats(showFeedback) {
     const responses = await Promise.all([
       fetch(API_BASE + "/api/stats", { headers: adminHeaders() }),
       fetch(API_BASE + "/api/access-logs", { headers: adminHeaders() }),
+      fetch(API_BASE + "/api/operations", { headers: adminHeaders() }),
+      fetch(API_BASE + "/api/platform-users", { headers: adminHeaders() }),
     ]);
     if (responses[0].status === 401) {
       sessionToken = "";
@@ -201,6 +289,8 @@ async function loadStats(showFeedback) {
     accessData = responses[1].ok
       ? await responses[1].json()
       : { totals: { accessLogs: 0 }, accessLogs: [] };
+    operationsData = responses[2].ok ? await responses[2].json() : null;
+    platformRolesData = responses[3].ok ? await responses[3].json() : { roles: [] };
     showDashboard();
     renderDashboard();
     if (showFeedback) showToast("최신 운영 데이터를 불러왔습니다.");
@@ -215,6 +305,7 @@ async function loadStats(showFeedback) {
 }
 
 function renderDashboard() {
+  currentAdminRole = dashboardData.admin?.role || "super_admin";
   const totals = dashboardData.totals || {};
   const views = Number(totals.views) || 0;
   const contacts = Number(totals.contactClicks) || 0;
@@ -232,6 +323,9 @@ function renderDashboard() {
   document.querySelector("#totalContacts").textContent = formatNumber(contacts);
   document.querySelector("#contactRate").textContent = rate + "%";
   document.querySelector("#navPendingCount").textContent = formatNumber(totals.pendingCenters);
+  document.querySelector("#navPendingReviewCount").textContent = formatNumber(totals.pendingReviews);
+  document.querySelector("#pendingReviewLabel").textContent =
+    "승인 대기 " + formatNumber(totals.pendingReviews) + "건";
   document.querySelector("#centerHealthCopy").textContent = incomplete
     ? "프로필 보완 필요 " + incomplete + "곳"
     : "모든 센터 프로필 기본 정보 완료";
@@ -242,15 +336,36 @@ function renderDashboard() {
   renderActionChecklist(totals.pendingCenters || 0, incomplete, missingAccounts);
   renderOverviewEvents();
   renderApplications();
+  renderReviewModeration();
   renderDirectory();
   renderLogs();
+  renderOperations();
+  renderPlatformRoles();
+  applyAdminRoleView();
+}
+
+function applyAdminRoleView() {
+  const elevated = ["super_admin", "admin"].includes(currentAdminRole);
+  const superAdmin = currentAdminRole === "super_admin";
+  const analyst = currentAdminRole === "analyst";
+  const operationsSection = document.querySelector("#operationsSection");
+  operationsSection.hidden = !elevated;
+  document.querySelector('a[href="#operationsSection"]').hidden = !elevated;
+  document.querySelector(".operations-card:last-child").hidden = !superAdmin;
+  document.querySelector("#applicationsSection").hidden = analyst;
+  document.querySelector('a[href="#applicationsSection"]').hidden = analyst;
+  document.querySelector("#reviewsAdminSection").hidden = analyst;
+  document.querySelector('a[href="#reviewsAdminSection"]').hidden = analyst;
+  document.querySelectorAll('[data-log-tab="access"], [data-log-tab="audit"], [data-log-tab="errors"]').forEach(function (button) {
+    button.hidden = !elevated;
+  });
 }
 
 function renderActionChecklist(pending, incomplete, missingAccounts) {
   const items = [
     {
       href: "#applicationsSection",
-      icon: "!",
+      icon: "circle-alert",
       warning: pending > 0,
       title: "승인 대기 신청",
       copy: pending ? "신청 자료를 검토하고 승인 또는 반려하세요." : "새로 처리할 신청이 없습니다.",
@@ -258,7 +373,7 @@ function renderActionChecklist(pending, incomplete, missingAccounts) {
     },
     {
       href: "#centersSection",
-      icon: "◫",
+      icon: "list-checks",
       warning: incomplete > 0,
       title: "프로필 정보 보완",
       copy: "주소·소개·태그·운영자·가격 기본 항목 기준",
@@ -266,7 +381,7 @@ function renderActionChecklist(pending, incomplete, missingAccounts) {
     },
     {
       href: "#centersSection",
-      icon: "⌾",
+      icon: "user-cog",
       warning: missingAccounts > 0,
       title: "센터장 계정 미등록",
       copy: "센터가 직접 정보를 관리할 수 있도록 계정을 발급하세요.",
@@ -275,7 +390,7 @@ function renderActionChecklist(pending, incomplete, missingAccounts) {
   ];
   document.querySelector("#actionChecklist").innerHTML = items.map(function (item) {
     return '<a class="action-item ' + (item.warning ? "warning" : "") + '" href="' + item.href + '">' +
-      "<span>" + item.icon + "</span><div><strong>" + item.title + "</strong><small>" + item.copy +
+      "<span>" + uiIcon(item.icon) + "</span><div><strong>" + item.title + "</strong><small>" + item.copy +
       "</small></div><b>" + item.value + "</b></a>";
   }).join("");
 }
@@ -323,7 +438,7 @@ function renderApplications() {
     return '<article class="application-item"><div class="application-summary"><div class="application-title"><h3>' +
       escapeHtml(item.centerName) + '</h3><span class="status-badge ' + escapeHtml(item.status) + '">' +
       escapeHtml(statusLabel(item.status)) + "</span></div><p>" + escapeHtml(item.address) +
-      ' · <a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noreferrer">지도에서 확인 ↗</a></p>' +
+      ' · <a class="icon-label" href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noreferrer">지도에서 확인 ' + uiIcon("external-link") + '</a></p>' +
       '<div class="application-meta"><span>신청자 ' + escapeHtml(item.ownerName) + "</span><span>" +
       escapeHtml(item.phone) + "</span><span>계정 이메일 " + escapeHtml(item.email || "미입력") +
       "</span><span>로그인 " + (item.ownerPasswordSet ? "설정 완료" : "관리자 발급 필요") +
@@ -335,6 +450,37 @@ function renderApplications() {
       (item.status === "rejected" && item.rejectionReason ? "<p>반려 사유: " + escapeHtml(item.rejectionReason) + "</p>" : "") +
       "</div>" + actions + "</article>";
   }).join("");
+}
+
+function renderReviewModeration() {
+  const reviews = dashboardData.reviews || [];
+  const pending = reviews.filter(function (item) { return item.status === "pending"; });
+  const visible = pending.length ? pending : reviews.slice(0, 20);
+  const container = document.querySelector("#reviewModerationList");
+  container.innerHTML = visible.length ? visible.map(function (item) {
+    const actions = item.status === "pending"
+      ? '<div class="moderation-actions"><button type="button" data-review-id="' + escapeHtml(item.id) +
+        '" data-review-status="approved">공개 승인</button><button type="button" data-review-id="' +
+        escapeHtml(item.id) + '" data-review-status="hidden">숨김</button><button type="button" data-review-id="' +
+        escapeHtml(item.id) + '" data-review-status="rejected">반려</button></div>'
+      : '<span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) + "</span>";
+    return '<article class="moderation-item"><div><header><h3>' + escapeHtml(item.nickname || "DAIL 이용자") +
+      '</h3><span class="stars">' + "★".repeat(Number(item.rating) || 0) + '</span><small>' +
+      escapeHtml(centerNameFor(item.centerId)) + " · " + formatDate(item.createdAt, true) +
+      "</small></header><p>" + escapeHtml(item.content) + "</p></div>" + actions + "</article>";
+  }).join("") : emptyState("심사할 후기가 없습니다.", "로그인 사용자가 후기를 작성하면 승인 대기로 표시됩니다.");
+}
+
+async function moderateReview(reviewId, status) {
+  const response = await fetch(API_BASE + "/api/reviews?id=" + encodeURIComponent(reviewId), {
+    method: "PATCH",
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ status: status }),
+  });
+  const data = await response.json().catch(function () { return {}; });
+  if (!response.ok) return showToast(data.error || "후기를 처리하지 못했습니다.", true);
+  showToast(status === "approved" ? "후기를 공개 승인했습니다." : "후기 상태를 변경했습니다.");
+  await loadStats();
 }
 
 function centerSearchText(center) {
@@ -416,14 +562,93 @@ function renderLogs() {
       (statusCode >= 400 ? "error" : "") + '">' + escapeHtml(statusCode || "-") +
       "</span></td><td>" + escapeHtml(log.ip || "-") + "<br />" + escapeHtml(shortUserAgent(log.userAgent)) + "</td></tr>";
   }).join("") : '<tr><td colspan="6">아직 접속 기록이 없거나 검색 결과가 없습니다.</td></tr>';
+
+  const audits = (accessData.auditLogs || []).filter(function (log) {
+    const haystack = [log.actorUserId, log.actorRole, log.action, log.targetType, log.targetId].join(" ").toLowerCase();
+    return !query || haystack.includes(query);
+  });
+  document.querySelector("#auditLogs").innerHTML = audits.length ? audits.map(function (log) {
+    return "<tr><td>" + formatDate(log.createdAt, true) + "</td><td><strong>" +
+      escapeHtml(log.actorUserId || "-") + "</strong><br />" + escapeHtml(log.actorRole || "-") +
+      "</td><td>" + escapeHtml(log.action) + "</td><td>" + escapeHtml(log.targetType) + " · " +
+      escapeHtml(log.targetId || "-") + '</td><td><span class="http-status ' +
+      (log.success ? "" : "error") + '">' + (log.success ? "성공" : "실패") + "</span></td></tr>";
+  }).join("") : '<tr><td colspan="5">아직 관리자 작업 기록이 없거나 검색 결과가 없습니다.</td></tr>';
+
+  const errors = (accessData.errorLogs || []).filter(function (log) {
+    const haystack = [log.source, log.errorCode, log.path, log.message].join(" ").toLowerCase();
+    return !query || haystack.includes(query);
+  });
+  document.querySelector("#errorLogs").innerHTML = errors.length ? errors.map(function (log) {
+    return "<tr><td>" + formatDate(log.createdAt, true) + "</td><td>" + escapeHtml(log.source) +
+      "</td><td><strong>" + escapeHtml(log.errorCode) + "</strong></td><td>" +
+      escapeHtml(log.path || "-") + " · " + escapeHtml(log.statusCode || "-") + "</td><td>" +
+      escapeHtml(log.message) + "</td></tr>";
+  }).join("") : '<tr><td colspan="5">기록된 오류가 없거나 검색 결과가 없습니다.</td></tr>';
   updateLogTab();
 }
 
 function updateLogTab() {
   document.querySelector("#eventLogPanel").hidden = activeLogTab !== "events";
   document.querySelector("#accessLogPanel").hidden = activeLogTab !== "access";
+  document.querySelector("#auditLogPanel").hidden = activeLogTab !== "audit";
+  document.querySelector("#errorLogPanel").hidden = activeLogTab !== "errors";
   document.querySelectorAll("[data-log-tab]").forEach(function (button) {
     button.classList.toggle("active", button.dataset.logTab === activeLogTab);
+  });
+}
+
+function renderOperations() {
+  const badge = document.querySelector("#systemHealthBadge");
+  if (!operationsData) {
+    badge.textContent = "상태 확인 실패";
+    badge.className = "health-badge critical";
+    document.querySelector("#systemMetrics").innerHTML = emptyState("상태 정보를 불러오지 못했습니다.", "DB 연결과 서버 환경을 확인하세요.");
+    document.querySelector("#alertList").innerHTML = "";
+    return;
+  }
+  const status = operationsData.status || "warning";
+  badge.textContent = status === "healthy" ? "정상" : status === "critical" ? "긴급 확인" : "확인 필요";
+  badge.className = "health-badge " + status;
+  const process = operationsData.process || {};
+  const memory = process.memory || {};
+  const database = operationsData.database || {};
+  document.querySelector("#systemMetrics").innerHTML = [
+    ["DB 응답", database.healthy ? formatNumber(database.responseMs) + "ms" : "연결 실패"],
+    ["DB 사용량", formatNumber(database.sizeMb) + "MB"],
+    ["DB 연결", formatNumber(database.activeConnections) + " / " + formatNumber(database.maxConnections)],
+    ["메모리 RSS", formatNumber(memory.rssMb) + "MB"],
+    ["프로세스 가동", formatNumber(Math.round((process.uptimeSeconds || 0) / 60)) + "분"],
+  ].map(function (item) {
+    return "<article><small>" + item[0] + "</small><strong>" + escapeHtml(item[1]) + "</strong></article>";
+  }).join("");
+  const alerts = operationsData.alerts || [];
+  document.querySelector("#alertList").innerHTML = alerts.length ? alerts.map(function (item) {
+    return '<article class="alert-item"><div><strong>' + escapeHtml(item.severity + " · " + item.alert_type) +
+      "</strong><small>" + escapeHtml(item.message) + " · " + formatDate(item.created_at, true) +
+      '</small></div><button type="button" data-alert-id="' + escapeHtml(item.id) +
+      '" data-alert-status="' + (item.status === "open" ? "acknowledged" : "resolved") + '">' +
+      (item.status === "open" ? "확인 처리" : "해결 처리") + "</button></article>";
+  }).join("") : emptyState("열린 운영 경고가 없습니다.", "CPU·메모리·DB·오류 임계치를 계속 감시합니다.");
+}
+
+function renderPlatformRoles() {
+  const roles = platformRolesData.roles || [];
+  const container = document.querySelector("#platformRoleList");
+  container.innerHTML = roles.length ? roles.map(function (item) {
+    return '<article class="role-item"><div><strong>' + escapeHtml(item.email || item.user_id) +
+      "</strong><small>MFA " + (item.mfa_required === false ? "선택" : "필수") + " · " +
+      formatDate(item.created_at, true) + '</small></div><select data-role-id="' + escapeHtml(item.id) +
+      '" data-role-field="role"><option value="admin">관리자</option><option value="support">고객지원</option>' +
+      '<option value="analyst">분석가</option><option value="super_admin">최고 관리자</option></select>' +
+      '<select data-role-id="' + escapeHtml(item.id) + '" data-role-field="status"><option value="active">활성</option>' +
+      '<option value="suspended">일시 정지</option><option value="revoked">권한 회수</option></select></article>';
+  }).join("") : emptyState("표시할 운영자 권한이 없습니다.", "Supabase Auth 관리자 계정을 초대하면 이곳에 표시됩니다.");
+  roles.forEach(function (item) {
+    const roleSelect = container.querySelector('[data-role-id="' + CSS.escape(item.id) + '"][data-role-field="role"]');
+    const statusSelect = container.querySelector('[data-role-id="' + CSS.escape(item.id) + '"][data-role-field="status"]');
+    if (roleSelect) roleSelect.value = item.role;
+    if (statusSelect) statusSelect.value = item.status;
   });
 }
 
@@ -437,7 +662,7 @@ async function approveApplication(applicationId) {
   });
   const data = await response.json().catch(function () { return {}; });
   if (!response.ok) return showToast(data.error || "승인에 실패했습니다.", true);
-  showToast(data.ownerAccountCreated
+  showToast(data.ownerAccountCreated || data.ownerMembershipCreated
     ? "센터 승인과 센터장 계정 활성화를 완료했습니다."
     : "센터를 승인하고 지도 등록을 완료했습니다.");
   await loadStats();
@@ -445,6 +670,7 @@ async function approveApplication(applicationId) {
     data.centerId &&
     application &&
     !data.ownerAccountCreated &&
+    !data.ownerMembershipCreated &&
     window.confirm("센터 승인이 완료되었습니다. 이어서 센터장 대시보드 계정을 발급할까요?")
   ) {
     await createOwnerAccount(data.centerId, application.centerName, application.email);
@@ -495,6 +721,13 @@ function openCenterDialog(centerId) {
   document.querySelector("#dialogOwnerButton").dataset.centerName = center.name;
   document.querySelector("#deleteCenterButton").dataset.centerId = center.id;
   document.querySelector("#deleteCenterButton").dataset.centerName = center.name;
+  const editable = ["super_admin", "admin"].includes(currentAdminRole);
+  centerForm.querySelectorAll("input, textarea, select").forEach(function (element) {
+    element.disabled = !editable;
+  });
+  centerForm.querySelector('button[type="submit"]').hidden = !editable;
+  document.querySelector("#deleteCenterButton").hidden = !editable;
+  document.querySelector("#dialogOwnerButton").hidden = !editable;
   if (typeof centerDialog.showModal === "function") centerDialog.showModal();
   else centerDialog.setAttribute("open", "");
 }
@@ -569,9 +802,82 @@ async function createOwnerAccount(centerId, centerName, suggestedEmail) {
   openCenterDialog(centerId);
 }
 
+async function updateAlert(id, status) {
+  const response = await fetch(API_BASE + "/api/operations", {
+    method: "PATCH",
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ id: id, status: status }),
+  });
+  const data = await response.json().catch(function () { return {}; });
+  if (!response.ok) return showToast(data.error || "경고 상태를 변경하지 못했습니다.", true);
+  showToast(status === "resolved" ? "경고를 해결 처리했습니다." : "경고를 확인 처리했습니다.");
+  await loadStats();
+}
+
+async function savePlatformRole(payload) {
+  const method = payload.id ? "PATCH" : "POST";
+  const response = await fetch(API_BASE + "/api/platform-users", {
+    method: method,
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(function () { return {}; });
+  if (!response.ok) return showToast(data.error || "운영자 권한을 저장하지 못했습니다.", true);
+  showToast(data.invitationSent ? "운영자 초대 메일과 MFA 권한을 설정했습니다." : "운영자 권한을 저장했습니다.");
+  await loadStats();
+}
+
 loginForm.addEventListener("submit", function (event) {
   event.preventDefault();
   login();
+});
+
+mfaForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const button = mfaForm.querySelector('button[type="submit"]');
+  const message = document.querySelector("#mfaMessage");
+  button.disabled = true;
+  message.textContent = "";
+  try {
+    await mfaRequest("verify", {
+      factorId: pendingMfaFactorId,
+      challengeId: pendingMfaChallengeId,
+      code: document.querySelector("#mfaCode").value,
+    });
+    pendingMfaAccessToken = "";
+    loginPassword.value = "";
+    document.querySelector("#mfaCode").value = "";
+    mfaPanel.hidden = true;
+    loginForm.hidden = false;
+    history.replaceState(null, "", "/admin/");
+    window.location.hash = "";
+    await loadStats();
+  } catch (error) {
+    message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+adminInviteForm.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const button = adminInviteForm.querySelector('button[type="submit"]');
+  const message = document.querySelector("#adminInviteMessage");
+  button.disabled = true;
+  message.textContent = "";
+  pendingMfaAccessToken = adminInviteAccessToken;
+  try {
+    await mfaRequest("set_password", {
+      password: document.querySelector("#adminInvitePassword").value,
+    });
+    adminInvitePanel.hidden = true;
+    await beginMfa({ accessToken: adminInviteAccessToken, factors: {} });
+  } catch (error) {
+    message.textContent = error.message;
+    adminInvitePanel.hidden = false;
+  } finally {
+    button.disabled = false;
+  }
 });
 
 togglePassword.addEventListener("click", function () {
@@ -586,6 +892,9 @@ refreshButton.addEventListener("click", function () { loadStats(true); });
 logoutButton.addEventListener("click", async function () {
   await fetch(API_BASE + "/api/logout", { method: "POST", headers: adminHeaders() }).catch(function () {});
   sessionToken = "";
+  pendingMfaAccessToken = "";
+  mfaPanel.hidden = true;
+  loginForm.hidden = false;
   showLogin();
 });
 
@@ -606,6 +915,11 @@ document.querySelector("#centerApplications").addEventListener("click", function
   if (reject) rejectApplication(reject.dataset.rejectId);
 });
 
+document.querySelector("#reviewModerationList").addEventListener("click", function (event) {
+  const button = event.target.closest("[data-review-id]");
+  if (button) moderateReview(button.dataset.reviewId, button.dataset.reviewStatus);
+});
+
 ["centerSearch", "centerStatusFilter", "centerPlanFilter"].forEach(function (id) {
   const element = document.querySelector("#" + id);
   element.addEventListener(id === "centerSearch" ? "input" : "change", renderDirectory);
@@ -624,6 +938,29 @@ document.querySelector("#logTabs").addEventListener("click", function (event) {
 });
 
 document.querySelector("#logSearch").addEventListener("input", renderLogs);
+
+document.querySelector("#alertList").addEventListener("click", function (event) {
+  const button = event.target.closest("[data-alert-id]");
+  if (button) updateAlert(button.dataset.alertId, button.dataset.alertStatus);
+});
+
+document.querySelector("#platformRoleForm").addEventListener("submit", function (event) {
+  event.preventDefault();
+  savePlatformRole({
+    email: document.querySelector("#platformRoleEmail").value.trim(),
+    role: document.querySelector("#platformRoleValue").value,
+    mfaRequired: true,
+  });
+});
+
+document.querySelector("#platformRoleList").addEventListener("change", function (event) {
+  const select = event.target.closest("[data-role-id]");
+  if (!select) return;
+  const id = select.dataset.roleId;
+  const role = document.querySelector('[data-role-id="' + CSS.escape(id) + '"][data-role-field="role"]').value;
+  const status = document.querySelector('[data-role-id="' + CSS.escape(id) + '"][data-role-field="status"]').value;
+  savePlatformRole({ id: id, role: role, status: status, mfaRequired: true });
+});
 
 centerForm.addEventListener("submit", function (event) {
   event.preventDefault();
@@ -651,4 +988,10 @@ document.querySelectorAll(".section-nav a").forEach(function (link) {
   });
 });
 
-loadStats();
+if (adminInviteAccessToken && adminInviteType === "invite") {
+  loginForm.hidden = true;
+  adminInvitePanel.hidden = false;
+  mfaPanel.hidden = true;
+} else {
+  loadStats();
+}

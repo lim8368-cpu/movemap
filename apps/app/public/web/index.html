@@ -24,7 +24,8 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260720-mobile-auth" />
+  <link rel="stylesheet" href="./styles.css?v=20260723-platform-security" />
+  <link rel="stylesheet" href="./assets/ui-icons.css?v=20260721-icons" />
 </head>
 <body>
   <header class="site-header">
@@ -47,15 +48,15 @@
           <h1><span>내 주변에서 만나는</span><strong>믿을 수 있는 운동센터</strong></h1>
           <p class="hero-description">물리치료사 출신이 함께 운영하는 운동센터를 지도에서 찾고, 센터가 제공한 프로그램 정보를 한눈에 비교해보세요.</p>
           <form class="hero-search" action="#search">
-            <label><span aria-hidden="true">⌕</span><input type="search" placeholder="지역 또는 센터명 검색" aria-label="지역 또는 센터명 검색" /></label>
-            <button class="button primary" type="submit">⌖ 내 주변 찾기</button>
+            <label><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg><input type="search" placeholder="지역 또는 센터명 검색" aria-label="지역 또는 센터명 검색" /></label>
+            <button class="button primary icon-label" type="submit"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#locate"></use></svg>내 주변 찾기</button>
           </form>
           <div class="quick"><span>빠른 검색:</span><a href="#search">강남구</a><a href="#search">마포구</a><a href="#search">송파구</a><a href="#search">용산구</a><a href="#search">서초구</a></div>
         </div>
         <div class="hero-map" aria-label="현재 위치 주변 센터 지도">
           <div id="heroNaverMap" class="hero-naver-map"></div>
           <div id="heroMapStatus" class="hero-map-status"><span class="status-pulse"></span> 현재 위치를 확인하고 있어요</div>
-          <button id="heroLocateButton" class="hero-locate" type="button">⌖ 내 위치</button>
+          <button id="heroLocateButton" class="hero-locate icon-label" type="button"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#locate"></use></svg>내 위치</button>
         </div>
       </div>
     </section>
@@ -63,22 +64,22 @@
     <section class="section specialties" id="centers">
       <p class="kicker">전문 분야</p><h2>원하는 분야를 선택하세요</h2><p class="section-lead">해당 전문 분야 센터를 즉시 찾을 수 있어요</p>
       <div class="specialty-grid">
-        <a href="#search" data-category="재활운동"><b>🏃</b><span>재활운동<small>기능 회복과 일상 복귀</small></span></a><a href="#search" data-category="통증관리"><b>✚</b><span>통증관리<small>원인 중심의 맞춤 운동</small></span></a><a href="#search" data-category="자세교정"><b>🧍</b><span>자세교정<small>움직임 분석과 균형 개선</small></span></a><a href="#search" data-category="체형관리"><b>⌁</b><span>체형관리<small>건강한 신체 밸런스</small></span></a><a href="#search" data-category="스포츠재활"><b>⚽</b><span>스포츠재활<small>부상 예방과 경기 복귀</small></span></a><a href="#search" data-category="시니어운동"><b>♧</b><span>시니어운동<small>안전한 근력과 보행 관리</small></span></a><a href="#search" data-category="산전산후"><b>♡</b><span>산전산후<small>회복 단계별 전문 관리</small></span></a><a href="#search" data-category="다이어트"><b>🥗</b><span>다이어트<small>지속 가능한 생활 습관</small></span></a>
+        <a href="#search" data-category="재활운동"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></b><span>재활운동<small>기능 회복과 일상 복귀</small></span></a><a href="#search" data-category="통증관리"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart-pulse"></use></svg></b><span>통증관리<small>원인 중심의 맞춤 운동</small></span></a><a href="#search" data-category="자세교정"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#scan-line"></use></svg></b><span>자세교정<small>움직임 분석과 균형 개선</small></span></a><a href="#search" data-category="체형관리"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#scale"></use></svg></b><span>체형관리<small>건강한 신체 밸런스</small></span></a><a href="#search" data-category="스포츠재활"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#trophy"></use></svg></b><span>스포츠재활<small>부상 예방과 경기 복귀</small></span></a><a href="#search" data-category="시니어운동"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#accessibility"></use></svg></b><span>시니어운동<small>안전한 근력과 보행 관리</small></span></a><a href="#search" data-category="산전산후"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#baby"></use></svg></b><span>산전산후<small>회복 단계별 전문 관리</small></span></a><a href="#search" data-category="다이어트"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#salad"></use></svg></b><span>다이어트<small>지속 가능한 생활 습관</small></span></a>
       </div>
     </section>
 
     <section class="section featured">
-      <div class="section-row"><div><p class="kicker">추천 센터</p><h2>검증된 전문 센터</h2></div><a class="button outline" href="#search">전체 보기 →</a></div>
+      <div class="section-row"><div><p class="kicker">추천 센터</p><h2>검증된 전문 센터</h2></div><a class="button outline icon-label" href="#search">전체 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a></div>
       <div class="feature-cards">
-        <article class="feature-card" data-feature-center="core" tabindex="0"><div class="photo photo-a"><span>✓ 물리치료사 출신</span><i>● 영업중</i></div><div class="feature-body"><h3>코어핏 무브센터</h3><p>⌖ 서울 강남구 · 1.2km</p><div><span>허리</span><span>수술 후</span><span>필라테스</span></div><button type="button">지도에서 보기 →</button></div></article>
-        <article class="feature-card" data-feature-center="reform" tabindex="0"><div class="photo photo-b"><span>✓ 물리치료사 출신</span><i>● 영업중</i></div><div class="feature-body"><h3>리폼무브 스튜디오</h3><p>⌖ 서울 마포구 · 3.8km</p><div><span>어깨</span><span>거북목</span><span>자세 분석</span></div><button type="button">지도에서 보기 →</button></div></article>
-        <article class="feature-card" data-feature-center="posture" tabindex="0"><div class="photo photo-c"><span>✓ 물리치료사 출신</span><i>● 영업중</i></div><div class="feature-body"><h3>포스처랩 분당</h3><p>⌖ 경기 성남시 분당구 · 9.6km</p><div><span>수술 후</span><span>고령자</span><span>보행</span></div><button type="button">지도에서 보기 →</button></div></article>
+        <article class="feature-card" data-feature-center="core" tabindex="0"><div class="photo photo-a"><span class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 출신</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>코어핏 무브센터</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 강남구 · 1.2km</p><div><span>허리</span><span>수술 후</span><span>필라테스</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
+        <article class="feature-card" data-feature-center="reform" tabindex="0"><div class="photo photo-b"><span class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 출신</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>리폼무브 스튜디오</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 마포구 · 3.8km</p><div><span>어깨</span><span>거북목</span><span>자세 분석</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
+        <article class="feature-card" data-feature-center="posture" tabindex="0"><div class="photo photo-c"><span class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 출신</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>포스처랩 분당</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>경기 성남시 분당구 · 9.6km</p><div><span>수술 후</span><span>고령자</span><span>보행</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
       </div>
     </section>
 
-    <section class="section how" id="about"><p class="kicker">이용 방법</p><h2>3단계로 시작하세요</h2><p class="section-lead">센터가 등록한 정보를 차근차근 확인하세요</p><div class="steps"><article><b>01</b><i>⌖</i><h3>위치 기반으로 센터 탐색</h3><p>현재 위치 주변 센터를 지도에서 확인하거나 전문 분야로 필터링하세요.</p></article><article><b>02</b><i>▤</i><h3>센터 정보 꼼꼼히 비교</h3><p>전문 분야, 프로그램, 시설과 물리치료사 출신 여부를 한 페이지에서 확인하세요.</p></article><article><b>03</b><i>♡</i><h3>센터와 바로 연결</h3><p>센터가 제공한 연락 방법을 확인하고 상담을 요청하세요.</p></article></div></section>
+    <section class="section how" id="about"><p class="kicker">이용 방법</p><h2>3단계로 시작하세요</h2><p class="section-lead">센터가 등록한 정보를 차근차근 확인하세요</p><div class="steps"><article><b>01</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg></i><h3>위치 기반으로 센터 탐색</h3><p>현재 위치 주변 센터를 지도에서 확인하거나 전문 분야로 필터링하세요.</p></article><article><b>02</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></i><h3>센터 정보 꼼꼼히 비교</h3><p>전문 분야, 프로그램, 시설과 물리치료사 출신 여부를 한 페이지에서 확인하세요.</p></article><article><b>03</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></i><h3>센터와 바로 연결</h3><p>센터가 제공한 연락 방법을 확인하고 상담을 요청하세요.</p></article></div></section>
 
-    <section class="proof"><div class="proof-copy"><p class="kicker light">센터 정보를 더 투명하게</p><h2>필요한 정보를<br /><em>한곳에서</em> 비교하세요</h2><p>DAIL은 센터가 직접 등록한 정보를 같은 기준으로 정리해, 지도 탐색부터 문의 전 확인까지 흐름이 끊기지 않도록 돕습니다.</p><a href="#search">내 주변 센터 살펴보기 <span>→</span></a></div><div class="trust-features"><article><i>⌖</i><div><h3>지도 중심 탐색</h3><p>현재 위치와 센터의 실제 거리를 한눈에 확인합니다.</p></div></article><article><i>▤</i><div><h3>같은 기준으로 비교</h3><p>전문 분야, 프로그램과 운영시간을 일관된 형식으로 봅니다.</p></div></article><article><i>✓</i><div><h3>출신 정보 표시</h3><p>운영자의 물리치료사 출신 여부를 구분해 표시합니다.</p></div></article><article><i>↗</i><div><h3>센터로 바로 연결</h3><p>정보를 확인한 뒤 센터가 제공한 방법으로 문의합니다.</p></div></article></div></section>
+    <section class="proof"><div class="proof-copy"><p class="kicker light">센터 정보를 더 투명하게</p><h2>필요한 정보를<br /><em>한곳에서</em> 비교하세요</h2><p>DAIL은 센터가 직접 등록한 정보를 같은 기준으로 정리해, 지도 탐색부터 문의 전 확인까지 흐름이 끊기지 않도록 돕습니다.</p><a class="icon-label" href="#search">내 주변 센터 살펴보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a></div><div class="trust-features"><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg></i><div><h3>지도 중심 탐색</h3><p>현재 위치와 센터의 실제 거리를 한눈에 확인합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></i><div><h3>같은 기준으로 비교</h3><p>전문 분야, 프로그램과 운영시간을 일관된 형식으로 봅니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg></i><div><h3>출신 정보 표시</h3><p>운영자의 물리치료사 출신 여부를 구분해 표시합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></i><div><h3>센터로 바로 연결</h3><p>정보를 확인한 뒤 센터가 제공한 방법으로 문의합니다.</p></div></article></div></section>
 
     <section id="search" class="search-section">
       <div class="search-title"><p class="kicker">지도 검색</p><h2>내 주변 센터를 찾아보세요</h2><p>지역과 목적을 선택하면 실제 등록 센터를 지도에서 확인할 수 있습니다.</p></div>
@@ -94,7 +95,7 @@
             </section>
             <section class="results-panel"><div class="section-heading"><h2>센터 목록</h2><span id="resultCount">0곳</span></div><div id="centerList" class="center-list"></div></section>
           </aside>
-          <section class="map-area" aria-label="센터 지도"><div class="map-toolbar"><button id="locateButton" class="icon-button" type="button" aria-label="현재 위치">⌖</button><button id="zoomInButton" class="icon-button" type="button" aria-label="확대">+</button><button id="zoomOutButton" class="icon-button" type="button" aria-label="축소">−</button></div><div id="naverMap" class="naver-map"></div><div id="mapStatus" class="map-status">네이버 지도 불러오는 중</div><div id="mapFallback" class="map-canvas" hidden><div class="map-notice">네이버 지도를 불러오지 못해 임시 지도를 표시합니다.</div><div class="river"></div></div><article id="detailPanel" class="detail-panel" aria-live="polite"></article></section>
+          <section class="map-area" aria-label="센터 지도"><div class="map-toolbar"><button id="locateButton" class="icon-button icon-only" type="button" aria-label="현재 위치"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#locate"></use></svg></button><button id="zoomInButton" class="icon-button icon-only" type="button" aria-label="확대"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#plus"></use></svg></button><button id="zoomOutButton" class="icon-button icon-only" type="button" aria-label="축소"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#minus"></use></svg></button></div><div id="naverMap" class="naver-map"></div><div id="mapStatus" class="map-status">네이버 지도 불러오는 중</div><div id="mapFallback" class="map-canvas" hidden><div class="map-notice">네이버 지도를 불러오지 못해 임시 지도를 표시합니다.</div><div class="river"></div></div><article id="detailPanel" class="detail-panel" aria-live="polite"></article></section>
         </div>
       </div>
     </section>
@@ -107,18 +108,18 @@
   <footer><div class="footer-brand"><a class="brand" href="#top"><span class="brand-mark"><span></span></span><span class="brand-name">DAIL<small>다시 일상으로</small></span></a><p>믿을 수 있는 운동센터를 지도에서 바로 찾는 서비스.</p></div><div><b>서비스</b><a href="#search">센터 찾기</a><a href="#centers">전문 분야</a><a href="/register/">센터 등록</a><a href="/center-dashboard/">센터 관리</a></div><div><b>안내</b><a href="#about">서비스 소개</a><a href="/terms.html">이용약관</a><a href="/privacy.html">개인정보처리방침</a></div><p class="copyright">© 2026 DAIL. All rights reserved.</p></footer>
   <div id="authOverlay" class="auth-overlay" hidden>
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <button id="authCloseButton" class="auth-close" type="button" aria-label="닫기">×</button>
+      <button id="authCloseButton" class="auth-close icon-only" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#x"></use></svg></button>
       <div id="authLoginView">
         <span class="auth-logo"><i></i> DAIL</span><p class="auth-kicker">다시 일상으로</p>
         <h2 id="authTitle">간편하게 시작하세요</h2><p class="auth-lead">관심 센터를 저장하고 내 주변 센터 정보를 더 편하게 확인할 수 있어요.</p>
         <div class="social-buttons">
-          <button class="social kakao" type="button" data-auth-provider="kakao"><b>💬</b><span>카카오로 계속하기</span></button>
+          <button class="social kakao" type="button" data-auth-provider="kakao"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#message-circle"></use></svg></b><span>카카오로 계속하기</span></button>
           <button class="social naver" type="button" data-auth-provider="naver"><b>N</b><span>네이버로 계속하기</span></button>
-          <button class="social apple" type="button" data-auth-provider="apple"><b>●</b><span>Apple로 계속하기</span></button>
+          <button class="social apple" type="button" data-auth-provider="apple"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#apple"></use></svg></b><span>Apple로 계속하기</span></button>
         </div>
         <p id="authMessage" class="auth-message" aria-live="polite"></p>
         <p class="auth-legal">계속하면 DAIL <a href="/terms.html" target="_blank">이용약관</a>과 <a href="/privacy.html" target="_blank">개인정보처리방침</a>을 확인한 것으로 간주됩니다. 필수 동의는 최초 로그인 후 진행됩니다.</p>
-        <a class="owner-auth-link" href="/center-dashboard/">센터 운영자이신가요? 센터 관리 로그인 →</a>
+        <a class="owner-auth-link icon-label" href="/center-dashboard/">센터 운영자이신가요? 센터 관리 로그인<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a>
       </div>
       <form id="onboardingForm" class="onboarding" hidden>
         <span class="auth-logo"><i></i> DAIL</span><p class="auth-kicker">마지막 한 단계</p><h2>회원 정보를 확인해 주세요</h2>
@@ -133,7 +134,7 @@
       </div>
     </section>
   </div>
-  <script src="./app.js?v=20260719-center-categories"></script>
+  <script src="./app.js?v=20260723-platform-security"></script>
   <script>document.querySelector('.menu-toggle').addEventListener('click',function(){const open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));document.querySelector('.main-nav').classList.toggle('open',!open)});</script>
 </body>
 </html>

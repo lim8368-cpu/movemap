@@ -40,7 +40,8 @@ function signOwnerSession(account, now = Date.now()) {
   const payload = Buffer.from(JSON.stringify({
     role: "center_owner",
     accountId: account.id,
-    centerId: account.center_id,
+    userId: account.auth_user_id || account.user_id || null,
+    centerId: account.center_id || null,
     email: account.email,
     exp: now + OWNER_SESSION_TTL_SECONDS * 1000,
   })).toString("base64url");
@@ -57,7 +58,11 @@ function verifyOwnerSession(token, now = Date.now()) {
   if (given.length !== wanted.length || !crypto.timingSafeEqual(given, wanted)) return null;
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    if (data.role !== "center_owner" || !data.centerId || Number(data.exp) <= now) return null;
+    if (
+      data.role !== "center_owner" ||
+      (!data.accountId && !data.userId) ||
+      Number(data.exp) <= now
+    ) return null;
     return data;
   } catch {
     return null;

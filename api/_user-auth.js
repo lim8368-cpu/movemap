@@ -15,6 +15,125 @@ function authSupabaseServiceRoleKey() {
   return process.env.AUTH_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 }
 
+async function authRequest(path, {
+  method = "GET",
+  accessToken = "",
+  useServiceRole = false,
+  body,
+} = {}) {
+  const supabaseUrl = authSupabaseUrl();
+  const apiKey = useServiceRole ? authSupabaseServiceRoleKey() : authSupabaseAnonKey();
+  if (!supabaseUrl || !apiKey) throw new Error("Supabase Auth is not configured");
+  const authorization = accessToken || (useServiceRole ? apiKey : "");
+  const response = await fetch(`${supabaseUrl}/auth/v1${path}`, {
+    method,
+    headers: {
+      apikey: apiKey,
+      ...(authorization ? { Authorization: `Bearer ${authorization}` } : {}),
+      "Content-Type": "application/json",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    const error = new Error(data?.msg || data?.message || data?.error_description || data?.error || `Auth request failed (${response.status})`);
+    error.statusCode = response.status;
+    error.authData = data;
+    throw error;
+  }
+  return data;
+}
+
+async function signInWithPassword(email, password) {
+  return authRequest("/token?grant_type=password", {
+    method: "POST",
+    body: { email: String(email || "").trim().toLowerCase(), password },
+  });
+}
+
+async function signUpWithPassword(email, password, metadata = {}) {
+  return authRequest("/signup", {
+    method: "POST",
+    body: {
+      email: String(email || "").trim().toLowerCase(),
+      password,
+      data: metadata,
+    },
+  });
+}
+
+async function findAuthUserByEmail(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) return null;
+  const perPage = 1000;
+  for (let page = 1; page <= 100; page += 1) {
+    const data = await authRequest(`/admin/users?page=${page}&per_page=${perPage}`, {
+      useServiceRole: true,
+    });
+    const users = Array.isArray(data?.users) ? data.users : Array.isArray(data) ? data : [];
+    const match = users.find((user) => String(user.email || "").toLowerCase() === normalized);
+    if (match) return match;
+    if (users.length < perPage) return null;
+  }
+  throw new Error("Supabase Auth user lookup exceeded 100,000 users");
+}
+
+async function createAuthUser({ email, password, metadata = {} }) {
+  return authRequest("/admin/users", {
+    method: "POST",
+    useServiceRole: true,
+    body: {
+      email: String(email || "").trim().toLowerCase(),
+      password,
+      email_confirm: true,
+      user_metadata: metadata,
+    },
+  });
+}
+
+async function updateAuthUser(userId, attributes) {
+  return authRequest(`/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    useServiceRole: true,
+    body: attributes,
+  });
+}
+
+async function inviteAuthUser({ email, redirectTo, metadata = {} }) {
+  return authRequest("/invite", {
+    method: "POST",
+    useServiceRole: true,
+    body: {
+      email: String(email || "").trim().toLowerCase(),
+      data: metadata,
+      ...(redirectTo ? { redirect_to: redirectTo } : {}),
+    },
+  });
+}
+
+async function ensureAuthUser({ email, password, metadata = {} }) {
+  const existing = await findAuthUserByEmail(email);
+  if (existing) return { user: existing, created: false };
+  const created = await createAuthUser({ email, password, metadata });
+  return { user: created?.user || created, created: true };
+}
+
+function accessTokenFromRequest(req) {
+  const authorization = String(req?.headers?.authorization || "");
+  return authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+}
+
+function jwtClaims(token) {
+  try {
+    const payload = String(token || "").split(".")[1];
+    return payload ? JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) : {};
+  } catch {
+    return {};
+  }
+}
+
 function publicAuthConfig() {
   const supabaseUrl = authSupabaseUrl();
   const supabaseAnonKey = authSupabaseAnonKey();
@@ -112,4 +231,25 @@ async function syncUserProfile(user, input = {}) {
   return { ...existing[0], ...body };
 }
 
-module.exports = { authSupabaseServiceRoleKey, authSupabaseUrl, cookie, cookieValue, createOAuthState, publicAuthConfig, safeOrigin, syncUserProfile, userFromAccessToken, verifyOAuthState };
+module.exports = {
+  accessTokenFromRequest,
+  authRequest,
+  authSupabaseServiceRoleKey,
+  authSupabaseUrl,
+  cookie,
+  cookieValue,
+  createAuthUser,
+  createOAuthState,
+  ensureAuthUser,
+  findAuthUserByEmail,
+  inviteAuthUser,
+  jwtClaims,
+  publicAuthConfig,
+  safeOrigin,
+  signInWithPassword,
+  signUpWithPassword,
+  syncUserProfile,
+  updateAuthUser,
+  userFromAccessToken,
+  verifyOAuthState,
+};

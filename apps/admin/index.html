@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
     <title>DAIL 최고 관리자</title>
-    <link rel="stylesheet" href="/admin/styles.css?v=20260719-operations" />
+    <link rel="stylesheet" href="/admin/styles.css?v=20260723-platform-security" />
+    <link rel="stylesheet" href="/assets/ui-icons.css?v=20260721-icons" />
   </head>
   <body>
     <header class="topbar">
       <a href="/" class="brand">
-        <span class="brand-symbol">◉</span>
+        <span class="brand-symbol" aria-hidden="true"><span></span></span>
         <b>DAIL</b>
         <small>최고 관리자</small>
       </a>
       <div class="top-actions">
-        <a href="/" target="_blank" rel="noreferrer">DAIL 홈 ↗</a>
+        <a class="icon-label" href="/" target="_blank" rel="noreferrer">DAIL 홈<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a>
         <button id="logoutButton" class="ghost" type="button" hidden>로그아웃</button>
       </div>
     </header>
@@ -27,9 +28,9 @@
           <h1>센터와 이용자의 흐름을<br />한곳에서 관리하세요</h1>
           <p>센터 등록 심사부터 운영 상태, 이용자 활동과 접속 기록까지 DAIL 운영에 필요한 정보를 확인합니다.</p>
           <ul>
-            <li>승인 대기 업무를 놓치지 않는 운영함</li>
-            <li>센터 검색·필터와 상세 편집</li>
-            <li>핵심 지표와 활동·보안 로그 점검</li>
+            <li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>승인 대기 업무를 놓치지 않는 운영함</li>
+            <li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>센터 검색·필터와 상세 편집</li>
+            <li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>핵심 지표와 활동·보안 로그 점검</li>
           </ul>
         </div>
         <div class="login-card">
@@ -37,6 +38,11 @@
           <h2>최고 관리자 로그인</h2>
           <p>DAIL 운영팀 전용 공간입니다.</p>
           <form id="loginForm">
+            <label>
+              관리자 이메일
+              <input id="loginEmail" type="email" autocomplete="username" placeholder="admin@dail.kr" />
+              <small>Supabase 관리자 계정은 이메일과 MFA로 로그인합니다. 전환 전에는 이메일을 비워둘 수 있습니다.</small>
+            </label>
             <label>
               관리자 비밀번호
               <span class="password-field">
@@ -47,6 +53,31 @@
             <button id="loginButton" type="submit">운영 대시보드 들어가기</button>
             <p id="loginMessage" class="message" aria-live="polite"></p>
           </form>
+          <section id="adminInvitePanel" class="mfa-panel" hidden>
+            <p class="eyebrow">ADMIN INVITATION</p>
+            <h3>운영자 계정을 활성화하세요</h3>
+            <p>새 비밀번호를 설정한 뒤 MFA 인증 앱을 등록합니다.</p>
+            <form id="adminInviteForm">
+              <label>새 비밀번호<input id="adminInvitePassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required placeholder="12자 이상" /></label>
+              <button type="submit">비밀번호 설정하고 MFA 등록</button>
+              <p id="adminInviteMessage" class="message" aria-live="polite"></p>
+            </form>
+          </section>
+          <section id="mfaPanel" class="mfa-panel" hidden>
+            <p class="eyebrow">TWO-FACTOR AUTHENTICATION</p>
+            <h3>인증 앱으로 한 번 더 확인</h3>
+            <p id="mfaGuide">인증 앱에 표시된 6자리 코드를 입력하세요.</p>
+            <div id="mfaEnrollment" class="mfa-enrollment" hidden>
+              <img id="mfaQrCode" alt="DAIL 관리자 MFA QR 코드" hidden />
+              <p>QR을 읽을 수 없다면 설정 키를 직접 입력하세요.</p>
+              <code id="mfaSecret"></code>
+            </div>
+            <form id="mfaForm">
+              <label>6자리 인증 코드<input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required /></label>
+              <button type="submit">MFA 인증 완료</button>
+              <p id="mfaMessage" class="message" aria-live="polite"></p>
+            </form>
+          </section>
           <small class="support">보안을 위해 로그인 세션은 15분 후 만료됩니다.</small>
         </div>
       </section>
@@ -59,7 +90,7 @@
             <p><span class="status-dot"></span> 관리 API 연결 정상 · <span id="lastRefreshedAt">방금 확인</span></p>
           </div>
           <div class="welcome-actions">
-            <a class="secondary-button" href="/" target="_blank" rel="noreferrer">공개 페이지 보기 ↗</a>
+            <a class="secondary-button icon-label" href="/" target="_blank" rel="noreferrer">공개 페이지 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a>
             <button id="refreshButton" class="primary-button" type="button">데이터 새로고침</button>
           </div>
         </div>
@@ -67,30 +98,32 @@
         <nav class="section-nav" aria-label="최고 관리자 메뉴">
           <a href="#overview" class="active">운영 요약</a>
           <a href="#applicationsSection">승인함 <span id="navPendingCount" class="nav-count">0</span></a>
+          <a href="#reviewsAdminSection">후기 심사 <span id="navPendingReviewCount" class="nav-count">0</span></a>
           <a href="#centersSection">센터 관리</a>
           <a href="#activitySection">활동·보안 로그</a>
+          <a href="#operationsSection">시스템·권한</a>
         </nav>
 
         <section id="overview">
           <div class="summary-grid">
             <article>
-              <span class="metric-icon">⌖</span>
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#building"></use></svg></span>
               <div><small>운영 센터</small><strong id="totalCenters">0</strong><p id="centerHealthCopy">센터 정보를 확인 중입니다.</p></div>
             </article>
             <article class="attention-card">
-              <span class="metric-icon">!</span>
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#circle-alert"></use></svg></span>
               <div><small>승인 대기</small><strong id="totalPending">0</strong><p>처리가 필요한 센터 신청</p></div>
             </article>
             <article>
-              <span class="metric-icon">◎</span>
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#mouse-pointer-click"></use></svg></span>
               <div><small>센터 상세 조회</small><strong id="totalViews">0</strong><p>최근 수집 이벤트 기준</p></div>
             </article>
             <article>
-              <span class="metric-icon">↗</span>
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></span>
               <div><small>상담 연결 클릭</small><strong id="totalContacts">0</strong><p>이용자가 상담을 시도한 횟수</p></div>
             </article>
             <article class="accent-card">
-              <span class="metric-icon">%</span>
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#percent"></use></svg></span>
               <div><small>조회 대비 상담 클릭</small><strong id="contactRate">0%</strong><p>상세 조회 중 상담 버튼 클릭 비율</p></div>
             </article>
           </div>
@@ -106,7 +139,7 @@
             <section class="panel">
               <div class="section-heading">
                 <div><p class="eyebrow">LATEST ACTIVITY</p><h2>최근 이용자 활동</h2><p>센터 상세 조회와 상담 흐름입니다.</p></div>
-                <a href="#activitySection" class="text-link">전체 보기 →</a>
+                <a href="#activitySection" class="text-link icon-label">전체 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a>
               </div>
               <div id="overviewEvents" class="compact-events"></div>
             </section>
@@ -124,13 +157,21 @@
           <div id="centerApplications" class="application-list"></div>
         </section>
 
+        <section id="reviewsAdminSection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">REVIEW MODERATION</p><h2>후기 심사함</h2><p>로그인 사용자가 작성한 후기를 검토한 뒤 공개·숨김·반려 처리합니다.</p></div>
+            <span id="pendingReviewLabel" class="period">승인 대기 0건</span>
+          </div>
+          <div id="reviewModerationList" class="moderation-list"></div>
+        </section>
+
         <section id="centersSection" class="workspace">
           <div class="section-heading workspace-heading">
             <div><p class="eyebrow">CENTER DIRECTORY</p><h2>센터 디렉터리</h2><p>검색과 상태 필터로 센터를 찾고 필요한 정보만 상세 편집합니다.</p></div>
             <span id="centerResultCount" class="period">0개 센터</span>
           </div>
           <div class="directory-tools">
-            <label class="search-field"><span>⌕</span><input id="centerSearch" type="search" placeholder="센터명, 지역, 태그, 센터장 이메일 검색" /></label>
+            <label class="search-field"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg></span><input id="centerSearch" type="search" placeholder="센터명, 지역, 태그, 센터장 이메일 검색" /></label>
             <select id="centerStatusFilter" aria-label="노출 상태">
               <option value="all">모든 노출 상태</option>
               <option value="approved">지도 노출 중</option>
@@ -155,8 +196,10 @@
             <div class="segmented-control" id="logTabs" aria-label="로그 종류">
               <button class="active" type="button" data-log-tab="events">이용자 활동</button>
               <button type="button" data-log-tab="access">접속 기록</button>
+              <button type="button" data-log-tab="audit">관리자 작업</button>
+              <button type="button" data-log-tab="errors">오류</button>
             </div>
-            <label class="search-field compact"><span>⌕</span><input id="logSearch" type="search" placeholder="센터, 이벤트, 요청 경로 검색" /></label>
+            <label class="search-field compact"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg></span><input id="logSearch" type="search" placeholder="센터, 이벤트, 요청 경로 검색" /></label>
           </div>
           <div id="eventLogPanel" class="log-list"></div>
           <div id="accessLogPanel" class="log-table-wrap" hidden>
@@ -165,6 +208,43 @@
               <tbody id="accessLogs"></tbody>
             </table>
           </div>
+          <div id="auditLogPanel" class="log-table-wrap" hidden>
+            <table>
+              <thead><tr><th>시간</th><th>작업자·역할</th><th>작업</th><th>대상</th><th>결과</th></tr></thead>
+              <tbody id="auditLogs"></tbody>
+            </table>
+          </div>
+          <div id="errorLogPanel" class="log-table-wrap" hidden>
+            <table>
+              <thead><tr><th>시간</th><th>출처</th><th>오류 코드</th><th>경로·상태</th><th>메시지</th></tr></thead>
+              <tbody id="errorLogs"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="operationsSection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">SYSTEM & ACCESS CONTROL</p><h2>시스템 상태와 운영자 권한</h2><p>DB 연결, 프로세스 자원, 열린 경고와 최고 관리자 권한을 한곳에서 확인합니다.</p></div>
+            <span id="systemHealthBadge" class="health-badge">확인 중</span>
+          </div>
+          <div class="operations-grid">
+            <section class="operations-card">
+              <h3>서비스 상태</h3>
+              <div id="systemMetrics" class="system-metrics"></div>
+              <h4>열린 경고</h4>
+              <div id="alertList" class="alert-list"></div>
+            </section>
+            <section class="operations-card">
+              <h3>최고 관리자·운영자 권한</h3>
+              <form id="platformRoleForm" class="role-form">
+                <label>이메일<input id="platformRoleEmail" type="email" required placeholder="operator@dail.kr" /></label>
+                <label>역할<select id="platformRoleValue"><option value="admin">관리자</option><option value="support">고객지원</option><option value="analyst">분석가</option><option value="super_admin">최고 관리자</option></select></label>
+                <button class="primary-button" type="submit">초대·권한 저장</button>
+              </form>
+              <p class="role-note">모든 운영자 계정은 MFA 사용이 기본이며, 권한 변경은 감사로그에 기록됩니다.</p>
+              <div id="platformRoleList" class="role-list"></div>
+            </section>
+          </div>
         </section>
       </section>
     </main>
@@ -172,7 +252,7 @@
     <dialog id="centerDialog" class="center-dialog">
       <div class="dialog-header">
         <div><p class="eyebrow">CENTER DETAILS</p><h2 id="dialogCenterTitle">센터 상세 관리</h2><p id="dialogCenterMeta">센터 정보를 확인하고 저장합니다.</p></div>
-        <button id="closeCenterDialog" class="icon-button" type="button" aria-label="닫기">×</button>
+        <button id="closeCenterDialog" class="icon-button icon-only" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#x"></use></svg></button>
       </div>
       <form id="centerForm" class="center-form">
         <input id="centerId" type="hidden" />
@@ -207,6 +287,6 @@
     </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="/admin/app.js?v=20260719-owner-password"></script>
+    <script src="/admin/app.js?v=20260723-platform-security"></script>
   </body>
 </html>

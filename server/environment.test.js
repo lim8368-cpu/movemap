@@ -18,5 +18,9 @@ assert.doesNotThrow(() => validateRuntimeEnvironment({
   EXPECTED_SUPABASE_PROJECT_REF: "stagingref",
 }));
 assert.throws(() => validateRuntimeEnvironment({ APP_ENV: "production", DATA_ENVIRONMENT: "production" }));
+assert.throws(() => validateRuntimeEnvironment({
+  APP_ENV: "development",
+  TURNSTILE_SITE_KEY: "site-only",
+}));
 
 console.log("Environment isolation tests passed");

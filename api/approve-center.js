@@ -1,4 +1,10 @@
-const { sendJson, isAdminRequest, supabaseRequest } = require("./_shared");
+const {
+  requireAdminRole,
+  recordAuditLog,
+  recordErrorLog,
+  sendJson,
+  supabaseRequest,
+} = require("./_shared");
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -13,15 +19,26 @@ async function readBody(req) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
-  if (!isAdminRequest(req)) return sendJson(res, 401, { error: "Unauthorized" });
 
   try {
     const applicationId = req.query.id;
     const action = String(req.query.action || "approve");
+    const roles = ["delete", "update"].includes(action)
+      ? ["super_admin", "admin"]
+      : ["super_admin", "admin", "support"];
+    const admin = await requireAdminRole(req, res, roles);
+    if (!admin) return;
     if (!applicationId) return sendJson(res, 400, { error: "신청 ID가 필요합니다." });
 
     if (action === "delete") {
       await supabaseRequest("centers", { method: "DELETE", query: `?id=eq.${encodeURIComponent(applicationId)}` });
+      await recordAuditLog(req, {
+        actorUserId: admin.userId,
+        actorRole: admin.role,
+        action: "center.delete",
+        targetType: "center",
+        targetId: applicationId,
+      });
       return sendJson(res, 200, { ok: true });
     }
 
@@ -31,6 +48,15 @@ module.exports = async function handler(req, res) {
       const patch = Object.fromEntries(allowed.filter((key) => body[key] !== undefined).map((key) => [key, body[key]]));
       patch.updated_at = new Date().toISOString();
       await supabaseRequest("centers", { method: "PATCH", query: `?id=eq.${encodeURIComponent(applicationId)}`, body: patch });
+      await recordAuditLog(req, {
+        actorUserId: admin.userId,
+        actorRole: admin.role,
+        centerId: applicationId,
+        action: "center.update",
+        targetType: "center",
+        targetId: applicationId,
+        metadata: { fields: Object.keys(patch).filter((key) => key !== "updated_at").join(",") },
+      });
       return sendJson(res, 200, { ok: true });
     }
 
@@ -53,6 +79,13 @@ module.exports = async function handler(req, res) {
           owner_password_scrypt: null,
           reviewed_at: new Date().toISOString(),
         },
+      });
+      await recordAuditLog(req, {
+        actorUserId: admin.userId,
+        actorRole: admin.role,
+        action: "center_application.reject",
+        targetType: "center_application",
+        targetId: item.id,
       });
       return sendJson(res, 200, { ok: true });
     }
@@ -84,8 +117,22 @@ module.exports = async function handler(req, res) {
 
     const center = centers[0];
     let ownerAccountCreated = false;
+    let ownerMembershipCreated = false;
     try {
-      if (item.email && item.owner_password_scrypt) {
+      if (item.email && item.applicant_auth_user_id) {
+        await supabaseRequest("center_memberships", {
+          method: "POST",
+          body: {
+            center_id: center.id,
+            user_id: item.applicant_auth_user_id,
+            email: item.email,
+            role: "owner",
+            status: "active",
+            accepted_at: new Date().toISOString(),
+          },
+        });
+        ownerMembershipCreated = true;
+      } else if (item.email && item.owner_password_scrypt) {
         const existingAccounts = await supabaseRequest("center_owner_accounts", {
           query: `?select=id&email=eq.${encodeURIComponent(item.email)}&limit=1`,
         });
@@ -120,6 +167,12 @@ module.exports = async function handler(req, res) {
           query: `?center_id=eq.${encodeURIComponent(center.id)}`,
         }).catch(() => null);
       }
+      if (ownerMembershipCreated) {
+        await supabaseRequest("center_memberships", {
+          method: "DELETE",
+          query: `?center_id=eq.${encodeURIComponent(center.id)}`,
+        }).catch(() => null);
+      }
       await supabaseRequest("centers", {
         method: "DELETE",
         query: `?id=eq.${encodeURIComponent(center.id)}`,
@@ -127,9 +180,24 @@ module.exports = async function handler(req, res) {
       throw error;
     }
 
-    sendJson(res, 200, { ok: true, centerId: center.id, ownerAccountCreated });
+    await recordAuditLog(req, {
+      actorUserId: admin.userId,
+      actorRole: admin.role,
+      centerId: center.id,
+      action: "center_application.approve",
+      targetType: "center_application",
+      targetId: item.id,
+      metadata: { ownerAccountCreated, ownerMembershipCreated },
+    });
+    sendJson(res, 200, {
+      ok: true,
+      centerId: center.id,
+      ownerAccountCreated,
+      ownerMembershipCreated,
+    });
   } catch (error) {
     console.error("approve api failed", error);
+    await recordErrorLog(req, error, { errorCode: "center_approval_failed", statusCode: 500 });
     sendJson(res, 500, {
       error: /이미 다른 센터장 계정/.test(String(error.message || ""))
         ? error.message

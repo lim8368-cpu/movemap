@@ -19,6 +19,11 @@ function validateRuntimeEnvironment(env = process.env) {
   const hasUrl = Boolean(env.SUPABASE_URL);
   const hasKey = Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
   if (hasUrl !== hasKey) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set together");
+  const hasTurnstileSiteKey = Boolean(env.TURNSTILE_SITE_KEY);
+  const hasTurnstileSecretKey = Boolean(env.TURNSTILE_SECRET_KEY);
+  if (hasTurnstileSiteKey !== hasTurnstileSecretKey) {
+    throw new Error("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be set together");
+  }
 
   if (hasUrl) {
     const actualRef = supabaseProjectRef(env.SUPABASE_URL);

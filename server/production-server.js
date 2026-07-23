@@ -2,8 +2,40 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { validateRuntimeEnvironment } = require("./environment");
+const { startMonitoring } = require("./monitoring");
+const {
+  adminIdentityFromRequest,
+  recordAccessLog,
+  recordErrorLog,
+  requestId,
+  supabaseRequest,
+} = require("../api/_shared");
+const { ownerSessionFromRequest } = require("../api/_owner-auth");
 
 const runtimeEnvironment = validateRuntimeEnvironment();
+
+process.on("unhandledRejection", (reason) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason || "Unhandled rejection"));
+  console.error("unhandled rejection", error);
+  recordErrorLog(null, error, {
+    errorCode: "unhandled_rejection",
+    statusCode: 500,
+    source: "process",
+  }).catch(() => {});
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("uncaught exception", error);
+  const forceExit = setTimeout(() => process.exit(1), 3_000);
+  recordErrorLog(null, error, {
+    errorCode: "uncaught_exception",
+    statusCode: 500,
+    source: "process",
+  }).finally(() => {
+    clearTimeout(forceExit);
+    process.exit(1);
+  });
+});
 
 const ROOT = path.resolve(__dirname, "..");
 const STATIC_ROOT = path.join(ROOT, "dist");
@@ -12,11 +44,14 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 const apiRoutes = new Map([
   ["/api/access-logs", require("../api/access-logs")],
+  ["/api/admin-mfa", require("../api/admin-mfa")],
   ["/api/auth/start", require("../api/auth-start")],
   ["/api/auth/naver/callback", require("../api/auth-naver-callback")],
   ["/api/auth/profile", require("../api/auth-profile")],
   ["/api/approve-center", require("../api/approve-center")],
   ["/api/center-applications", require("../api/center-applications")],
+  ["/api/center-invitations", require("../api/center-invitations")],
+  ["/api/center-members", require("../api/center-members")],
   ["/api/centers", require("../api/centers")],
   ["/api/config", require("../api/config")],
   ["/api/events", require("../api/events")],
@@ -26,7 +61,11 @@ const apiRoutes = new Map([
   ["/api/owner-dashboard", require("../api/owner-dashboard")],
   ["/api/owner-login", require("../api/owner-login")],
   ["/api/owner-logout", require("../api/owner-logout")],
+  ["/api/operations", require("../api/operations")],
+  ["/api/platform-users", require("../api/platform-users")],
   ["/api/reviews", require("../api/reviews")],
+  ["/api/registration-challenge", require("../api/registration-challenge")],
+  ["/api/registration-session", require("../api/registration-session")],
   ["/api/stats", require("../api/stats")],
   ["/api/uploads", require("../api/uploads")],
 ]);
@@ -127,6 +166,11 @@ async function serveApi(req, res, url) {
     await handler(req, res);
   } catch (error) {
     console.error("api gateway failed", error);
+    await recordErrorLog(req, error, {
+      errorCode: "api_gateway_failed",
+      statusCode: error.statusCode || 500,
+      source: "gateway",
+    });
     if (!res.headersSent) sendText(res, error.statusCode || 500, "Request failed");
     else if (!res.writableEnded) res.end();
   }
@@ -186,11 +230,44 @@ function serveStatic(req, res, url) {
 
 const server = http.createServer(async (req, res) => {
   setSecurityHeaders(res);
+  const startedAt = Date.now();
+  const currentRequestId = requestId(req);
+  res.setHeader("X-Request-ID", currentRequestId);
+  res.once("finish", () => {
+    const pathname = new URL(req.url || "/", "http://localhost").pathname;
+    if (
+      pathname === "/healthz" ||
+      pathname === "/readyz" ||
+      pathname.startsWith("/assets/") ||
+      /\.(css|js|png|jpe?g|svg|ico|webp)$/i.test(pathname)
+    ) return;
+    const admin = adminIdentityFromRequest(req);
+    const owner = ownerSessionFromRequest(req);
+    const auth = req.authContext || {};
+    recordAccessLog(req, {
+      actorUserId: admin?.userId || auth.actorUserId || owner?.userId || null,
+      actorRole: admin?.role || auth.actorRole || (owner ? "center_member" : "anonymous"),
+      centerId: req.query?.centerId || req.body?.centerId || auth.centerId || owner?.centerId || null,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    }).catch(() => {});
+  });
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname === "/healthz") {
     res.setHeader("Cache-Control", "no-store");
     sendText(res, 200, "ok");
+    return;
+  }
+
+  if (url.pathname === "/readyz") {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+      await supabaseRequest("centers", { query: "?select=id&limit=1" });
+      sendText(res, 200, "ready");
+    } catch {
+      sendText(res, 503, "database unavailable");
+    }
     return;
   }
 
@@ -213,6 +290,7 @@ server.keepAliveTimeout = 5_000;
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`DAIL ${runtimeEnvironment.appEnv} server listening on port ${PORT}`);
+  startMonitoring();
 });
 
 function shutdown(signal) {

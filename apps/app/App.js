@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   ActivityIndicator,
   Linking,
@@ -12,13 +13,13 @@ import {
 import { WebView } from "react-native-webview";
 
 const API_BASE = String(
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8090"
+  process.env.EXPO_PUBLIC_API_BASE_URL || "https://dail.157-90-26-205.sslip.io"
 ).replace(/\/$/, "");
 
 const SCREENS = [
-  { id: "centers", label: "센터 찾기", icon: "⌖", path: "/" },
-  { id: "register", label: "센터 등록", icon: "+", path: "/register/" },
-  { id: "account", label: "내 정보", icon: "○", path: "/?login=1" },
+  { id: "centers", label: "센터 찾기", icon: "map-outline", activeIcon: "map", path: "/" },
+  { id: "register", label: "센터 등록", icon: "add-circle-outline", activeIcon: "add-circle", path: "/register/" },
+  { id: "account", label: "내 정보", icon: "person-circle-outline", activeIcon: "person-circle", path: "/?login=1" },
 ];
 
 function screenForUrl(url) {
@@ -38,11 +39,13 @@ export default function App() {
   const [currentUrl, setCurrentUrl] = useState(`${API_BASE}/`);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const openScreen = useCallback((screen) => {
     setActiveScreen(screen.id);
     setCurrentUrl(`${API_BASE}${screen.path}`);
     setLoadFailed(false);
+    setLoadError("");
     setLoading(true);
   }, []);
 
@@ -83,6 +86,7 @@ export default function App() {
           allowsBackForwardNavigationGestures
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
+          mixedContentMode="always"
           setSupportMultipleWindows={false}
           pullToRefreshEnabled
           onShouldStartLoadWithRequest={allowNavigation}
@@ -92,14 +96,22 @@ export default function App() {
           onLoadStart={() => {
             setLoading(true);
             setLoadFailed(false);
+            setLoadError("");
           }}
           onLoadEnd={() => setLoading(false)}
-          onError={() => {
+          onError={(event) => {
             setLoading(false);
             setLoadFailed(true);
+            setLoadError(event.nativeEvent.description || "WebView 연결 오류");
           }}
           onHttpError={(event) => {
-            if (event.nativeEvent.statusCode >= 500) setLoadFailed(true);
+            setLoading(false);
+            setLoadFailed(true);
+            setLoadError(`HTTP ${event.nativeEvent.statusCode}`);
+          }}
+          onContentProcessDidTerminate={() => {
+            setLoadFailed(true);
+            setLoadError("웹 화면 프로세스가 종료되었습니다.");
           }}
           renderLoading={() => null}
         />
@@ -115,10 +127,12 @@ export default function App() {
           <View style={styles.errorOverlay}>
             <Text style={styles.errorTitle}>화면을 불러오지 못했습니다</Text>
             <Text style={styles.errorText}>인터넷 연결을 확인한 뒤 다시 시도해 주세요.</Text>
+            <Text style={styles.errorDetail}>{loadError || currentUrl}</Text>
             <TouchableOpacity
               style={styles.retryButton}
               onPress={() => {
                 setLoadFailed(false);
+                setLoadError("");
                 setLoading(true);
                 webViewRef.current?.reload();
               }}
@@ -142,7 +156,13 @@ export default function App() {
               accessibilityState={{ selected: active }}
               activeOpacity={0.78}
             >
-              <Text style={[styles.tabIcon, active && styles.tabTextActive]}>{screen.icon}</Text>
+              <Ionicons
+                name={active ? screen.activeIcon : screen.icon}
+                size={21}
+                color={active ? "#167354" : "#77847e"}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
               <Text style={[styles.tabText, active && styles.tabTextActive]}>{screen.label}</Text>
             </TouchableOpacity>
           );
@@ -172,6 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     backgroundColor: "rgba(247, 250, 248, 0.94)",
+    zIndex: 2,
   },
   loadingText: {
     color: "#607069",
@@ -184,6 +205,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 28,
     backgroundColor: "#f7faf8",
+    zIndex: 3,
   },
   errorTitle: {
     color: "#17211d",
@@ -194,6 +216,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: "#607069",
     fontSize: 14,
+    textAlign: "center",
+  },
+  errorDetail: {
+    marginTop: 10,
+    color: "#8b5048",
+    fontSize: 12,
+    lineHeight: 18,
     textAlign: "center",
   },
   retryButton: {
@@ -228,11 +257,6 @@ const styles = StyleSheet.create({
   tabActive: {
     borderTopColor: "#2f9b76",
     backgroundColor: "#eef6f1",
-  },
-  tabIcon: {
-    color: "#77847e",
-    fontSize: 19,
-    fontWeight: "900",
   },
   tabText: {
     color: "#77847e",

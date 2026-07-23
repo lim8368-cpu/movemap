@@ -17,6 +17,22 @@ iOS:
 npm run ios
 ```
 
+Xcode 네이티브 프로젝트를 생성하거나 실행할 때:
+
+```bash
+npm run ios:prebuild
+npm run ios:native
+```
+
+USB로 연결한 실제 iPhone에 설치할 때:
+
+```bash
+npm run ios:device
+```
+
+실제 iPhone용 Debug 빌드는 `ios/.xcode.env.updates`에서 JavaScript 번들을
+앱 내부에 포함하므로 Metro 연결이 잠시 끊겨도 시작 화면을 열 수 있습니다.
+
 Android:
 
 ```bash

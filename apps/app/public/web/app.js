@@ -121,6 +121,15 @@ function escapeHtml(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
+function uiIcon(name, className = "") {
+  return `<svg class="ui-icon ${className}" aria-hidden="true"><use href="/assets/ui-icons.svg#${name}"></use></svg>`;
+}
+
+function ratingIcons(rating) {
+  const score = Math.max(0, Math.min(5, Number(rating) || 0));
+  return Array.from({ length: 5 }, (_, index) => uiIcon("star", index < score ? "is-filled" : "")).join("");
+}
+
 function normalizeCenter(center) {
   const operatorText = String(center.therapist || "운영자 정보 확인 중")
     .replace(/물리치료사(?:\s*\d+년|\s*운영 확인|\s*면허 확인)?/g, "물리치료사 출신");
@@ -171,12 +180,25 @@ async function loadPublicConfig() {
   }
 }
 
-function trackEvent(type, centerId, detail = "") {
+function clientIdempotencyKey() {
+  return window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+      const value = Math.floor(Math.random() * 16);
+      return (character === "x" ? value : (value & 0x3) | 0x8).toString(16);
+    });
+}
+
+async function trackEvent(type, centerId, detail = "") {
+  const session = await activeAuthSession().catch(() => null);
   fetch(`${API_BASE}/api/events`, {
     method: "POST",
     headers: {
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       "Content-Type": "application/json",
       "X-Movemap-Client": "web",
+      "X-DAIL-Source": "web",
+      "Idempotency-Key": clientIdempotencyKey(),
     },
     body: JSON.stringify({
       type,
@@ -282,19 +304,19 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
-              <span class="badge badge-pt">✓ 물리치료사 출신</span>
+              <span class="badge badge-pt icon-label">${uiIcon("badge-check")}물리치료사 출신</span>
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
-            <span class="favorite" aria-hidden="true">♡</span>
+            <span class="favorite" aria-hidden="true">${uiIcon("heart")}</span>
           </div>
           <div class="meta-row">
             <span>${escapeHtml(center.area)}</span>
             <span>${escapeHtml(center.distance)}</span>
-            <span class="rating">★ ${escapeHtml(center.rating)}</span>
+            <span class="rating icon-label">${uiIcon("star", "is-filled")}${escapeHtml(center.rating)}</span>
           </div>
           <div class="card-tags">${[...center.categories,...center.tags].slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
-          <span class="card-cta">센터 상세 보기 <span aria-hidden="true">→</span></span>
+          <span class="card-cta icon-label">센터 상세 보기 ${uiIcon("arrow-right")}</span>
         </button>
       `
     )
@@ -344,7 +366,7 @@ async function loadCenterReviews(centerId) {
     const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
     const data = await response.json();
     if (!response.ok) throw new Error();
-    list.innerHTML = data.reviews.map((review) => `<article><strong>${"★".repeat(review.rating)} <span>${escapeHtml(review.nickname)}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
+    list.innerHTML = data.reviews.map((review) => `<article><strong class="review-title"><span class="stars">${ratingIcons(review.rating)}</span><span>${escapeHtml(review.nickname)}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
   } catch { list.innerHTML = "<p>후기를 불러오지 못했습니다.</p>"; }
 }
 
@@ -353,10 +375,30 @@ async function submitReview(event, centerId) {
   const form = event.currentTarget;
   const message = form.querySelector(".review-message");
   const values = new FormData(form);
-  const response = await fetch(`${API_BASE}/api/reviews`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ centerId, rating: Number(values.get("rating")), nickname: values.get("nickname"), content: values.get("content") }) });
+  const session = await activeAuthSession();
+  if (!session) {
+    message.textContent = "후기는 로그인한 이용자만 작성할 수 있습니다.";
+    openAuth("login");
+    return;
+  }
+  const idempotencyKey = clientIdempotencyKey();
+  const response = await fetch(`${API_BASE}/api/reviews`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+      "X-DAIL-Source": "web",
+    },
+    body: JSON.stringify({
+      centerId,
+      rating: Number(values.get("rating")),
+      content: values.get("content"),
+    }),
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) { message.textContent = data.error || "후기 등록에 실패했습니다."; return; }
-  form.reset(); message.textContent = "후기가 등록되었습니다."; await loadCenterReviews(centerId);
+  form.reset(); message.textContent = data.message || "후기가 검토 대기 상태로 접수되었습니다.";
 }
 
 function openCenterDetail(id) {
@@ -367,12 +409,12 @@ function openCenterDetail(id) {
 
 function centerPopupContent(center) {
   return `<article class="map-popup">
-    <button class="map-popup-close" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">×</button>
+    <button class="map-popup-close icon-only" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">${uiIcon("x")}</button>
     <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
     <p class="map-popup-category">운동센터 · <b>물리치료사 출신</b></p>
     <p class="map-popup-location">${escapeHtml(center.area)}</p>
     <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
-    <div class="map-popup-actions"><button class="map-popup-cta" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">상세보기</button><button class="map-popup-route" type="button">길찾기</button></div>
+    <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button">${uiIcon("map-pin")}길찾기</button></div>
   </article>`;
 }
 
@@ -720,7 +762,7 @@ function createMarkerIcon(isSelected, center) {
     content: `
       <button class="naver-marker ${isSelected ? "selected" : ""}" type="button">
         <span class="marker-name">${label}</span>
-        <span class="marker-rating">★ ${rating}</span>
+        <span class="marker-rating icon-label">${uiIcon("star", "is-filled")}${rating}</span>
       </button>
     `,
     size: new naver.maps.Size(size, 42),

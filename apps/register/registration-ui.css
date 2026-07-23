@@ -757,6 +757,91 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
   line-height: 1.6;
 }
 
+.human-check {
+  margin: 22px 0 18px;
+  padding: 20px;
+  border: 1px solid #d8e8df;
+  border-radius: 18px;
+  background: #f7fbf8;
+}
+
+.human-check > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.human-check > div:first-child > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 12px;
+  color: #18744f;
+  background: #e3f3ea;
+}
+
+.human-check h3 {
+  margin: 0 0 4px;
+  color: #143b2c;
+  font-size: 16px;
+}
+
+.human-check p {
+  margin: 0;
+  color: #5b7167;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.human-check > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.human-check > label > span {
+  color: #173c2e;
+  font-weight: 750;
+}
+
+.human-check > label input {
+  margin: 0;
+  text-align: center;
+}
+
+#turnstileChallenge {
+  margin-top: 16px;
+}
+
+#challengeStatus {
+  margin-top: 12px;
+}
+
+#challengeStatus.success {
+  color: #18744f;
+  font-weight: 700;
+}
+
+#challengeStatus.error {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.registration-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
 .registration-success[hidden],
 .steps[hidden],
 #registrationForm[hidden] {
@@ -902,3 +987,13 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
     text-align: left;
   }
 }
+
+/* Consistent SVG icon language */
+.benefits b { display: grid; place-items: center; color: var(--teal); }
+.benefits b .ui-icon { font-size: 28px; }
+.owner-account-title > span,
+.faq-note > span { font-family: inherit; color: var(--teal); }
+.owner-account-title > span .ui-icon { font-size: 18px; }
+.owner-signup-heading > span .ui-icon { font-size: 21px; }
+.success-symbol .ui-icon { font-size: 27px; }
+.faq-note > span .ui-icon { font-size: 20px; }

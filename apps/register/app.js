@@ -32,11 +32,21 @@ const ownerPassword = document.querySelector("#ownerPassword");
 const ownerPasswordConfirm = document.querySelector("#ownerPasswordConfirm");
 const passwordMatchMessage = document.querySelector("#passwordMatchMessage");
 const passwordToggle = document.querySelector("[data-password-toggle]");
+const mathChallenge = document.querySelector("#mathChallenge");
+const challengePrompt = document.querySelector("#challengePrompt");
+const challengeAnswer = document.querySelector("#challengeAnswer");
+const challengeStatus = document.querySelector("#challengeStatus");
+const turnstileChallenge = document.querySelector("#turnstileChallenge");
+const companyWebsite = document.querySelector("#companyWebsite");
 
 let currentStep = 1;
 let geocoderState = "loading";
 let manualAddressMode = false;
 let selectedBaseAddress = "";
+let captchaConfig = null;
+let turnstileWidgetId = null;
+let registrationToken = "";
+let formStartedAt = Date.now();
 
 function escapeHtml(value) {
   return String(value || "")
@@ -382,6 +392,109 @@ function renderSummary() {
   }).join("");
 }
 
+async function loadTurnstile(siteKey) {
+  await new Promise(function (resolve, reject) {
+    if (window.turnstile) return resolve();
+    const existing = document.querySelector('script[data-dail-turnstile]');
+    if (existing) {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", reject, { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.dataset.dailTurnstile = "true";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  turnstileChallenge.hidden = false;
+  turnstileWidgetId = window.turnstile.render(turnstileChallenge, {
+    sitekey: siteKey,
+    language: "ko",
+    theme: "light",
+    callback: function () {
+      challengeStatus.textContent = "사람 확인이 완료되었습니다.";
+      challengeStatus.className = "success";
+    },
+    "expired-callback": function () {
+      challengeStatus.textContent = "보안 확인 시간이 만료되었습니다. 다시 확인해 주세요.";
+      challengeStatus.className = "error";
+    },
+  });
+}
+
+async function loadRegistrationChallenge() {
+  registrationToken = "";
+  formStartedAt = Date.now();
+  challengeStatus.textContent = "보안 확인을 준비하고 있습니다.";
+  challengeStatus.className = "";
+  mathChallenge.hidden = true;
+  if (window.turnstile && turnstileWidgetId !== null) {
+    window.turnstile.remove(turnstileWidgetId);
+    turnstileWidgetId = null;
+  }
+  turnstileChallenge.innerHTML = "";
+  turnstileChallenge.hidden = true;
+  try {
+    const response = await fetch(API_BASE + "/api/registration-challenge", {
+      headers: { "X-DAIL-Source": "register" },
+    });
+    const config = await response.json();
+    if (!response.ok) throw new Error(config.error || "보안 확인을 불러오지 못했습니다.");
+    captchaConfig = config;
+    if (config.mode === "turnstile") {
+      await loadTurnstile(config.siteKey);
+      challengeStatus.textContent = "아래 보안 확인을 완료해 주세요.";
+    } else {
+      challengePrompt.textContent = config.prompt;
+      challengeAnswer.value = "";
+      mathChallenge.hidden = false;
+      challengeStatus.textContent = "간단한 계산 문제의 정답을 입력해 주세요.";
+    }
+  } catch (error) {
+    captchaConfig = null;
+    challengeStatus.textContent = error.message || "보안 확인을 준비하지 못했습니다.";
+    challengeStatus.className = "error";
+  }
+}
+
+async function ensureRegistrationSession() {
+  if (registrationToken) return registrationToken;
+  if (!captchaConfig) throw new Error("보안 확인을 다시 불러와 주세요.");
+  challengeStatus.textContent = "보안 확인 중입니다.";
+  challengeStatus.className = "";
+  const turnstileToken = captchaConfig.mode === "turnstile" && window.turnstile
+    ? window.turnstile.getResponse(turnstileWidgetId)
+    : "";
+  const response = await fetch(API_BASE + "/api/registration-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-DAIL-Source": "register",
+    },
+    body: JSON.stringify({
+      formStartedAt,
+      companyWebsite: companyWebsite.value,
+      challengeToken: captchaConfig.challengeToken || "",
+      challengeAnswer: challengeAnswer.value,
+      turnstileToken,
+    }),
+  });
+  const data = await response.json().catch(function () { return {}; });
+  if (!response.ok) {
+    if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+    await loadRegistrationChallenge();
+    throw new Error(data.error || "사람 확인에 실패했습니다.");
+  }
+  registrationToken = data.registrationToken;
+  challengeStatus.textContent = "보안 확인이 완료되었습니다. 신청을 전송합니다.";
+  challengeStatus.className = "success";
+  return registrationToken;
+}
+
 function validateImage(file, required) {
   if (!file && !required) return;
   if (!file) throw new Error("확인 서류를 선택해주세요.");
@@ -397,7 +510,12 @@ async function upload(file, kind) {
     API_BASE + "/api/uploads?kind=" + encodeURIComponent(kind),
     {
       method: "POST",
-      headers: { "Content-Type": file.type, "X-Movemap-Client": "register" },
+      headers: {
+        "Content-Type": file.type,
+        "X-Movemap-Client": "register",
+        "X-DAIL-Source": "register",
+        "X-Registration-Token": registrationToken,
+      },
       body: file,
     }
   );
@@ -477,6 +595,7 @@ form.addEventListener("submit", async function (event) {
   submitButton.disabled = true;
   submitButton.textContent = "신청 중...";
   try {
+    await ensureRegistrationSession();
     const photoFiles = Array.from(photoFileInput.files).slice(0, 5);
     if (photoFileInput.files.length > 5) {
       throw new Error("센터 사진은 최대 5장까지 올릴 수 있습니다.");
@@ -519,17 +638,34 @@ form.addEventListener("submit", async function (event) {
       memo: [data.get("hours"), data.get("memo")].filter(Boolean).join("\n"),
       consent: data.get("consent") === "on",
       therapistBackground: isTherapistBackground(),
+      registrationToken: registrationToken,
     };
     const response = await fetch(API_BASE + "/api/center-applications", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Movemap-Client": "register" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Movemap-Client": "register",
+        "X-DAIL-Source": "register",
+        "X-Registration-Token": registrationToken,
+      },
       body: JSON.stringify(payload),
     });
     const result = await response.json().catch(function () { return {}; });
-    if (!response.ok) throw new Error(result.error || "등록 신청에 실패했습니다.");
+    if (!response.ok) {
+      if (result.code === "registration_session_required") {
+        registrationToken = "";
+        await loadRegistrationChallenge();
+      }
+      throw new Error(result.error || "등록 신청에 실패했습니다.");
+    }
     form.reset();
     clearSelectedAddress();
     syncBackground();
+    registrationToken = "";
+    const successCaution = document.querySelector(".success-caution");
+    if (result.emailVerificationRequired) {
+      successCaution.textContent = "이메일 인증을 완료해야 센터 승인 후 대시보드에 로그인할 수 있습니다.";
+    }
     showRegistrationSuccess(signupEmail);
   } catch (error) {
     message.textContent = error.message || "서버 연결을 확인해주세요.";
@@ -542,3 +678,4 @@ form.addEventListener("submit", async function (event) {
 
 syncBackground();
 loadNaverGeocoder();
+loadRegistrationChallenge();

@@ -1,27 +1,39 @@
 const {
   sendJson,
-  isAdminRequest,
+  requireAdminRole,
   supabaseRequest,
   centerFromRow,
   createSignedStorageUrl,
+  recordAuditLog,
+  recordErrorLog,
 } = require("./_shared");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
-  if (!isAdminRequest(req)) return sendJson(res, 401, { error: "Unauthorized" });
+  const admin = await requireAdminRole(req, res, ["super_admin", "admin", "support", "analyst"]);
+  if (!admin) return;
   try {
-    const [applications, centerRows, events, ownerAccounts] = await Promise.all([
+    const [applications, centerRows, events, ownerAccounts, ownerMemberships, reviews] = await Promise.all([
       supabaseRequest("center_applications", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=1000" }),
       supabaseRequest("center_owner_accounts", {
         query: "?select=id,center_id,email,status,last_login_at,created_at&order=created_at.desc",
       }).catch(() => []),
+      supabaseRequest("center_memberships", {
+        query: "?select=id,center_id,user_id,email,role,status,last_active_at,created_at&role=eq.owner&order=created_at.desc",
+      }).catch(() => []),
+      supabaseRequest("reviews", {
+        query: "?select=id,center_id,user_id,nickname,rating,content,status,created_at,updated_at&order=created_at.desc&limit=250",
+      }).catch(() => []),
     ]);
     const centers = await Promise.all(centerRows.map(async (row) => {
       const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
       const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
-      const ownerAccount = ownerAccounts.find((account) => account.center_id === row.id);
+      const ownerMembership = ownerMemberships.find((membership) =>
+        membership.center_id === row.id && membership.status === "active"
+      );
+      const legacyOwnerAccount = ownerAccounts.find((account) => account.center_id === row.id);
       const registration = applications.find((application) => application.id === row.application_id);
       return ({
         ...centerFromRow(row, photoUrls[0] || "", photoUrls),
@@ -35,12 +47,20 @@ module.exports = async function handler(req, res) {
         views: events.filter((item) => item.center_id === row.id && item.event_type === "view").length,
         contactClicks: events.filter((item) => item.center_id === row.id && item.event_type === "contact").length,
         lastEventAt: events.find((item) => item.center_id === row.id)?.created_at || null,
-        ownerAccount: ownerAccount ? {
-          id: ownerAccount.id,
-          email: ownerAccount.email,
-          status: ownerAccount.status,
-          lastLoginAt: ownerAccount.last_login_at,
-          createdAt: ownerAccount.created_at,
+        ownerAccount: ownerMembership ? {
+          id: ownerMembership.id,
+          email: ownerMembership.email,
+          status: ownerMembership.status,
+          lastLoginAt: ownerMembership.last_active_at,
+          createdAt: ownerMembership.created_at,
+          authUserId: ownerMembership.user_id,
+        } : legacyOwnerAccount ? {
+          id: legacyOwnerAccount.id,
+          email: legacyOwnerAccount.email,
+          status: legacyOwnerAccount.status,
+          lastLoginAt: legacyOwnerAccount.last_login_at,
+          createdAt: legacyOwnerAccount.created_at,
+          legacy: true,
         } : null,
       });
     }));
@@ -50,7 +70,7 @@ module.exports = async function handler(req, res) {
       ownerName: item.owner_name,
       phone: item.phone,
       email: item.email || "",
-      ownerPasswordSet: Boolean(item.owner_password_scrypt),
+      ownerPasswordSet: Boolean(item.applicant_auth_user_id || item.owner_password_scrypt),
       therapistBackground: Boolean(item.therapist_background),
       area: item.area,
       address: item.address,
@@ -68,26 +88,57 @@ module.exports = async function handler(req, res) {
       centerId: centerRows.find((center) => center.application_id === item.id)?.id || "",
       createdAt: item.created_at,
     })));
+    await recordAuditLog(req, {
+      actorUserId: admin.userId,
+      actorRole: admin.role || "admin",
+      action: "admin.dashboard.read",
+      targetType: "dashboard",
+    });
     sendJson(res, 200, {
+      admin: {
+        role: admin.role,
+        email: admin.email || null,
+      },
       totals: {
         centers: centers.length,
         pendingCenters: applications.filter((item) => item.status === "pending").length,
         views: events.filter((item) => item.event_type === "view").length,
         contactClicks: events.filter((item) => item.event_type === "contact").length,
         events: events.length,
-        activeOwnerAccounts: ownerAccounts.filter((item) => item.status === "active").length,
+        activeOwnerAccounts: ownerMemberships.filter((item) => item.status === "active").length +
+          ownerAccounts.filter((item) => item.status === "active" &&
+            !ownerMemberships.some((membership) => membership.center_id === item.center_id && membership.status === "active")).length,
+        pendingReviews: reviews.filter((item) => item.status === "pending").length,
       },
-      centerApplications: applicationItems,
-      centers,
+      centerApplications: admin.role === "analyst" ? [] : applicationItems,
+      centers: admin.role === "analyst"
+        ? centers.map(({ ownerAccount, registrationEmail, ...center }) => center)
+        : centers,
       recentEvents: events.slice(0, 30).map((item) => ({
         type: item.event_type,
         centerId: item.center_id || "-",
         source: item.source,
         createdAt: item.created_at,
       })),
+      reviews: admin.role === "analyst" ? [] : reviews.map((item) => ({
+        id: item.id,
+        centerId: item.center_id,
+        userId: item.user_id,
+        nickname: item.nickname,
+        rating: item.rating,
+        content: item.content,
+        status: item.status,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+      })),
     });
   } catch (error) {
     console.error("stats api failed", error);
+    await recordErrorLog(req, error, {
+      errorCode: "admin_stats_failed",
+      statusCode: 500,
+      source: "admin",
+    });
     sendJson(res, 500, { error: "관리자 데이터를 불러오지 못했습니다." });
   }
 };

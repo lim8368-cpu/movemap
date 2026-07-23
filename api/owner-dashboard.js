@@ -1,5 +1,12 @@
-const { centerFromRow, createSignedStorageUrl, sendJson, supabaseRequest } = require("./_shared");
-const { ownerSessionFromRequest } = require("./_owner-auth");
+const {
+  centerFromRow,
+  createSignedStorageUrl,
+  recordAuditLog,
+  recordErrorLog,
+  sendJson,
+  supabaseRequest,
+} = require("./_shared");
+const { requireOwnerAccess } = require("./_platform-auth");
 
 const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "categories", "therapist", "price", "phone", "website", "opening_hours"];
 const ALLOWED_CATEGORIES = new Set(["재활운동", "통증관리", "자세교정", "체형관리", "스포츠재활", "시니어운동", "산전산후", "다이어트"]);
@@ -42,20 +49,47 @@ async function centerData(centerId) {
   };
 }
 
-module.exports = async function handler(req, res) {
-  let session;
-  try {
-    session = ownerSessionFromRequest(req);
-  } catch {
-    return sendJson(res, 503, { error: "센터장 세션 설정을 확인해 주세요." });
+async function availableCenters(access) {
+  const memberships = access.memberships || [];
+  if (!memberships.length) {
+    const rows = await supabaseRequest("centers", {
+      query: `?select=id,name,status&id=eq.${encodeURIComponent(access.centerId)}&limit=1`,
+    });
+    return rows.map((center) => ({ ...center, role: access.role }));
   }
-  if (!session) return sendJson(res, 401, { error: "로그인이 필요합니다." });
+  const centers = await Promise.all(memberships.map(async (membership) => {
+    const rows = await supabaseRequest("centers", {
+      query: `?select=id,name,status&id=eq.${encodeURIComponent(membership.center_id)}&limit=1`,
+    });
+    return rows[0] ? { ...rows[0], role: membership.role } : null;
+  }));
+  return centers.filter(Boolean);
+}
 
+module.exports = async function handler(req, res) {
   try {
+    const requestedCenterId = String(req.query?.centerId || req.body?.centerId || "");
+    const access = await requireOwnerAccess(req, res, {
+      centerId: requestedCenterId,
+      action: req.method === "PATCH" ? "edit_center" : "read",
+    });
+    if (!access) return;
     if (req.method === "GET") {
-      const data = await centerData(session.centerId);
+      const [data, centers] = await Promise.all([
+        centerData(access.centerId),
+        availableCenters(access),
+      ]);
       if (!data) return sendJson(res, 404, { error: "연결된 센터를 찾을 수 없습니다." });
-      return sendJson(res, 200, { ...data, account: { email: session.email } });
+      return sendJson(res, 200, {
+        ...data,
+        account: {
+          email: access.email,
+          userId: access.userId,
+          role: access.role,
+          legacy: access.legacy,
+        },
+        availableCenters: centers,
+      });
     }
     if (req.method !== "PATCH") return sendJson(res, 405, { error: "Method not allowed" });
 
@@ -77,10 +111,24 @@ module.exports = async function handler(req, res) {
     }
     if (!Object.keys(patch).length) return sendJson(res, 400, { error: "수정할 정보가 없습니다." });
     patch.updated_at = new Date().toISOString();
-    await supabaseRequest("centers", { method: "PATCH", query: `?id=eq.${encodeURIComponent(session.centerId)}`, body: patch });
-    sendJson(res, 200, { ok: true, ...(await centerData(session.centerId)) });
+    await supabaseRequest("centers", { method: "PATCH", query: `?id=eq.${encodeURIComponent(access.centerId)}`, body: patch });
+    await recordAuditLog(req, {
+      actorUserId: access.userId,
+      actorRole: access.role,
+      centerId: access.centerId,
+      action: "center.update",
+      targetType: "center",
+      targetId: access.centerId,
+      metadata: { fields: Object.keys(patch).filter((key) => key !== "updated_at").join(",") },
+    });
+    sendJson(res, 200, {
+      ok: true,
+      ...(await centerData(access.centerId)),
+      availableCenters: await availableCenters(access),
+    });
   } catch (error) {
     console.error("owner dashboard api failed", error);
+    await recordErrorLog(req, error, { errorCode: "owner_dashboard_failed", statusCode: 500 });
     sendJson(res, 500, { error: "센터 정보를 처리하지 못했습니다." });
   }
 };

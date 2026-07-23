@@ -1,0 +1,62 @@
+.ui-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  flex: 0 0 auto;
+  overflow: visible;
+  vertical-align: -0.14em;
+  color: inherit;
+}
+
+.ui-icon.is-filled {
+  fill: currentColor;
+}
+
+.icon-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42em;
+}
+
+.icon-label .ui-icon {
+  font-size: 1.08em;
+}
+
+.icon-only {
+  display: inline-grid;
+  place-items: center;
+}
+
+.icon-only .ui-icon {
+  font-size: 1.15em;
+}
+
+.brand-symbol > span {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  display: block;
+}
+
+.brand-symbol > span::before,
+.brand-symbol > span::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  border: 1.8px solid currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.brand-symbol > span::before {
+  width: 14px;
+  height: 14px;
+}
+
+.brand-symbol > span::after {
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px currentColor inset;
+}
