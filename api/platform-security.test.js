@@ -1,4 +1,5 @@
 const assert = require("assert");
+const crypto = require("crypto");
 
 process.env.SUPABASE_URL = "https://supabase.test";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
@@ -8,6 +9,7 @@ process.env.OWNER_SESSION_SECRET = "test-owner-session-secret";
 process.env.REGISTRATION_CHALLENGE_SECRET = "test-registration-secret";
 
 const events = require("./events");
+const login = require("./login");
 const reviews = require("./reviews");
 const { requireAdminRole, signAdminSession } = require("./_shared");
 const { ownerAccess, roleAllows } = require("./_platform-auth");
@@ -154,6 +156,83 @@ async function testAdminRoleIsRechecked() {
   assert.equal(revokedResponse.statusCode, 403);
 }
 
+async function testExistingBootstrapAdminReceivesMissingPlatformRole() {
+  const email = "bootstrap-admin@example.com";
+  const password = "bootstrap-password";
+  const salt = Buffer.from("platform-bootstrap-test-salt");
+  const passwordHash = crypto.scryptSync(password, salt, 64);
+  const accessToken = [
+    Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url"),
+    Buffer.from(JSON.stringify({ aal: "aal1" })).toString("base64url"),
+    "signature",
+  ].join(".");
+  const user = {
+    id: "33333333-3333-4333-8333-333333333333",
+    email,
+    factors: [],
+    user_metadata: {},
+  };
+  let roleCreated = false;
+  let authUserUpdated = false;
+
+  process.env.AUTH_SUPABASE_URL = "https://supabase.test";
+  process.env.AUTH_SUPABASE_ANON_KEY = "test-anon";
+  process.env.AUTH_SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
+  process.env.SUPER_ADMIN_EMAIL = email;
+  process.env.ADMIN_PASSWORD_SCRYPT =
+    `scrypt$${salt.toString("base64url")}$${passwordHash.toString("base64url")}`;
+
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const method = init.method || "GET";
+    if (parsed.pathname === "/rest/v1/admin_login_attempts" && method === "GET") {
+      return jsonResponse([]);
+    }
+    if (parsed.pathname === "/auth/v1/token" && method === "POST") {
+      return jsonResponse({
+        access_token: accessToken,
+        refresh_token: "refresh-token",
+        user,
+      });
+    }
+    if (parsed.pathname === "/auth/v1/admin/users" && method === "GET") {
+      return jsonResponse({ users: [user] });
+    }
+    if (parsed.pathname === `/auth/v1/admin/users/${user.id}` && method === "PUT") {
+      authUserUpdated = true;
+      return jsonResponse(user);
+    }
+    if (parsed.pathname === "/rest/v1/platform_user_roles" && method === "GET") {
+      return jsonResponse(roleCreated ? [{
+        user_id: user.id,
+        email,
+        role: "super_admin",
+        status: "active",
+        mfa_required: true,
+      }] : []);
+    }
+    if (parsed.pathname === "/rest/v1/platform_user_roles" && method === "POST") {
+      roleCreated = true;
+      return jsonResponse(null, 201);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+
+  const res = responseRecorder();
+  await login({
+    method: "POST",
+    url: "/api/login",
+    headers: {},
+    socket: { remoteAddress: "127.0.0.20" },
+    body: { email, password },
+  }, res);
+
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.code, "mfa_required");
+  assert.equal(roleCreated, true);
+  assert.equal(authUserUpdated, true);
+}
+
 (async function run() {
   const originalFetch = global.fetch;
   try {
@@ -161,6 +240,7 @@ async function testAdminRoleIsRechecked() {
     await testSignedCaptcha();
     await testMembershipIsolationAndImmediateRevocation();
     await testAdminRoleIsRechecked();
+    await testExistingBootstrapAdminReceivesMissingPlatformRole();
     console.log("Platform security tests passed");
   } finally {
     global.fetch = originalFetch;

@@ -116,7 +116,14 @@ async function supabaseAdminLogin(email, password) {
     authSession = await ensureBootstrapAdmin(email, password);
   }
   if (!authSession?.user) return null;
-  const platformRole = await platformRoleForUser(authSession.user.id);
+  let platformRole = await platformRoleForUser(authSession.user.id);
+  if (!platformRole) {
+    const bootstrappedSession = await ensureBootstrapAdmin(email, password);
+    if (bootstrappedSession?.user) {
+      authSession = bootstrappedSession;
+      platformRole = await platformRoleForUser(authSession.user.id);
+    }
+  }
   if (!platformRole) return null;
   const claims = jwtClaims(authSession.access_token);
   if (platformRole.mfa_required !== false && claims.aal !== "aal2") {
