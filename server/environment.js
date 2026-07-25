@@ -34,8 +34,41 @@ function validateRuntimeEnvironment(env = process.env) {
     }
   }
 
+  const authValues = [
+    env.AUTH_SUPABASE_URL,
+    env.AUTH_SUPABASE_ANON_KEY,
+    env.AUTH_SUPABASE_SERVICE_ROLE_KEY,
+  ];
+  const hasAnyAuthValue = authValues.some(Boolean);
+  const hasAllAuthValues = authValues.every(Boolean);
+  if (hasAnyAuthValue && !hasAllAuthValues) {
+    throw new Error("AUTH_SUPABASE_URL, AUTH_SUPABASE_ANON_KEY, and AUTH_SUPABASE_SERVICE_ROLE_KEY must be set together");
+  }
+
+  const authUrl = env.AUTH_SUPABASE_URL || env.SUPABASE_URL || "";
+  const authRef = authUrl ? supabaseProjectRef(authUrl) : "";
+  if (authUrl && !authRef) throw new Error("AUTH_SUPABASE_URL must use a *.supabase.co project URL");
+
+  if (appEnv !== "development" && hasUrl) {
+    if (!hasAllAuthValues) {
+      throw new Error(`${appEnv} requires explicit AUTH_SUPABASE configuration`);
+    }
+    const expectedAuthRef = String(env.EXPECTED_AUTH_SUPABASE_PROJECT_REF || "").toLowerCase();
+    if (!expectedAuthRef || authRef !== expectedAuthRef) {
+      throw new Error("AUTH_SUPABASE_URL does not match EXPECTED_AUTH_SUPABASE_PROJECT_REF");
+    }
+    if (authRef !== supabaseProjectRef(env.SUPABASE_URL)) {
+      throw new Error("AUTH_SUPABASE_URL and SUPABASE_URL must use the same environment project");
+    }
+  }
+
   if (appEnv === "production" && !hasUrl) throw new Error("Production requires Supabase configuration");
-  return { appEnv, dataEnv: dataEnv || "development", supabaseProjectRef: hasUrl ? supabaseProjectRef(env.SUPABASE_URL) : "" };
+  return {
+    appEnv,
+    dataEnv: dataEnv || "development",
+    supabaseProjectRef: hasUrl ? supabaseProjectRef(env.SUPABASE_URL) : "",
+    authSupabaseProjectRef: authRef,
+  };
 }
 
 module.exports = { supabaseProjectRef, validateRuntimeEnvironment };

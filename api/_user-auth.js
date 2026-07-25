@@ -206,18 +206,69 @@ async function userFromAccessToken(token) {
   return response.json();
 }
 
+async function claimLegacyAuthIdentity(userId, confirmedEmail) {
+  const legacyProfiles = await supabaseRequest("user_profiles", {
+    query: `?select=*&email=eq.${encodeURIComponent(confirmedEmail)}&user_id=neq.${encodeURIComponent(userId)}&limit=2`,
+  });
+  if (legacyProfiles.length !== 1) return [];
+
+  const legacyUserId = legacyProfiles[0].user_id;
+  const references = [
+    ["reviews", "user_id"],
+    ["events", "actor_user_id"],
+    ["center_memberships", "user_id"],
+    ["center_memberships", "invited_by_user_id"],
+    ["center_memberships", "revoked_by_user_id"],
+    ["center_invitations", "invited_by_user_id"],
+    ["center_invitations", "accepted_by_user_id"],
+    ["center_owner_accounts", "auth_user_id"],
+    ["center_applications", "applicant_auth_user_id"],
+    ["platform_user_roles", "user_id"],
+    ["platform_user_roles", "created_by_user_id"],
+    ["access_logs", "actor_user_id"],
+    ["audit_logs", "actor_user_id"],
+    ["operational_alerts", "acknowledged_by_user_id"],
+  ];
+  for (const [table, column] of references) {
+    await supabaseRequest(table, {
+      method: "PATCH",
+      query: `?${column}=eq.${encodeURIComponent(legacyUserId)}`,
+      body: { [column]: userId },
+    });
+  }
+  await supabaseRequest("user_profiles", {
+    method: "PATCH",
+    query: `?user_id=eq.${encodeURIComponent(legacyUserId)}&email=eq.${encodeURIComponent(confirmedEmail)}`,
+    body: {
+      user_id: userId,
+      updated_at: new Date().toISOString(),
+    },
+  });
+  return [{ ...legacyProfiles[0], user_id: userId }];
+}
+
 async function syncUserProfile(user, input = {}) {
   const metadata = user.user_metadata || {};
   const provider = user.app_metadata?.provider || metadata.provider || "unknown";
   const nickname = String(input.nickname ?? metadata.full_name ?? metadata.name ?? metadata.user_name ?? metadata.nickname ?? "").trim().slice(0, 40);
-  const existing = await supabaseRequest("user_profiles", { query: `?select=*&user_id=eq.${encodeURIComponent(user.id)}&limit=1` });
+  let existing = await supabaseRequest("user_profiles", { query: `?select=*&user_id=eq.${encodeURIComponent(user.id)}&limit=1` });
+  const confirmedEmail = user.email && (user.email_confirmed_at || user.confirmed_at)
+    ? String(user.email).trim().toLowerCase()
+    : "";
+  if (!existing.length && confirmedEmail) {
+    try {
+      existing = await claimLegacyAuthIdentity(user.id, confirmedEmail);
+    } catch (error) {
+      console.warn("Legacy auth identity claim was skipped", error.message);
+    }
+  }
   const now = new Date().toISOString();
   const body = {
     user_id: user.id,
-    email: user.email || null,
-    nickname,
-    avatar_url: metadata.avatar_url || metadata.picture || null,
-    provider,
+    email: user.email || existing[0]?.email || null,
+    nickname: nickname || existing[0]?.nickname || "",
+    avatar_url: metadata.avatar_url || metadata.picture || existing[0]?.avatar_url || null,
+    provider: provider === "unknown" ? (existing[0]?.provider || provider) : provider,
     updated_at: now,
   };
   if (input.acceptRequired === true) {
