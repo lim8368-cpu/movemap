@@ -13,7 +13,6 @@ const {
 } = require("./_shared");
 const { platformRoleForUser } = require("./_platform-auth");
 const {
-  authRequest,
   createAuthUser,
   findAuthUserByEmail,
   jwtClaims,
@@ -121,9 +120,13 @@ async function supabaseAdminLogin(email, password) {
   if (!platformRole) return null;
   const claims = jwtClaims(authSession.access_token);
   if (platformRole.mfa_required !== false && claims.aal !== "aal2") {
-    const factors = await authRequest("/factors", {
-      accessToken: authSession.access_token,
-    }).catch(() => ({ all: [], totp: [] }));
+    const allFactors = Array.isArray(authSession.user.factors)
+      ? authSession.user.factors
+      : [];
+    const factors = {
+      all: allFactors,
+      totp: allFactors.filter((factor) => factor.factor_type === "totp"),
+    };
     return {
       mfaRequired: true,
       authSession,
