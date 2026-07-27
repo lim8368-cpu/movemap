@@ -14,17 +14,20 @@ const tagInput = document.querySelector("#tagInput");
 const tagField = centerForm.elements.tags;
 const tagChips = document.querySelector("#tagChips");
 const tagEditor = document.querySelector("#tagEditor");
+const AUTH_STORAGE_KEY = "dail_auth_session";
+const AUTH_RETURN_KEY = "dail_auth_return_to";
 
 let currentEmail = "";
 let currentCenterId = "";
 let currentRole = "";
 let hasUnsavedChanges = false;
 let latestInvitationLinks = {};
+let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
 
 const ownerOnboardingMessage = invitationToken
-  ? "초대받은 이메일과 비밀번호로 로그인하면 센터 구성원 합류가 완료됩니다."
+  ? "초대받은 DAIL 계정으로 로그인하면 센터 구성원 합류가 완료됩니다."
   : ownerQuery.get("from") === "register"
-    ? "센터가 승인되면 등록 신청 때 설정한 이메일과 비밀번호로 로그인해 주세요."
+    ? "센터가 승인되면 등록 신청에 사용한 같은 DAIL 계정으로 로그인해 주세요."
     : "";
 
 if (/^\S+@\S+\.\S+$/.test(ownerEmailHint)) ownerLoginEmail.value = ownerEmailHint;
@@ -112,6 +115,78 @@ function showInvitationActivation() {
   dashboard.hidden = true;
   logoutButton.hidden = true;
   invitePanel.hidden = false;
+}
+
+function storedAuthSession() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+async function refreshAuthSession(session) {
+  const auth = publicConfig.auth || {};
+  if (!session?.refresh_token || !auth.supabaseUrl || !auth.supabaseAnonKey) return null;
+  const response = await fetch(auth.supabaseUrl + "/auth/v1/token?grant_type=refresh_token", {
+    method: "POST",
+    headers: {
+      "apikey": auth.supabaseAnonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: session.refresh_token }),
+  });
+  if (!response.ok) return null;
+  const next = await response.json();
+  next.expires_at = Math.floor(Date.now() / 1000) + (Number(next.expires_in) || 3600);
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+async function activeAuthSession() {
+  let session = storedAuthSession();
+  if (!session) return null;
+  if (Number(session.expires_at || 0) < Math.floor(Date.now() / 1000) + 60) {
+    session = await refreshAuthSession(session);
+  }
+  if (!session) localStorage.removeItem(AUTH_STORAGE_KEY);
+  return session;
+}
+
+async function establishSocialOwnerSession() {
+  const session = await activeAuthSession();
+  if (!session?.access_token) return { ok: false, message: "" };
+  const response = await fetch("/api/owner-login", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ invitationToken }),
+  });
+  const data = await response.json().catch(() => ({}));
+  return {
+    ok: response.ok,
+    message: data.error || "",
+  };
+}
+
+async function initializeOwnerAuth() {
+  try {
+    const response = await fetch("/api/config");
+    publicConfig = await response.json();
+  } catch {
+    publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
+  }
+  const providers = publicConfig.auth?.providers || {};
+  document.querySelectorAll("[data-owner-auth-provider]").forEach((button) => {
+    const ready = Boolean(providers[button.dataset.ownerAuthProvider]);
+    button.dataset.ready = String(ready);
+    button.disabled = !ready;
+    button.title = ready ? "" : "로그인 설정을 준비하고 있습니다.";
+  });
+  if (invitationToken && invitationAccessToken) showInvitationActivation();
+  else loadDashboard();
 }
 
 function formValues() {
@@ -230,9 +305,17 @@ function fillDashboard(data) {
   setDirtyState(false);
 }
 
-async function loadDashboard(centerId = currentCenterId) {
+async function loadDashboard(centerId = currentCenterId, allowSocialSession = true) {
   const query = centerId ? `?centerId=${encodeURIComponent(centerId)}` : "";
   const response = await fetch(`/api/owner-dashboard${query}`);
+  if ((response.status === 401 || response.status === 403) && allowSocialSession) {
+    const socialLogin = await establishSocialOwnerSession();
+    if (socialLogin.ok) {
+      if (ownerQuery.get("auth") === "success") history.replaceState(null, "", "/center-dashboard/");
+      return loadDashboard(centerId, false);
+    }
+    return showLogin(socialLogin.message || ownerOnboardingMessage);
+  }
   if (response.status === 401 || response.status === 403) return showLogin();
   const data = await response.json().catch(() => ({}));
   if (!response.ok) return showLogin(data.error || "센터 정보를 불러오지 못했습니다.");
@@ -317,6 +400,14 @@ function setDirtyState(dirty) {
     : dirty ? "저장하지 않은 변경사항이 있습니다" : "저장된 정보입니다";
 }
 
+document.querySelectorAll("[data-owner-auth-provider]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.dataset.ready !== "true") return;
+    sessionStorage.setItem(AUTH_RETURN_KEY, "/center-dashboard/");
+    location.href = `/api/auth/start?provider=${encodeURIComponent(button.dataset.ownerAuthProvider)}`;
+  });
+});
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = loginForm.querySelector('button[type="submit"]');
@@ -333,7 +424,7 @@ loginForm.addEventListener("submit", async (event) => {
   });
   const data = await response.json().catch(() => ({}));
   button.disabled = false;
-  button.textContent = "대시보드 들어가기";
+  button.textContent = "기존 계정으로 들어가기";
   if (!response.ok) return showLogin(data.error || "로그인하지 못했습니다.");
   document.querySelector("#password").value = "";
   if (invitationToken) history.replaceState(null, "", "/center-dashboard/");
@@ -470,6 +561,18 @@ document.querySelectorAll("[data-jump-profile]").forEach((button) =>
 );
 logoutButton.addEventListener("click", async () => {
   await fetch("/api/owner-logout", { method: "POST" });
+  const session = storedAuthSession();
+  const auth = publicConfig.auth || {};
+  if (session?.access_token && auth.supabaseUrl && auth.supabaseAnonKey) {
+    fetch(auth.supabaseUrl + "/auth/v1/logout", {
+      method: "POST",
+      headers: {
+        "apikey": auth.supabaseAnonKey,
+        "Authorization": "Bearer " + session.access_token,
+      },
+    }).catch(() => {});
+  }
+  localStorage.removeItem(AUTH_STORAGE_KEY);
   currentCenterId = "";
   showLogin("안전하게 로그아웃되었습니다.");
 });
@@ -499,5 +602,4 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 
-if (invitationToken && invitationAccessToken) showInvitationActivation();
-else loadDashboard();
+initializeOwnerAuth();

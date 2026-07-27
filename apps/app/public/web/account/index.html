@@ -6,7 +6,7 @@
   <title>내 정보 수정 | DAIL</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./account.css?v=20260719" />
+  <link rel="stylesheet" href="./account.css?v=20260727-social-owner" />
 </head>
 <body>
   <header><a class="brand" href="/"><i></i><span>DAIL<small>다시 일상으로</small></span></a><a class="back" href="/">홈으로</a></header>
@@ -19,7 +19,13 @@
       <button type="submit">변경사항 저장</button><p id="accountMessage" class="message" aria-live="polite"></p>
     </form>
     <p id="accountLoading" class="loading">회원 정보를 불러오는 중입니다.</p>
+    <section id="centerOperationCard" class="center-operation-card" hidden>
+      <span id="centerOperationBadge"></span>
+      <h2 id="centerOperationTitle"></h2>
+      <p id="centerOperationMessage"></p>
+      <a id="centerOperationAction" href="/register/"></a>
+    </section>
   </section></main>
-  <script src="./account.js?v=20260719-home-after-save"></script>
+  <script src="./account.js?v=20260727-social-owner"></script>
 </body>
 </html>

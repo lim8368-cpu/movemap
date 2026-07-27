@@ -10,6 +10,7 @@ process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret";
 
 const centerApplications = require("./center-applications");
 const approveCenter = require("./approve-center");
+const ownerLogin = require("./owner-login");
 const { privacyHash, signAdminSession } = require("./_shared");
 
 function responseRecorder() {
@@ -32,13 +33,15 @@ function applicationRequest(token = "registration-token") {
   return {
     method: "POST",
     url: "/api/center-applications",
-    headers: { "x-registration-token": token },
+    headers: {
+      "x-registration-token": token,
+      authorization: "Bearer social-access-token",
+    },
     body: {
       centerName: "일반 운동센터",
       ownerName: "홍길동",
       phone: "010-1234-5678",
       email: "owner@example.com",
-      password: "secure-pass-123",
       area: "서울 중구",
       address: "서울 중구 세종대로 110",
       therapistBackground: false,
@@ -49,6 +52,9 @@ function applicationRequest(token = "registration-token") {
 
 async function testRegistrationSessionIsRequired() {
   global.fetch = async function (url, init = {}) {
+    if (String(url).endsWith("/auth/v1/user")) {
+      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
+    }
     if (String(url).includes("/rest/v1/registration_sessions")) return jsonResponse([]);
     throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
   };
@@ -58,23 +64,14 @@ async function testRegistrationSessionIsRequired() {
   assert.equal(res.body.code, "registration_session_required");
 }
 
-async function testGeneralCenterApplicationUsesSupabaseAuth() {
+async function testGeneralCenterApplicationUsesAuthenticatedSocialAccount() {
   let insertedApplication;
   let registrationConsumed = false;
   global.fetch = async function (url, init = {}) {
     const parsed = new URL(url);
     const method = init.method || "GET";
-    if (parsed.pathname === "/auth/v1/token") {
-      return jsonResponse({ error: "invalid credentials" }, 400);
-    }
-    if (parsed.pathname === "/auth/v1/signup") {
-      return jsonResponse({
-        user: {
-          id: "auth-user-1",
-          email: "owner@example.com",
-          identities: [{ id: "identity-1" }],
-        },
-      });
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
     }
     const table = parsed.pathname.split("/").pop();
     if (table === "registration_sessions" && method === "GET") {
@@ -114,6 +111,18 @@ async function testGeneralCenterApplicationUsesSupabaseAuth() {
   assert.equal(insertedApplication.registration_session_id, "registration-session-1");
   assert.equal("password" in insertedApplication, false);
   assert.equal(registrationConsumed, true);
+}
+
+async function testCenterApplicationRequiresAuthenticatedAccount() {
+  global.fetch = async function () {
+    throw new Error("Unauthenticated application must not reach Supabase");
+  };
+  const req = applicationRequest();
+  delete req.headers.authorization;
+  const res = responseRecorder();
+  await centerApplications(req, res);
+  assert.equal(res.statusCode, 401);
+  assert.equal(res.body.error, "로그인이 필요합니다.");
 }
 
 async function testApprovalCreatesOwnerMembership() {
@@ -178,12 +187,49 @@ async function testApprovalCreatesOwnerMembership() {
   assert.equal(applicationPatch.status, "approved");
 }
 
+async function testSocialSessionCreatesOwnerDashboardSession() {
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const method = init.method || "GET";
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
+    }
+    const table = parsed.pathname.split("/").pop();
+    if (table === "center_memberships" && method === "GET") {
+      return jsonResponse([{
+        id: "membership-1",
+        center_id: "center-1",
+        user_id: "auth-user-1",
+        email: "owner@example.com",
+        role: "owner",
+        status: "active",
+      }]);
+    }
+    if (table === "audit_logs" && method === "POST") {
+      return jsonResponse([{ id: "audit-3" }], 201);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  const res = responseRecorder();
+  await ownerLogin({
+    method: "POST",
+    url: "/api/owner-login",
+    headers: { authorization: "Bearer social-access-token" },
+    body: {},
+  }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.centers[0].centerId, "center-1");
+  assert.match(String(res.headers["Set-Cookie"]), /^dail_center_session=/);
+}
+
 (async function run() {
   const originalFetch = global.fetch;
   try {
     await testRegistrationSessionIsRequired();
-    await testGeneralCenterApplicationUsesSupabaseAuth();
+    await testCenterApplicationRequiresAuthenticatedAccount();
+    await testGeneralCenterApplicationUsesAuthenticatedSocialAccount();
     await testApprovalCreatesOwnerMembership();
+    await testSocialSessionCreatesOwnerDashboardSession();
     console.log("Center onboarding tests passed");
   } finally {
     global.fetch = originalFetch;

@@ -13,9 +13,11 @@ const {
   verifyOwnerPassword,
 } = require("./_owner-auth");
 const {
+  accessTokenFromRequest,
   ensureAuthUser,
   signInWithPassword,
   updateAuthUser,
+  userFromAccessToken,
 } = require("./_user-auth");
 
 const MAX_FAILURES = 5;
@@ -144,12 +146,76 @@ async function supabaseUserForLegacyAccount(account, password) {
   }
 }
 
+async function completeOwnerLogin(req, res, {
+  user,
+  account = null,
+  invitationToken = "",
+  authMigrated = false,
+}) {
+  if (account && account.status === "active") {
+    await activateLegacyOwner(account, user);
+  }
+  const acceptedInvitation = await acceptInvitation(invitationToken, user);
+  const memberships = await activeMemberships(user.id);
+  if (!memberships.length) {
+    await recordAuditLog(req, {
+      actorUserId: user.id,
+      actorRole: "center_member",
+      action: "center_member.login",
+      targetType: "session",
+      success: false,
+      metadata: { reason: "no_active_membership" },
+    });
+    return sendJson(res, 403, {
+      error: "이 계정에는 아직 활성화된 센터 운영 권한이 없습니다.",
+      code: "membership_required",
+    });
+  }
+
+  const email = String(user.email || memberships[0].email || "").toLowerCase();
+  const token = signOwnerSession({
+    id: account?.id || null,
+    auth_user_id: user.id,
+    center_id: memberships[0].center_id,
+    email,
+  });
+  res.setHeader("Set-Cookie", ownerSessionCookie(token, req));
+  await recordAuditLog(req, {
+    actorUserId: user.id,
+    actorRole: memberships[0].role,
+    centerId: memberships[0].center_id,
+    action: "center_member.login",
+    targetType: "session",
+    metadata: { centers: memberships.length, authMigrated, method: account ? "password" : "social_session" },
+  });
+  return sendJson(res, 200, {
+    ok: true,
+    expiresInSeconds: OWNER_SESSION_TTL_SECONDS,
+    centers: memberships.map((membership) => ({
+      centerId: membership.center_id,
+      role: membership.role,
+    })),
+    authMigrated,
+    invitationAccepted: Boolean(acceptedInvitation),
+  });
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
   if (!enforceRateLimit(req, res, { bucket: "owner-login", max: 10, windowMs: 15 * 60 * 1000 })) return;
 
   try {
     const body = req.body || {};
+    const accessToken = accessTokenFromRequest(req);
+    if (accessToken) {
+      const socialUser = await userFromAccessToken(accessToken);
+      if (!socialUser) return sendJson(res, 401, { error: "로그인 정보가 만료되었습니다. 다시 로그인해 주세요." });
+      return completeOwnerLogin(req, res, {
+        user: socialUser,
+        invitationToken: String(body.invitationToken || ""),
+      });
+    }
+
     const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
     const password = String(body.password || "");
     if (!email || !password) return sendJson(res, 400, { error: "이메일과 비밀번호를 입력해 주세요." });
@@ -200,47 +266,11 @@ module.exports = async function handler(req, res) {
       authMigrated = migrated.authMigrated;
     }
 
-    if (account && account.status === "active") {
-      await activateLegacyOwner(account, user);
-    }
-    const acceptedInvitation = await acceptInvitation(String(body.invitationToken || ""), user);
-    const memberships = await activeMemberships(user.id);
-    if (!memberships.length) {
-      await recordAuditLog(req, {
-        actorUserId: user.id,
-        actorRole: "center_member",
-        action: "center_member.login",
-        targetType: "session",
-        success: false,
-        metadata: { reason: "no_active_membership" },
-      });
-      return sendJson(res, 403, { error: "활성화된 센터 소속이 없습니다. 운영팀에 문의해 주세요." });
-    }
-
-    const token = signOwnerSession({
-      id: account?.id || null,
-      auth_user_id: user.id,
-      center_id: memberships[0].center_id,
-      email,
-    });
-    res.setHeader("Set-Cookie", ownerSessionCookie(token, req));
-    await recordAuditLog(req, {
-      actorUserId: user.id,
-      actorRole: memberships[0].role,
-      centerId: memberships[0].center_id,
-      action: "center_member.login",
-      targetType: "session",
-      metadata: { centers: memberships.length, authMigrated },
-    });
-    sendJson(res, 200, {
-      ok: true,
-      expiresInSeconds: OWNER_SESSION_TTL_SECONDS,
-      centers: memberships.map((membership) => ({
-        centerId: membership.center_id,
-        role: membership.role,
-      })),
+    return completeOwnerLogin(req, res, {
+      user,
+      account,
+      invitationToken: String(body.invitationToken || ""),
       authMigrated,
-      invitationAccepted: Boolean(acceptedInvitation),
     });
   } catch (error) {
     console.error("center owner login failed", error);

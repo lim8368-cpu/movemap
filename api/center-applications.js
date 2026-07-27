@@ -13,9 +13,8 @@ const {
   registrationTokenFromRequest,
 } = require("./_registration-security");
 const {
-  signInWithPassword,
-  signUpWithPassword,
-} = require("./_user-auth");
+  requireAuthenticatedUser,
+} = require("./_platform-auth");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -58,12 +57,14 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = await readJsonBody(req);
+    const auth = await requireAuthenticatedUser(req, res);
+    if (!auth) return;
     const sessionToken = registrationTokenFromRequest(req, body);
     if (!enforceRateLimit(req, res, {
       bucket: "center-application",
       max: 3,
       windowMs: 60 * 60 * 1000,
-      identity: privacyHash(sessionToken, "center-application"),
+      identity: privacyHash(`${auth.user.id}:${sessionToken}`, "center-application"),
     })) return;
     const secureSession = await registrationSession(req, body);
     if (!secureSession) {
@@ -80,7 +81,6 @@ module.exports = async function handler(req, res) {
       "email",
       "area",
       "address",
-      "password",
     ];
 
     const missing = requiredFields.filter((field) => !requiredString(body[field]));
@@ -114,11 +114,12 @@ module.exports = async function handler(req, res) {
     }
 
     const activeApplications = await supabaseRequest("center_applications", {
-        query: `?select=id,status&email=eq.${encodeURIComponent(email)}&status=eq.pending&limit=1`,
+        query: `?select=id,status&applicant_auth_user_id=eq.${encodeURIComponent(auth.user.id)}&status=eq.pending&limit=1`,
       });
     if (activeApplications[0]) {
       sendJson(res, 409, {
-        error: "이 이메일로 처리 중인 센터 등록 신청이 있습니다. 승인 또는 반려 후 다른 센터를 신청해 주세요.",
+        error: "현재 로그인한 계정으로 처리 중인 센터 등록 신청이 있습니다.",
+        code: "application_pending",
       });
       return;
     }
@@ -138,27 +139,6 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    let authUser;
-    let emailVerificationRequired = false;
-    try {
-      const signedIn = await signInWithPassword(email, String(body.password || ""));
-      authUser = signedIn.user;
-    } catch {
-      const signedUp = await signUpWithPassword(email, String(body.password || ""), {
-        account_type: "center_member",
-        pending_center_application: true,
-      });
-      authUser = signedUp?.user;
-      emailVerificationRequired = !signedUp?.access_token;
-      if (!authUser?.id || (Array.isArray(authUser.identities) && authUser.identities.length === 0)) {
-        sendJson(res, 409, {
-          error: "이미 가입된 이메일입니다. 기존 비밀번호로 다시 시도하거나 비밀번호를 재설정해 주세요.",
-          code: "existing_auth_user",
-        });
-        return;
-      }
-    }
-
     const rows = await supabaseRequest("center_applications", {
       method: "POST",
       body: {
@@ -167,7 +147,7 @@ module.exports = async function handler(req, res) {
         phone: body.phone.trim(),
         email,
         owner_password_scrypt: null,
-        applicant_auth_user_id: authUser.id,
+        applicant_auth_user_id: auth.user.id,
         registration_session_id: secureSession.id,
         area: body.area.trim(),
         address: body.address.trim(),
@@ -190,7 +170,7 @@ module.exports = async function handler(req, res) {
     });
     await consumeRegistrationSession(secureSession.id);
     await recordAuditLog(req, {
-      actorUserId: authUser.id,
+      actorUserId: auth.user.id,
       actorRole: "center_applicant",
       action: "center_application.create",
       targetType: "center_application",
@@ -202,10 +182,7 @@ module.exports = async function handler(req, res) {
       ok: true,
       applicationId: rows[0].id,
       status: "received",
-      emailVerificationRequired,
-      message: emailVerificationRequired
-        ? "등록 신청이 접수되었습니다. 이메일 인증 후 운영자 검토가 진행됩니다."
-        : "등록 신청이 접수되었습니다. 운영자 확인 후 연락드릴게요.",
+      message: "등록 신청이 접수되었습니다. 승인되면 현재 로그인한 계정에 센터 운영 권한이 연결됩니다.",
     });
   } catch (error) {
     console.error("center application api failed", error);

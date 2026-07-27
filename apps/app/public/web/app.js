@@ -967,7 +967,7 @@ async function initApp() {
 initApp();
 
 const AUTH_STORAGE_KEY="dail_auth_session";
-const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerLogoutButton=document.querySelector("#headerLogoutButton");
+const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerLogoutButton=document.querySelector("#headerLogoutButton"),centerDashboardLink=document.querySelector("#centerDashboardLink");
 let currentUserProfile=null;
 function captureAuthSessionFromHash(){
   const hash=new URLSearchParams(location.hash.slice(1));
@@ -994,6 +994,7 @@ async function loadUserProfile(){
 }
 function renderAuthState(data){
   currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));headerLogoutButton.hidden=!data;
+  centerDashboardLink.hidden=!data?.centerAccess?.hasActiveMembership;
   if(!data)return;document.querySelector("#accountNickname").textContent=nickname;document.querySelector("#accountEmail").textContent=data.user?.email||`${data.user?.provider||"소셜"} 계정`;
 }
 async function initUserAuth(){

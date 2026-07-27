@@ -1,5 +1,7 @@
 const title=document.querySelector("#callbackTitle"),message=document.querySelector("#callbackMessage"),home=document.querySelector("#callbackHome");
-function fail(text){title.textContent="로그인하지 못했어요";message.textContent=text;document.querySelector(".auth-spinner").hidden=true;home.hidden=false}
+const AUTH_RETURN_KEY="dail_auth_return_to";
+function safeReturnPath(){const value=sessionStorage.getItem(AUTH_RETURN_KEY)||"/";sessionStorage.removeItem(AUTH_RETURN_KEY);return ["/register/","/center-dashboard/","/account/"].includes(value)?value:"/"}
+function fail(text){sessionStorage.removeItem(AUTH_RETURN_KEY);title.textContent="로그인하지 못했어요";message.textContent=text;document.querySelector(".auth-spinner").hidden=true;home.hidden=false}
 async function run(){
   const query=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.slice(1));
   if(query.get("error")||hash.get("error"))return fail("로그인이 취소되었거나 인증 설정을 확인해야 합니다.");
@@ -13,6 +15,6 @@ async function run(){
       if(!session.access_token)throw new Error("Access token missing");
     }
     session.expires_at=Math.floor(Date.now()/1000)+(Number(session.expires_in)||3600);localStorage.setItem("dail_auth_session",JSON.stringify(session));
-    history.replaceState(null,"",location.pathname);location.replace("/?auth=success");
+    const returnPath=safeReturnPath();history.replaceState(null,"",location.pathname);location.replace(returnPath+(returnPath.includes("?")?"&":"?")+"auth=success");
   }catch(error){console.error(error);fail("인증 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.")}
 }run();
