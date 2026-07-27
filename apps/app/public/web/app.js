@@ -128,8 +128,12 @@ let centerExperienceId = "";
 let centerExperienceView = "detail";
 let routeMode = "public";
 let routeOrigin = null;
+let routeLocationState = "idle";
+let routeLocationMessage = "";
+let routeLocationRequestId = 0;
 let routeMiniMap = null;
 let routeMiniMarker = null;
+let routeMiniOriginMarker = null;
 let publicConfig = {
   naverMapNcpKeyId: "",
   auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
@@ -704,27 +708,111 @@ function mountRouteMiniMap(center) {
     map: routeMiniMap,
     icon: createMarkerIcon(true, center),
   });
+  if (routeOrigin) {
+    const originPosition = new naver.maps.LatLng(routeOrigin.lat, routeOrigin.lng);
+    routeMiniOriginMarker = new naver.maps.Marker({
+      position: originPosition,
+      map: routeMiniMap,
+      title: "내 현재 위치",
+      icon: createUserMarkerIcon(),
+    });
+    const bounds = new naver.maps.LatLngBounds(originPosition, position);
+    routeMiniMap.fitBounds(bounds, { top: 46, right: 46, bottom: 46, left: 46 });
+  }
 }
 
-function useCurrentLocationForRoute(center) {
+function locationPermissionGuide() {
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    return "iPhone 설정 → 개인정보 보호 및 보안 → 위치 서비스 → Safari 웹사이트에서 위치 접근을 허용해 주세요.";
+  }
+  if (/Safari/i.test(navigator.userAgent) && !/Chrome|Chromium/i.test(navigator.userAgent)) {
+    return "Safari 설정 → 웹사이트 → 위치에서 이 사이트를 ‘허용’으로 바꾼 뒤 다시 시도해 주세요.";
+  }
+  return "브라우저 주소창의 위치 권한을 허용한 뒤 다시 시도해 주세요.";
+}
+
+function routeLocationFeedbackMarkup() {
+  if (routeLocationState === "loading") {
+    return `<section id="routeLocationFeedback" class="route-location-feedback is-loading" aria-live="assertive">
+      <span class="route-location-spinner" aria-hidden="true"></span>
+      <div><strong>현재 위치를 확인하고 있어요</strong><p>최대 8초 정도 걸릴 수 있습니다.</p></div>
+    </section>`;
+  }
+  if (routeLocationState === "success") {
+    return `<section id="routeLocationFeedback" class="route-location-feedback is-success" aria-live="polite">
+      <span>${uiIcon("circle-check")}</span>
+      <div><strong>현재 위치를 설정했어요</strong><p>아래 예상 거리와 이동 시간을 확인해 보세요.</p></div>
+    </section>`;
+  }
+  if (routeLocationState === "error") {
+    return `<section id="routeLocationFeedback" class="route-location-feedback is-error" role="alert">
+      <span>${uiIcon("circle-alert")}</span>
+      <div><strong>${escapeHtml(routeLocationMessage || "현재 위치를 확인하지 못했어요")}</strong><p>${escapeHtml(locationPermissionGuide())}</p><button type="button" data-route-retry>${uiIcon("locate")} 다시 시도</button></div>
+    </section>`;
+  }
+  return `<section id="routeLocationFeedback" class="route-location-feedback" aria-live="polite">
+    <span>${uiIcon("locate")}</span>
+    <div><strong>현재 위치는 버튼을 누를 때만 사용해요</strong><p>위치 정보는 저장하지 않고 거리 계산에만 사용합니다.</p></div>
+  </section>`;
+}
+
+async function useCurrentLocationForRoute(center) {
   const button = centerExperienceContent?.querySelector("[data-route-location]");
-  const status = centerExperienceContent?.querySelector("#routeLocationStatus");
-  if (!navigator.geolocation) {
-    if (status) status.textContent = "이 브라우저에서는 현재 위치를 사용할 수 없습니다.";
+  if (!window.isSecureContext || !navigator.geolocation) {
+    routeLocationState = "error";
+    routeLocationMessage = "이 브라우저에서는 현재 위치를 사용할 수 없어요";
+    renderCenterExperienceRoute(center);
     return;
   }
-  if (button) button.disabled = true;
-  if (status) status.textContent = "현재 위치를 확인하고 있습니다…";
+
+  const permission = await navigator.permissions?.query?.({ name: "geolocation" }).catch(() => null);
+  if (permission?.state === "denied") {
+    routeLocationState = "error";
+    routeLocationMessage = "Safari의 위치 권한이 꺼져 있어요";
+    renderCenterExperienceRoute(center);
+    return;
+  }
+
+  routeLocationState = "loading";
+  routeLocationMessage = "";
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = `${uiIcon("locate")} 확인 중`;
+  }
+  const feedback = centerExperienceContent?.querySelector("#routeLocationFeedback");
+  if (feedback) feedback.outerHTML = routeLocationFeedbackMarkup();
+
+  const requestId = ++routeLocationRequestId;
+  let settled = false;
+  const finish = (callback) => {
+    if (settled || requestId !== routeLocationRequestId) return;
+    settled = true;
+    window.clearTimeout(watchdog);
+    callback();
+  };
+  const watchdog = window.setTimeout(() => finish(() => {
+    routeLocationState = "error";
+    routeLocationMessage = "위치 확인 시간이 초과됐어요";
+    renderCenterExperienceRoute(center);
+  }), 8500);
+
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    (position) => finish(() => {
       routeOrigin = { lat: position.coords.latitude, lng: position.coords.longitude };
+      routeLocationState = "success";
+      routeLocationMessage = "";
       renderCenterExperienceRoute(center);
-    },
-    () => {
-      if (button) button.disabled = false;
-      if (status) status.textContent = "위치 권한을 허용하면 현재 위치에서 길을 찾을 수 있습니다.";
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    }),
+    (error) => finish(() => {
+      routeLocationState = "error";
+      routeLocationMessage = error?.code === 1
+        ? "Safari의 위치 권한이 꺼져 있어요"
+        : error?.code === 2
+          ? "현재 위치 정보를 가져올 수 없어요"
+          : "위치 확인 시간이 초과됐어요";
+      renderCenterExperienceRoute(center);
+    }),
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
   );
 }
 
@@ -752,7 +840,7 @@ function renderCenterExperienceRoute(center) {
         <div class="route-point">
           <i class="route-point-start"></i>
           <div><span>출발</span><strong>${routeOrigin ? "내 현재 위치" : "현재 위치를 설정해 주세요"}</strong></div>
-          <button type="button" data-route-location>${uiIcon("locate")} ${routeOrigin ? "다시 찾기" : "현재 위치 사용"}</button>
+          <button type="button" data-route-location ${routeLocationState === "loading" ? "disabled" : ""}>${uiIcon("locate")} ${routeLocationState === "loading" ? "확인 중" : routeOrigin ? "다시 찾기" : "현재 위치 사용"}</button>
         </div>
         <div class="route-line" aria-hidden="true"></div>
         <div class="route-point">
@@ -760,7 +848,7 @@ function renderCenterExperienceRoute(center) {
           <div><span>도착</span><strong>${escapeHtml(center.name)}</strong><small>${escapeHtml(center.address || center.area)}</small></div>
         </div>
       </section>
-      <p id="routeLocationStatus" class="route-location-status">${routeOrigin ? "현재 위치가 설정되었습니다." : "위치 권한은 버튼을 누를 때만 요청합니다."}</p>
+      ${routeLocationFeedbackMarkup()}
       <section class="route-mode-section">
         <p class="center-sheet-kicker">이동 수단</p>
         <div class="route-mode-tabs" role="tablist" aria-label="이동 수단 선택">
@@ -784,6 +872,7 @@ function renderCenterExperienceRoute(center) {
   centerExperienceContent.querySelector("[data-route-back]")?.addEventListener("click", () => renderCenterExperienceDetail(center));
   centerExperienceContent.querySelector("[data-center-sheet-close]")?.addEventListener("click", closeCenterExperience);
   centerExperienceContent.querySelector("[data-route-location]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
+  centerExperienceContent.querySelector("[data-route-retry]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
   centerExperienceContent.querySelectorAll("[data-route-mode]").forEach((button) => button.addEventListener("click", () => {
     routeMode = button.dataset.routeMode;
     renderCenterExperienceRoute(center);
@@ -803,6 +892,8 @@ function openCenterExperience(id, view = "detail") {
   if (view === "detail") {
     routeOrigin = null;
     routeMode = "public";
+    routeLocationState = "idle";
+    routeLocationMessage = "";
   }
   centerExperienceOverlay.hidden = false;
   document.body.classList.add("center-experience-open");
@@ -826,8 +917,12 @@ function closeCenterExperience() {
     centerExperienceId = "";
     centerExperienceView = "detail";
     routeOrigin = null;
+    routeLocationState = "idle";
+    routeLocationMessage = "";
+    routeLocationRequestId += 1;
     routeMiniMap = null;
     routeMiniMarker = null;
+    routeMiniOriginMarker = null;
   }, 180);
 }
 
@@ -1129,7 +1224,7 @@ function initHeroMap() {
   heroMap=new naver.maps.Map(heroMapElement,{center:new naver.maps.LatLng(37.5036,127.0247),zoom:12,minZoom:8,mapTypeId:naver.maps.MapTypeId.NORMAL,scaleControl:false,logoControl:true,mapDataControl:false,zoomControl:false,draggable:true,scrollWheel:false});
   refreshNaverMapLayout(heroMap, heroMapElement);
   renderHeroCenterMarkers();
-  locateHeroMap();
+  heroMapStatus.innerHTML = '<span class="status-pulse"></span> 내 위치 버튼을 누르면 주변을 찾아드려요';
 }
 
 function refreshNaverMapLayout(map, element) {
@@ -1280,7 +1375,7 @@ async function initNaverMap() {
       syncMarkerVisibility();
     });
     naver.maps.Event.addListener(naverMap, "click", clearSelectedCenter);
-    centerMapOnUser();
+    mapStatus.textContent = "센터 표시 중";
 
     renderPins();
   } catch {

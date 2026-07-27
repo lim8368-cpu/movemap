@@ -518,7 +518,30 @@ body.center-experience-open{overflow:hidden}
 .route-point button:disabled{opacity:.55}
 .route-point button .ui-icon{font-size:13px}
 .route-line{width:1px;height:20px;margin:-4px 0 -4px 5px;border-left:1px dashed #b9c4d0}
-.route-location-status{min-height:18px;margin:10px 24px 0;color:#64748b;font-size:10px;text-align:center}
+.route-location-feedback{
+  margin:11px 20px 0;
+  padding:13px 14px;
+  display:grid;
+  grid-template-columns:32px 1fr;
+  align-items:start;
+  gap:10px;
+  border:1px solid #e2e8f0;
+  border-radius:13px;
+  background:#fff;
+  color:var(--teal);
+}
+.route-location-feedback>span{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:#eafaf7}
+.route-location-feedback .ui-icon{font-size:17px}
+.route-location-feedback strong,.route-location-feedback p{display:block}
+.route-location-feedback strong{color:#334155;font-size:11px;line-height:1.45}
+.route-location-feedback p{margin:4px 0 0;color:#64748b;font-size:10px;line-height:1.5}
+.route-location-feedback.is-success{border-color:#bcebe5;background:#f3fffd}
+.route-location-feedback.is-error{border-color:#fecaca;background:#fff7f7;color:#dc2626}
+.route-location-feedback.is-error>span{background:#fee2e2}
+.route-location-feedback.is-error strong{color:#991b1b}
+.route-location-feedback.is-error button{min-height:32px;margin-top:9px;padding:0 10px;display:inline-flex;align-items:center;gap:5px;border:1px solid #fecaca;border-radius:8px;background:#fff;color:#b91c1c;font-size:10px;font-weight:800}
+.route-location-spinner{border:3px solid #ccfbf1;border-top-color:var(--teal);border-radius:50%;animation:route-location-spin .8s linear infinite}
+@keyframes route-location-spin{to{transform:rotate(360deg)}}
 .route-mode-section{margin:22px 20px 0}
 .route-mode-tabs{padding:4px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:12px;background:#e9eef3}
 .route-mode-tabs button{min-height:40px;border:0;border-radius:9px;background:transparent;color:#64748b;font-size:12px;font-weight:750}
@@ -576,7 +599,7 @@ body.center-experience-open{overflow:hidden}
   .center-sheet-section{margin:0 20px;padding:24px 0}
   .center-sheet-footer{min-height:76px;padding:11px 16px max(11px,env(safe-area-inset-bottom))}
   .route-destination-card{margin:-20px 16px 0}
-  .route-mode-section,.route-summary{margin-left:16px;margin-right:16px}
+  .route-location-feedback,.route-mode-section,.route-summary{margin-left:16px;margin-right:16px}
   .route-guide-card{margin-left:16px;margin-right:16px}
 }
 
