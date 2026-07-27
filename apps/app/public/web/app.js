@@ -443,7 +443,9 @@ function renderPins() {
   });
 
   naverMarkers.forEach(({ marker, center }) => {
-    marker.setIcon(createMarkerIcon(center.id === selectedId, center));
+    const isSelected = center.id === selectedId;
+    marker.setIcon(createMarkerIcon(isSelected, center));
+    marker.setZIndex(isSelected ? 1000 : 100);
   });
 }
 
@@ -477,9 +479,9 @@ function groupCentersForZoom() {
 }
 
 function createClusterIcon(count) {
-  const size = count >= 10 ? 58 : 50;
+  const size = count >= 10 ? 62 : 56;
   return {
-    content: `<button class="cluster-marker ${count >= 10 ? "large" : ""}" type="button">${count}</button>`,
+    content: `<button class="cluster-marker ${count >= 10 ? "large" : ""}" type="button" aria-label="${count}개 센터 보기"><strong>${count}</strong><span>센터</span></button>`,
     size: new naver.maps.Size(size, size),
     anchor: new naver.maps.Point(size / 2, size / 2),
   };
@@ -613,6 +615,7 @@ function rebuildNaverMarkers() {
       map: naverMap,
       title: center.name,
       icon: createMarkerIcon(center.id === selectedId, center),
+      zIndex: center.id === selectedId ? 1000 : 100,
     });
 
     naver.maps.Event.addListener(marker, "click", (event) => {
@@ -754,19 +757,22 @@ function loadNaverMapSdk(key) {
 }
 
 function createMarkerIcon(isSelected, center) {
-  const label = center.name.slice(0, 7);
+  const label = escapeHtml(center.name.slice(0, 9));
   const rating = center.rating && center.rating !== "신규" ? center.rating : "신규";
-  const size = 112;
+  const ratingMarkup = rating === "신규"
+    ? `<span class="marker-new">신규</span>`
+    : `${uiIcon("star", "is-filled")}<span>${escapeHtml(rating)}</span>`;
+  const size = 148;
 
   return {
     content: `
-      <button class="naver-marker ${isSelected ? "selected" : ""}" type="button">
+      <button class="naver-marker ${isSelected ? "selected" : ""}" type="button" aria-label="${escapeHtml(center.name)} ${rating === "신규" ? "신규 센터" : `평점 ${escapeHtml(rating)}`}">
         <span class="marker-name">${label}</span>
-        <span class="marker-rating icon-label">${uiIcon("star", "is-filled")}${rating}</span>
+        <span class="marker-rating icon-label">${ratingMarkup}</span>
       </button>
     `,
-    size: new naver.maps.Size(size, 42),
-    anchor: new naver.maps.Point(size / 2, 10),
+    size: new naver.maps.Size(size, 54),
+    anchor: new naver.maps.Point(size / 2, 52),
   };
 }
 
