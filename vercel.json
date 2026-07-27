@@ -79,6 +79,10 @@
       "destination": "/api/owner-logout"
     },
     {
+      "source": "/api/place-search",
+      "destination": "/api/place-search"
+    },
+    {
       "source": "/api/reviews",
       "destination": "/api/reviews"
     },

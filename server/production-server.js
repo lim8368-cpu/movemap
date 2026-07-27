@@ -62,6 +62,7 @@ const apiRoutes = new Map([
   ["/api/owner-login", require("../api/owner-login")],
   ["/api/owner-logout", require("../api/owner-logout")],
   ["/api/operations", require("../api/operations")],
+  ["/api/place-search", require("../api/place-search")],
   ["/api/platform-users", require("../api/platform-users")],
   ["/api/reviews", require("../api/reviews")],
   ["/api/registration-challenge", require("../api/registration-challenge")],

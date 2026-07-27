@@ -131,6 +131,11 @@ let routeOrigin = null;
 let routeLocationState = "idle";
 let routeLocationMessage = "";
 let routeLocationRequestId = 0;
+let routePlaceQuery = "";
+let routePlaceResults = [];
+let routePlaceSearchState = "idle";
+let routePlaceSearchMessage = "";
+let routePlaceRequestId = 0;
 let routeMiniMap = null;
 let routeMiniMarker = null;
 let routeMiniOriginMarker = null;
@@ -663,21 +668,46 @@ function naverRouteScheme(center) {
     dlat: String(center.lat),
     dlng: String(center.lng),
     dname: center.name,
-    appname: "com.movemap.app",
+    appname: /^https?:$/i.test(window.location.protocol) ? window.location.origin : "com.movemap.app",
   });
   if (routeOrigin) {
     params.set("slat", String(routeOrigin.lat));
     params.set("slng", String(routeOrigin.lng));
-    params.set("sname", "내 위치");
+    params.set("sname", routeOrigin.label || "내 위치");
   }
   return `nmap://route/${modePath}?${params.toString()}`;
+}
+
+function naverWebRouteUrl(center) {
+  if (!routeOrigin) return "https://map.naver.com/p/directions/";
+  const toWebMercator = (point) => {
+    const x = point.lng * 20037508.34 / 180;
+    const boundedLatitude = Math.max(-85, Math.min(85, point.lat));
+    const y = Math.log(Math.tan((90 + boundedLatitude) * Math.PI / 360)) / (Math.PI / 180);
+    return { x, y: y * 20037508.34 / 180 };
+  };
+  const segment = (point, name, placeId = "") => {
+    const projected = toWebMercator(point);
+    return [
+      projected.x,
+      projected.y,
+      encodeURIComponent(name),
+      placeId,
+      placeId ? "PLACE_POI" : "ADDRESS_POI",
+    ].join(",");
+  };
+  const centerPlaceId = String(center.naverMapUrl || "").match(/\/place\/(\d+)/)?.[1] || "";
+  const mode = routeMode === "walk" ? "walk" : routeMode === "car" ? "car" : "transit";
+  const start = segment(routeOrigin, routeOrigin.label || "출발 위치", routeOrigin.naverPlaceId || "");
+  const destination = segment(center, center.name, centerPlaceId);
+  return `https://map.naver.com/p/directions/${start}/${destination}/-/${mode}`;
 }
 
 function renderRouteSummary(center) {
   const summary = centerExperienceContent?.querySelector("#routeSummary");
   if (!summary) return;
   if (!routeOrigin) {
-    summary.innerHTML = `<div class="route-summary-placeholder">${uiIcon("locate")}<div><strong>현재 위치를 사용하면 예상 거리를 볼 수 있어요</strong><span>위치 정보는 길찾기 화면에서만 사용합니다.</span></div></div>`;
+    summary.innerHTML = `<div class="route-summary-placeholder">${uiIcon("map-pin")}<div><strong>출발 장소를 선택하면 예상 거리를 볼 수 있어요</strong><span>건물·식당·지하철역 이름으로 검색하거나 현재 위치를 사용해 보세요.</span></div></div>`;
     return;
   }
   const distanceKm = haversineDistanceKm(routeOrigin, center);
@@ -701,7 +731,7 @@ function mountRouteMiniMap(center) {
     zoomControl: false,
     mapDataControl: false,
     scaleControl: false,
-    logoControlOptions: { position: naver.maps.Position.BOTTOM_LEFT },
+    logoControlOptions: { position: naver.maps.Position.TOP_RIGHT },
   });
   routeMiniMarker = new naver.maps.Marker({
     position,
@@ -713,7 +743,7 @@ function mountRouteMiniMap(center) {
     routeMiniOriginMarker = new naver.maps.Marker({
       position: originPosition,
       map: routeMiniMap,
-      title: "내 현재 위치",
+      title: routeOrigin.label || "출발 위치",
       icon: createUserMarkerIcon(),
     });
     const bounds = new naver.maps.LatLngBounds(originPosition, position);
@@ -750,14 +780,116 @@ function routeLocationFeedbackMarkup() {
       <div><strong>${escapeHtml(routeLocationMessage || "현재 위치를 확인하지 못했어요")}</strong><p>${escapeHtml(locationPermissionGuide())}</p><button type="button" data-route-retry>${uiIcon("locate")} 다시 시도</button></div>
     </section>`;
   }
-  return `<section id="routeLocationFeedback" class="route-location-feedback" aria-live="polite">
-    <span>${uiIcon("locate")}</span>
-    <div><strong>현재 위치는 버튼을 누를 때만 사용해요</strong><p>위치 정보는 저장하지 않고 거리 계산에만 사용합니다.</p></div>
-  </section>`;
+  return "";
+}
+
+function routePlaceResultsMarkup() {
+  if (routePlaceSearchState === "loading") {
+    return `<div class="route-place-status is-loading" aria-live="assertive">
+      <span class="route-location-spinner" aria-hidden="true"></span>
+      <div><strong>네이버에서 장소를 찾고 있어요</strong><p>건물·식당·역 이름과 주변 주소를 함께 확인합니다.</p></div>
+    </div>`;
+  }
+  if (routePlaceSearchState === "error") {
+    return `<div class="route-place-status is-error" role="alert">
+      <span>${uiIcon("circle-alert")}</span>
+      <div><strong>${escapeHtml(routePlaceSearchMessage || "장소를 검색하지 못했어요")}</strong><p>장소명을 조금 더 구체적으로 입력해 다시 검색해 주세요.</p></div>
+    </div>`;
+  }
+  if (routePlaceSearchState === "empty") {
+    return `<div class="route-place-status" aria-live="polite">
+      <span>${uiIcon("search")}</span>
+      <div><strong>검색 결과가 없어요</strong><p>지역명과 장소명을 함께 입력해 보세요. 예: 강남역 스타벅스</p></div>
+    </div>`;
+  }
+  if (routePlaceSearchState === "selected" && routeOrigin) {
+    return `<div class="route-place-selected" aria-live="polite">
+      <span>${uiIcon("circle-check")}</span>
+      <div><strong>출발 위치로 설정했어요</strong><p>${escapeHtml(routeOrigin.address || routeOrigin.label)}</p></div>
+    </div>`;
+  }
+  if (routePlaceSearchState !== "results" || !routePlaceResults.length) {
+    return `<p class="route-place-hint">${uiIcon("info")} 네이버 지역검색으로 건물·식당·카페·지하철역을 찾습니다.</p>`;
+  }
+  return `<div class="route-place-results" role="listbox" aria-label="출발 장소 검색 결과">
+    ${routePlaceResults.map((place) => `<button type="button" role="option" data-route-place-id="${escapeHtml(place.id)}">
+      <span class="route-place-result-icon">${uiIcon("map-pin")}</span>
+      <span class="route-place-result-copy">
+        <strong>${escapeHtml(place.name)}</strong>
+        ${place.category ? `<small>${escapeHtml(place.category)}</small>` : ""}
+        <em>${escapeHtml(place.roadAddress || place.address || "주소 정보 없음")}</em>
+      </span>
+      ${uiIcon("arrow-right")}
+    </button>`).join("")}
+  </div>`;
+}
+
+function resetRoutePlaceSearch() {
+  routePlaceQuery = "";
+  routePlaceResults = [];
+  routePlaceSearchState = "idle";
+  routePlaceSearchMessage = "";
+  routePlaceRequestId += 1;
+}
+
+async function searchRoutePlace(event, center) {
+  event?.preventDefault();
+  const input = centerExperienceContent?.querySelector("#routePlaceInput");
+  const query = String(input?.value || routePlaceQuery).replace(/\s+/g, " ").trim();
+  routePlaceQuery = query;
+  if (query.length < 2) {
+    routePlaceSearchState = "error";
+    routePlaceSearchMessage = "장소 이름을 2자 이상 입력해 주세요";
+    renderCenterExperienceRoute(center);
+    window.requestAnimationFrame(() => centerExperienceContent?.querySelector("#routePlaceInput")?.focus());
+    return;
+  }
+
+  routePlaceSearchState = "loading";
+  routePlaceSearchMessage = "";
+  routePlaceResults = [];
+  const requestId = ++routePlaceRequestId;
+  renderCenterExperienceRoute(center);
+
+  try {
+    const response = await fetch(`/api/place-search?q=${encodeURIComponent(query)}`, {
+      headers: { Accept: "application/json", "X-Dail-Source": "web" },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "장소를 검색하지 못했어요");
+    if (requestId !== routePlaceRequestId || centerExperienceView !== "route") return;
+    routePlaceResults = Array.isArray(data.places) ? data.places : [];
+    routePlaceSearchState = routePlaceResults.length ? "results" : "empty";
+  } catch (error) {
+    if (requestId !== routePlaceRequestId || centerExperienceView !== "route") return;
+    routePlaceResults = [];
+    routePlaceSearchState = "error";
+    routePlaceSearchMessage = error?.message || "네이버 장소 검색에 연결하지 못했어요";
+  }
+  renderCenterExperienceRoute(center);
+}
+
+function selectRoutePlace(id, center) {
+  const place = routePlaceResults.find((item) => item.id === id);
+  if (!place) return;
+  routeOrigin = {
+    lat: Number(place.lat),
+    lng: Number(place.lng),
+    label: place.name,
+    address: place.roadAddress || place.address || "",
+    source: "place",
+    naverPlaceId: place.naverPlaceId || "",
+  };
+  routePlaceQuery = place.name;
+  routePlaceResults = [];
+  routePlaceSearchState = "selected";
+  routePlaceSearchMessage = "";
+  routeLocationState = "idle";
+  routeLocationMessage = "";
+  renderCenterExperienceRoute(center);
 }
 
 async function useCurrentLocationForRoute(center) {
-  const button = centerExperienceContent?.querySelector("[data-route-location]");
   if (!window.isSecureContext || !navigator.geolocation) {
     routeLocationState = "error";
     routeLocationMessage = "이 브라우저에서는 현재 위치를 사용할 수 없어요";
@@ -767,12 +899,7 @@ async function useCurrentLocationForRoute(center) {
 
   routeLocationState = "loading";
   routeLocationMessage = "";
-  if (button) {
-    button.disabled = true;
-    button.innerHTML = `${uiIcon("locate")} 확인 중`;
-  }
-  const feedback = centerExperienceContent?.querySelector("#routeLocationFeedback");
-  if (feedback) feedback.outerHTML = routeLocationFeedbackMarkup();
+  renderCenterExperienceRoute(center);
 
   const requestId = ++routeLocationRequestId;
   let settled = false;
@@ -790,7 +917,14 @@ async function useCurrentLocationForRoute(center) {
 
   navigator.geolocation.getCurrentPosition(
     (position) => finish(() => {
-      routeOrigin = { lat: position.coords.latitude, lng: position.coords.longitude };
+      routeOrigin = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        label: "내 현재 위치",
+        address: "",
+        source: "current",
+      };
+      resetRoutePlaceSearch();
       routeLocationState = "success";
       routeLocationMessage = "";
       renderCenterExperienceRoute(center);
@@ -815,7 +949,7 @@ function openNaverRoute(center) {
     window.location.href = naverRouteScheme(center);
     return;
   }
-  window.open(naverSearchUrl(center), "_blank", "noopener,noreferrer");
+  window.open(routeOrigin ? naverWebRouteUrl(center) : naverSearchUrl(center), "_blank", "noopener,noreferrer");
 }
 
 function renderCenterExperienceRoute(center) {
@@ -829,11 +963,18 @@ function renderCenterExperienceRoute(center) {
     <div class="center-sheet-scroll route-sheet-scroll">
       <div id="routeMiniMap" class="route-mini-map" aria-label="${escapeHtml(center.name)} 위치 지도"></div>
       <section class="route-destination-card">
-        <div class="route-point">
-          <i class="route-point-start"></i>
-          <div><span>출발</span><strong>${routeOrigin ? "내 현재 위치" : "현재 위치를 설정해 주세요"}</strong></div>
-          <button type="button" data-route-location ${routeLocationState === "loading" ? "disabled" : ""}>${uiIcon("locate")} ${routeLocationState === "loading" ? "확인 중" : routeOrigin ? "다시 찾기" : "현재 위치 사용"}</button>
+        <div class="route-origin-heading">
+          <div class="route-point-heading"><i class="route-point-start"></i><span>출발</span></div>
+          <button class="route-current-location" type="button" data-route-location ${routeLocationState === "loading" ? "disabled" : ""}>${uiIcon("locate")} ${routeLocationState === "loading" ? "확인 중" : "내 위치"}</button>
         </div>
+        <form id="routePlaceForm" class="route-place-form" role="search">
+          <label class="sr-only" for="routePlaceInput">출발 장소</label>
+          ${uiIcon("search")}
+          <input id="routePlaceInput" name="place" type="search" value="${escapeHtml(routePlaceQuery)}" placeholder="건물, 식당, 지하철역 검색" autocomplete="off" enterkeyhint="search" />
+          <button type="submit">검색</button>
+        </form>
+        ${routeOrigin ? `<div class="route-origin-current">${uiIcon(routeOrigin.source === "current" ? "locate" : "map-pin")}<div><strong>${escapeHtml(routeOrigin.label)}</strong>${routeOrigin.address ? `<small>${escapeHtml(routeOrigin.address)}</small>` : ""}</div></div>` : ""}
+        <div id="routePlaceFeedback">${routePlaceResultsMarkup()}</div>
         <div class="route-line" aria-hidden="true"></div>
         <div class="route-point">
           <i class="route-point-end"></i>
@@ -865,6 +1006,10 @@ function renderCenterExperienceRoute(center) {
   centerExperienceContent.querySelector("[data-center-sheet-close]")?.addEventListener("click", closeCenterExperience);
   centerExperienceContent.querySelector("[data-route-location]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
   centerExperienceContent.querySelector("[data-route-retry]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
+  centerExperienceContent.querySelector("#routePlaceForm")?.addEventListener("submit", (event) => searchRoutePlace(event, center));
+  centerExperienceContent.querySelectorAll("[data-route-place-id]").forEach((button) => button.addEventListener("click", () => {
+    selectRoutePlace(button.dataset.routePlaceId, center);
+  }));
   centerExperienceContent.querySelectorAll("[data-route-mode]").forEach((button) => button.addEventListener("click", () => {
     routeMode = button.dataset.routeMode;
     renderCenterExperienceRoute(center);
@@ -886,6 +1031,7 @@ function openCenterExperience(id, view = "detail") {
     routeMode = "public";
     routeLocationState = "idle";
     routeLocationMessage = "";
+    resetRoutePlaceSearch();
   }
   centerExperienceOverlay.hidden = false;
   document.body.classList.add("center-experience-open");
@@ -912,6 +1058,7 @@ function closeCenterExperience() {
     routeLocationState = "idle";
     routeLocationMessage = "";
     routeLocationRequestId += 1;
+    resetRoutePlaceSearch();
     routeMiniMap = null;
     routeMiniMarker = null;
     routeMiniOriginMarker = null;
@@ -1257,7 +1404,7 @@ function loadNaverMapSdk(key) {
     }
 
     const script = document.createElement("script");
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&submodules=geocoder`;
     script.async = true;
     script.onload = () => {
       if (window.naver?.maps) {
