@@ -115,6 +115,7 @@ let panelGestureActive = false;
 let publicConfig = {
   naverMapNcpKeyId: "",
   auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
+  mobileApps: { iosAppStoreUrl: "", googlePlayStoreUrl: "" },
 };
 const CENTER_MARKER_MIN_ZOOM = 13;
 const CENTER_DETAIL_ZOOM = 16;
@@ -178,9 +179,43 @@ async function loadPublicConfig() {
     if (!response.ok) throw new Error("config unavailable");
     publicConfig = await response.json();
   } catch {
-    publicConfig = { naverMapNcpKeyId: "", auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
+    publicConfig = {
+      naverMapNcpKeyId: "",
+      auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
+      mobileApps: { iosAppStoreUrl: "", googlePlayStoreUrl: "" },
+    };
   }
 }
+
+function configureMobileDownloadLinks() {
+  const storeLinks = [
+    { element: document.querySelector("#iosStoreLink"), url: publicConfig.mobileApps?.iosAppStoreUrl },
+    { element: document.querySelector("#androidStoreLink"), url: publicConfig.mobileApps?.googlePlayStoreUrl },
+  ];
+
+  storeLinks.forEach(({ element, url }) => {
+    if (!element) return;
+    const isAvailable = Boolean(url);
+    element.href = isAvailable ? url : "#app";
+    element.setAttribute("aria-disabled", String(!isAvailable));
+    if (isAvailable) {
+      element.target = "_blank";
+      element.rel = "noopener noreferrer";
+    } else {
+      element.removeAttribute("target");
+      element.removeAttribute("rel");
+    }
+  });
+}
+
+document.querySelectorAll("[data-store-platform]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (link.getAttribute("aria-disabled") !== "true") return;
+    event.preventDefault();
+    const message = document.querySelector("#appDownloadMessage");
+    if (message) message.textContent = "스토어 등록이 완료되면 이 버튼에서 바로 다운로드할 수 있습니다.";
+  });
+});
 
 function clientIdempotencyKey() {
   return window.crypto?.randomUUID
@@ -956,6 +991,7 @@ document.querySelectorAll("[data-feature-center]").forEach(card => {
 
 async function initApp() {
   await loadPublicConfig();
+  configureMobileDownloadLinks();
   captureAuthSessionFromHash();
   await initUserAuth();
   await loadApprovedCenters();

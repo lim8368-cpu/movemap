@@ -163,3 +163,77 @@
 @media(prefers-reduced-motion:reduce){
   .cluster-marker.is-opening,.map-area.is-revealing-centers .naver-marker{animation:none}
 }
+
+/* Homepage readability and store-ready app downloads */
+.hero-description span{display:block}
+.proof{gap:84px}
+.trust-features{gap:16px}
+.trust-features article{
+  min-height:186px;
+  padding:27px;
+  display:grid;
+  grid-template-columns:1fr;
+  align-content:start;
+  gap:17px;
+}
+.trust-features i{
+  width:46px;
+  height:46px;
+  flex:0 0 46px;
+  border-radius:13px;
+}
+.trust-features h3{
+  margin:0 0 9px;
+  font-size:18px;
+  line-height:1.35;
+  letter-spacing:-.025em;
+}
+.trust-features p{
+  color:#b4c0ce;
+  font-size:14px;
+  line-height:1.72;
+}
+.store-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:25px;
+}
+.store-button{
+  min-width:176px;
+  min-height:58px;
+  padding:8px 15px;
+  display:grid;
+  grid-template-columns:32px 1fr;
+  align-items:center;
+  gap:10px;
+  border:1px solid #29384b;
+  border-radius:11px;
+  background:#0b111a;
+  color:#fff;
+  box-shadow:0 10px 24px rgba(15,28,46,.14);
+  transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.store-button:hover,.store-button:focus-visible{
+  outline:0;
+  background:#172337;
+  box-shadow:0 13px 28px rgba(15,28,46,.2);
+  transform:translateY(-1px);
+}
+.store-button>.ui-icon{font-size:29px}
+.play-store-icon{width:29px;height:32px}
+.store-button span{display:block;text-align:left}
+.store-button small,.store-button strong{display:block;line-height:1.05}
+.store-button small{margin-bottom:3px;font-size:9px;font-weight:600;letter-spacing:.02em;opacity:.78}
+.store-button strong{font-size:17px;font-weight:750;letter-spacing:-.02em}
+.app-download-message{min-height:19px;margin:10px 0 0;color:#64748b;font-size:11px}
+
+@media(max-width:640px){
+  .hero-description span{display:inline}
+  .hero-description span+span:before{content:" "}
+  .trust-features article{min-height:auto;padding:23px}
+  .trust-features h3{font-size:17px}
+  .trust-features p{font-size:13px}
+  .store-buttons{justify-content:center}
+  .store-button{min-width:min(176px,calc(50% - 5px));}
+}
