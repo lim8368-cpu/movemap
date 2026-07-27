@@ -165,6 +165,10 @@
 }
 
 /* Homepage readability and store-ready app downloads */
+body{
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
 .hero-description span{display:block}
 .proof{gap:84px}
 .trust-features{gap:16px}
