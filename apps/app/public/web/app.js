@@ -646,13 +646,6 @@ function haversineDistanceKm(origin, destination) {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function routeEstimate(mode, distanceKm) {
-  const speed = mode === "walk" ? 4.5 : mode === "car" ? 28 : 18;
-  const minutes = Math.max(1, Math.round((distanceKm / speed) * 60));
-  if (minutes < 60) return `약 ${minutes}분`;
-  return `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분`;
-}
-
 function routeModeLabel(mode) {
   return mode === "walk" ? "도보" : mode === "car" ? "자동차" : "대중교통";
 }
@@ -707,14 +700,14 @@ function renderRouteSummary(center) {
   const summary = centerExperienceContent?.querySelector("#routeSummary");
   if (!summary) return;
   if (!routeOrigin) {
-    summary.innerHTML = `<div class="route-summary-placeholder">${uiIcon("map-pin")}<div><strong>출발 장소를 선택하면 예상 거리를 볼 수 있어요</strong><span>건물·식당·지하철역 이름으로 검색하거나 현재 위치를 사용해 보세요.</span></div></div>`;
+    summary.innerHTML = "";
     return;
   }
   const distanceKm = haversineDistanceKm(routeOrigin, center);
   summary.innerHTML = `<div class="route-summary-result">
-    <div><span>${routeModeLabel(routeMode)} 참고 시간</span><strong>${routeEstimate(routeMode, distanceKm)}</strong></div>
+    <div><span>선택한 이동수단</span><strong>${routeModeLabel(routeMode)}</strong></div>
     <div><span>직선거리</span><strong>${distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)}km`}</strong></div>
-  </div><p>${uiIcon("info")} 실제 경로·교통 상황이 반영되지 않은 참고값입니다. 정확한 안내는 네이버 지도에서 확인하세요.</p>`;
+  </div><p>${uiIcon("info")} 실제 경로와 소요 시간은 네이버 지도에서 확인할 수 있어요.</p>`;
 }
 
 function mountRouteMiniMap(center) {
@@ -768,12 +761,7 @@ function routeLocationFeedbackMarkup() {
       <div><strong>현재 위치를 확인하고 있어요</strong><p>최대 8초 정도 걸릴 수 있습니다.</p></div>
     </section>`;
   }
-  if (routeLocationState === "success") {
-    return `<section id="routeLocationFeedback" class="route-location-feedback is-success" aria-live="polite">
-      <span>${uiIcon("circle-check")}</span>
-      <div><strong>현재 위치를 설정했어요</strong><p>아래 예상 거리와 이동 시간을 확인해 보세요.</p></div>
-    </section>`;
-  }
+  if (routeLocationState === "success") return "";
   if (routeLocationState === "error") {
     return `<section id="routeLocationFeedback" class="route-location-feedback is-error" role="alert">
       <span>${uiIcon("circle-alert")}</span>
@@ -802,17 +790,14 @@ function routePlaceResultsMarkup() {
       <div><strong>검색 결과가 없어요</strong><p>지역명과 장소명을 함께 입력해 보세요. 예: 강남역 스타벅스</p></div>
     </div>`;
   }
-  if (routePlaceSearchState === "selected" && routeOrigin) {
-    return `<div class="route-place-selected" aria-live="polite">
-      <span>${uiIcon("circle-check")}</span>
-      <div><strong>출발 위치로 설정했어요</strong><p>${escapeHtml(routeOrigin.address || routeOrigin.label)}</p></div>
-    </div>`;
-  }
+  if (routePlaceSearchState === "selected" && routeOrigin) return "";
+  if (routeOrigin) return "";
   if (routePlaceSearchState !== "results" || !routePlaceResults.length) {
-    return `<p class="route-place-hint">${uiIcon("info")} 네이버 지역검색으로 건물·식당·카페·지하철역을 찾습니다.</p>`;
+    return `<p class="route-place-hint">${uiIcon("info")} 장소명으로 검색하거나 ‘내 위치’를 선택해 주세요.</p>`;
   }
-  return `<div class="route-place-results" role="listbox" aria-label="출발 장소 검색 결과">
-    ${routePlaceResults.map((place) => `<button type="button" role="option" data-route-place-id="${escapeHtml(place.id)}">
+  return `<section class="route-place-results" aria-label="출발 장소 검색 결과">
+    <header><strong>${routePlaceResults.length}곳을 찾았어요</strong><span>네이버 장소 검색</span></header>
+    ${routePlaceResults.map((place) => `<button type="button" data-route-place-id="${escapeHtml(place.id)}">
       <span class="route-place-result-icon">${uiIcon("map-pin")}</span>
       <span class="route-place-result-copy">
         <strong>${escapeHtml(place.name)}</strong>
@@ -821,7 +806,7 @@ function routePlaceResultsMarkup() {
       </span>
       ${uiIcon("arrow-right")}
     </button>`).join("")}
-  </div>`;
+  </section>`;
 }
 
 function resetRoutePlaceSearch() {
@@ -887,6 +872,16 @@ function selectRoutePlace(id, center) {
   routeLocationState = "idle";
   routeLocationMessage = "";
   renderCenterExperienceRoute(center);
+}
+
+function changeRouteOrigin(center) {
+  routeOrigin = null;
+  routeLocationState = "idle";
+  routeLocationMessage = "";
+  routeLocationRequestId += 1;
+  resetRoutePlaceSearch();
+  renderCenterExperienceRoute(center);
+  window.requestAnimationFrame(() => centerExperienceContent?.querySelector("#routePlaceInput")?.focus());
 }
 
 async function useCurrentLocationForRoute(center) {
@@ -961,51 +956,53 @@ function renderCenterExperienceRoute(center) {
       <button class="center-sheet-close icon-only" type="button" data-center-sheet-close aria-label="길찾기 닫기">${uiIcon("x")}</button>
     </header>
     <div class="center-sheet-scroll route-sheet-scroll">
-      <div id="routeMiniMap" class="route-mini-map" aria-label="${escapeHtml(center.name)} 위치 지도"></div>
+      <div id="routeMiniMap" class="route-mini-map ${routeOrigin ? "has-origin" : ""}" aria-label="${escapeHtml(center.name)} 위치 지도"></div>
       <section class="route-destination-card">
         <div class="route-origin-heading">
           <div class="route-point-heading"><i class="route-point-start"></i><span>출발</span></div>
-          <button class="route-current-location" type="button" data-route-location ${routeLocationState === "loading" ? "disabled" : ""}>${uiIcon("locate")} ${routeLocationState === "loading" ? "확인 중" : "내 위치"}</button>
+          ${routeOrigin
+            ? `<button class="route-origin-change" type="button" data-route-origin-change>변경</button>`
+            : `<button class="route-current-location" type="button" data-route-location ${routeLocationState === "loading" ? "disabled" : ""}>${uiIcon("locate")} ${routeLocationState === "loading" ? "확인 중" : "내 위치"}</button>`}
         </div>
-        <form id="routePlaceForm" class="route-place-form" role="search">
-          <label class="sr-only" for="routePlaceInput">출발 장소</label>
-          ${uiIcon("search")}
-          <input id="routePlaceInput" name="place" type="search" value="${escapeHtml(routePlaceQuery)}" placeholder="건물, 식당, 지하철역 검색" autocomplete="off" enterkeyhint="search" />
-          <button type="submit">검색</button>
-        </form>
-        ${routeOrigin ? `<div class="route-origin-current">${uiIcon(routeOrigin.source === "current" ? "locate" : "map-pin")}<div><strong>${escapeHtml(routeOrigin.label)}</strong>${routeOrigin.address ? `<small>${escapeHtml(routeOrigin.address)}</small>` : ""}</div></div>` : ""}
-        <div id="routePlaceFeedback">${routePlaceResultsMarkup()}</div>
+        ${routeOrigin
+          ? `<div class="route-origin-current">${uiIcon(routeOrigin.source === "current" ? "locate" : "map-pin")}<div><strong>${escapeHtml(routeOrigin.label)}</strong>${routeOrigin.address ? `<small>${escapeHtml(routeOrigin.address)}</small>` : ""}</div></div>`
+          : `<form id="routePlaceForm" class="route-place-form" role="search">
+              <label class="sr-only" for="routePlaceInput">출발 장소</label>
+              ${uiIcon("search")}
+              <input id="routePlaceInput" name="place" type="search" value="${escapeHtml(routePlaceQuery)}" placeholder="건물, 식당, 지하철역 검색" autocomplete="off" enterkeyhint="search" />
+              <button type="submit">검색</button>
+            </form>`}
         <div class="route-line" aria-hidden="true"></div>
         <div class="route-point">
           <i class="route-point-end"></i>
           <div><span>도착</span><strong>${escapeHtml(center.name)}</strong><small>${escapeHtml(center.address || center.area)}</small></div>
         </div>
       </section>
+      <div id="routePlaceFeedback" class="route-place-feedback">${routePlaceResultsMarkup()}</div>
       ${routeLocationFeedbackMarkup()}
-      <section class="route-mode-section">
-        <p class="center-sheet-kicker">이동 수단</p>
-        <div class="route-mode-tabs" role="tablist" aria-label="이동 수단 선택">
-          ${[
-            ["public", "대중교통"],
-            ["car", "자동차"],
-            ["walk", "도보"],
-          ].map(([mode, label]) => `<button type="button" role="tab" data-route-mode="${mode}" aria-selected="${routeMode === mode}" class="${routeMode === mode ? "active" : ""}">${label}</button>`).join("")}
-        </div>
-      </section>
-      <section id="routeSummary" class="route-summary"></section>
-      <section class="route-guide-card">
-        <span>${uiIcon("info")}</span>
-        <div><strong>정확한 경로는 네이버 지도에서 안내합니다</strong><p>DAIL에서는 센터 위치와 기본 정보를 확인하고, 외부 지도에서 실시간 교통과 도보 경로를 이어서 볼 수 있어요.</p></div>
-      </section>
+      ${routeOrigin ? `<section class="route-mode-section">
+          <p class="center-sheet-kicker">이동 수단</p>
+          <div class="route-mode-tabs" role="tablist" aria-label="이동 수단 선택">
+            ${[
+              ["public", "대중교통"],
+              ["car", "자동차"],
+              ["walk", "도보"],
+            ].map(([mode, label]) => `<button type="button" role="tab" data-route-mode="${mode}" aria-selected="${routeMode === mode}" class="${routeMode === mode ? "active" : ""}">${label}</button>`).join("")}
+          </div>
+        </section>
+        <section id="routeSummary" class="route-summary"></section>` : ""}
     </div>
     <footer class="center-sheet-footer route-sheet-footer">
-      <button class="center-sheet-contact-button route-external-button icon-label" type="button" data-route-external>네이버 지도에서 길찾기 ${uiIcon("external-link")}</button>
+      <button class="center-sheet-contact-button route-external-button icon-label" type="button" data-route-external ${routeOrigin ? "" : "disabled"}>
+        ${routeOrigin ? `네이버 지도에서 ${routeModeLabel(routeMode)} 길찾기 ${uiIcon("external-link")}` : "출발지를 먼저 선택해 주세요"}
+      </button>
     </footer>`;
 
   centerExperienceContent.querySelector("[data-route-back]")?.addEventListener("click", () => renderCenterExperienceDetail(center));
   centerExperienceContent.querySelector("[data-center-sheet-close]")?.addEventListener("click", closeCenterExperience);
   centerExperienceContent.querySelector("[data-route-location]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
   centerExperienceContent.querySelector("[data-route-retry]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
+  centerExperienceContent.querySelector("[data-route-origin-change]")?.addEventListener("click", () => changeRouteOrigin(center));
   centerExperienceContent.querySelector("#routePlaceForm")?.addEventListener("submit", (event) => searchRoutePlace(event, center));
   centerExperienceContent.querySelectorAll("[data-route-place-id]").forEach((button) => button.addEventListener("click", () => {
     selectRoutePlace(button.dataset.routePlaceId, center);
