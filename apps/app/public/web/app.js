@@ -644,7 +644,7 @@ function renderBookingSlots(center) {
   panel.innerHTML = slots.length
     ? `<div class="booking-slot-grid">${slots.map((slot) =>
         `<button type="button" data-booking-slot="${escapeHtml(slot.startAt)}" ${slot.available ? "" : "disabled"} class="${bookingSelectedSlot?.startAt === slot.startAt ? "active" : ""}">
-          ${escapeHtml(slot.time)}${slot.available ? "" : "<small>예약됨</small>"}
+          ${escapeHtml(slot.time)}${slot.available ? "" : `<small>${slot.unavailableReason === "booked" ? "예약됨" : "마감"}</small>`}
         </button>`
       ).join("")}</div>`
     : `<div class="booking-no-slots">${uiIcon("calendar")}<strong>선택한 날짜는 예약 가능한 시간이 없어요</strong><p>다른 날짜를 선택해 주세요.</p></div>`;
@@ -776,10 +776,10 @@ function renderCenterExperienceDetail(center) {
         <p class="center-sheet-kicker">센터장 정보</p>
         <button class="center-operator-card" type="button" data-center-operator aria-expanded="false">
           <span class="center-operator-avatar" aria-hidden="true">${uiIcon("user-cog")}</span>
-          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인 · 커리어 보기</span></div>
+          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인 · ${center.managerCareer ? "커리어 보기" : "커리어 등록 준비중"}</span></div>
           ${uiIcon("chevron-down")}
         </button>
-        <div class="center-operator-career" data-center-operator-career hidden><b>주요 커리어</b><p>${escapeHtml(center.managerCareer)}</p></div>
+        <div class="center-operator-career" data-center-operator-career hidden><b>주요 커리어</b><p>${escapeHtml(center.managerCareer || "센터장이 커리어 정보를 준비하고 있습니다.")}</p></div>
       </section>
       ${centerBookingMarkup(center)}
       <section class="center-sheet-section">

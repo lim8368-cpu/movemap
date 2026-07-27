@@ -60,10 +60,15 @@ async function availability(req, res) {
     date,
     bookingEnabled: center.booking_enabled !== false,
     slotMinutes,
-    slots: generated.map((slot) => ({
-      ...slot,
-      available: new Date(slot.startAt).getTime() >= minimumStart && !reservedStarts.has(slot.startAt),
-    })),
+    slots: generated.map((slot) => {
+      const pastCutoff = new Date(slot.startAt).getTime() < minimumStart;
+      const reserved = reservedStarts.has(slot.startAt);
+      return {
+        ...slot,
+        available: !pastCutoff && !reserved,
+        unavailableReason: pastCutoff ? "closed" : reserved ? "booked" : null,
+      };
+    }),
   });
 }
 
