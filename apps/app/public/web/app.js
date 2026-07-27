@@ -12,6 +12,8 @@ const sampleCenters = [
     therapist: "김민재 센터장 · 물리치료사 출신",
     price: "첫 평가 30,000원",
     conversion: "전화 상담 가능",
+    address: "서울 강남구 강남대로",
+    openingHours: "평일 09:00–21:00 · 토요일 10:00–17:00",
     lat: 37.4979,
     lng: 127.0276,
     fallbackX: "58%",
@@ -30,6 +32,8 @@ const sampleCenters = [
     therapist: "박서연 대표 · 물리치료사 출신",
     price: "체험 수업 20,000원",
     conversion: "예약 후 방문",
+    address: "서울 마포구 양화로",
+    openingHours: "평일 10:00–22:00 · 토요일 10:00–16:00",
     lat: 37.5557,
     lng: 126.9236,
     fallbackX: "42%",
@@ -48,6 +52,8 @@ const sampleCenters = [
     therapist: "이도윤 원장 · 물리치료사 출신",
     price: "방문 상담 무료",
     conversion: "센터 문의",
+    address: "경기 성남시 분당구 성남대로",
+    openingHours: "평일 09:00–20:00 · 일요일 휴무",
     lat: 37.3827,
     lng: 127.1189,
     fallbackX: "73%",
@@ -66,6 +72,8 @@ const sampleCenters = [
     therapist: "최하린 대표 · 물리치료사 출신",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
+    address: "서울 강남구 도산대로",
+    openingHours: "평일 08:00–21:00 · 주말 예약제",
     lat: 37.5243,
     lng: 127.0399,
     fallbackX: "64%",
@@ -94,6 +102,10 @@ const heroMapElement = document.querySelector("#heroNaverMap");
 const heroMapStatus = document.querySelector("#heroMapStatus");
 const heroLocateButton = document.querySelector("#heroLocateButton");
 const activeFilters = document.querySelector("#activeFilters");
+const centerExperienceOverlay = document.querySelector("#centerExperienceOverlay");
+const centerExperienceSheet = document.querySelector("#centerExperienceSheet");
+const centerExperienceContent = document.querySelector("#centerExperienceContent");
+const centerExperienceScrim = document.querySelector("#centerExperienceScrim");
 
 let selectedRegion = "all";
 let selectedCategory = "";
@@ -112,6 +124,12 @@ let centerFocusTimers = [];
 let clusterTransitionTimer = null;
 let markerRevealTimer = null;
 let panelGestureActive = false;
+let centerExperienceId = "";
+let centerExperienceView = "detail";
+let routeMode = "public";
+let routeOrigin = null;
+let routeMiniMap = null;
+let routeMiniMarker = null;
 let publicConfig = {
   naverMapNcpKeyId: "",
   auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
@@ -148,6 +166,15 @@ function normalizeCenter(center) {
     therapist: operatorText,
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
+    address: center.address || center.area || "",
+    phone: center.phone || "",
+    website: center.website || "",
+    openingHours: center.openingHours || center.opening_hours || "운영시간은 센터에 문의해 주세요.",
+    naverMapUrl: center.naverMapUrl || center.naver_map_url || "",
+    photoUrl: center.photoUrl || "",
+    photoUrls: Array.isArray(center.photoUrls)
+      ? center.photoUrls.filter(Boolean)
+      : (center.photoUrl ? [center.photoUrl] : []),
     lat: Number(center.lat) || 37.5665,
     lng: Number(center.lng) || 126.978,
     fallbackX: center.fallbackX || "52%",
@@ -393,7 +420,6 @@ function renderDetail() {
   document.body.classList.add("detail-open");
   detailPanel.innerHTML = centerPopupContent(center);
   detailPanel.querySelector(".map-popup-close").addEventListener("click", clearSelectedCenter);
-  detailPanel.querySelector(".map-popup-cta").addEventListener("click", () => trackEvent("contact_click", center.id, "map_popup"));
 }
 
 async function loadCenterReviews(centerId) {
@@ -451,8 +477,358 @@ function centerPopupContent(center) {
     <p class="map-popup-category">운동센터 · <b>물리치료사 출신</b></p>
     <p class="map-popup-location">${escapeHtml(center.area)}</p>
     <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
-    <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.trackDailContact('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button">${uiIcon("map-pin")}길찾기</button></div>
+    <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
   </article>`;
+}
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function centerExperienceTags(center) {
+  return [...new Set([...(center.categories || []), ...(center.tags || [])])].filter(Boolean);
+}
+
+function centerPhotoMarkup(center) {
+  const photos = center.photoUrls?.length ? center.photoUrls : (center.photoUrl ? [center.photoUrl] : []);
+  if (!photos.length) {
+    return `<div class="center-sheet-hero center-sheet-hero-placeholder">
+      <span class="center-sheet-hero-mark" aria-hidden="true"><i></i> DAIL</span>
+      <div><b>센터가 등록한 정보</b><span>${escapeHtml(center.name)}</span></div>
+    </div>`;
+  }
+  return `<div class="center-sheet-gallery" aria-label="센터 사진">
+    ${photos.slice(0, 4).map((photo, index) => `<img src="${escapeHtml(photo)}" alt="${escapeHtml(center.name)} 센터 사진 ${index + 1}" loading="lazy" />`).join("")}
+  </div>`;
+}
+
+function isFavoriteCenter(centerId) {
+  try {
+    return JSON.parse(localStorage.getItem("dail_favorite_centers") || "[]").includes(centerId);
+  } catch {
+    return false;
+  }
+}
+
+function toggleFavoriteCenter(centerId) {
+  let favorites = [];
+  try {
+    favorites = JSON.parse(localStorage.getItem("dail_favorite_centers") || "[]");
+  } catch {
+    favorites = [];
+  }
+  favorites = favorites.includes(centerId)
+    ? favorites.filter((id) => id !== centerId)
+    : [...favorites, centerId];
+  localStorage.setItem("dail_favorite_centers", JSON.stringify(favorites));
+  const button = centerExperienceContent?.querySelector("[data-center-favorite]");
+  if (button) {
+    const saved = favorites.includes(centerId);
+    button.classList.toggle("is-saved", saved);
+    button.setAttribute("aria-pressed", String(saved));
+    button.querySelector("span").textContent = saved ? "저장됨" : "관심 저장";
+  }
+}
+
+function renderCenterExperienceDetail(center) {
+  const tags = centerExperienceTags(center);
+  const website = safeExternalUrl(center.website);
+  const phoneLink = String(center.phone || "").replace(/[^\d+]/g, "");
+  const saved = isFavoriteCenter(center.id);
+  centerExperienceView = "detail";
+  centerExperienceContent.innerHTML = `
+    <header class="center-sheet-header">
+      <div><span>센터 상세</span><strong id="centerExperienceTitle">센터 정보</strong></div>
+      <button class="center-sheet-close icon-only" type="button" data-center-sheet-close aria-label="센터 상세 닫기">${uiIcon("x")}</button>
+    </header>
+    <div class="center-sheet-scroll">
+      ${centerPhotoMarkup(center)}
+      <section class="center-sheet-summary">
+        <span class="center-sheet-badge icon-label">${uiIcon("badge-check")} 물리치료사 출신</span>
+        <h2>${escapeHtml(center.name)}</h2>
+        <p class="center-sheet-rating"><span class="stars">${ratingIcons(center.rating)}</span><b>${escapeHtml(center.rating)}</b><span>후기 ${escapeHtml(center.reviews)}개</span><i></i><span>${escapeHtml(center.distance)}</span></p>
+        <p class="center-sheet-address icon-label">${uiIcon("map-pin")}<span>${escapeHtml(center.address || center.area)}</span></p>
+      </section>
+      <nav class="center-sheet-quick-actions" aria-label="센터 빠른 메뉴">
+        <button type="button" data-center-route>${uiIcon("map-pin")}<span>길찾기</span></button>
+        <button type="button" data-center-phone ${phoneLink ? "" : "disabled"}>${uiIcon("phone-call")}<span>${phoneLink ? "전화" : "전화 준비중"}</span></button>
+        <button type="button" data-center-favorite class="${saved ? "is-saved" : ""}" aria-pressed="${saved}">${uiIcon("heart")}<span>${saved ? "저장됨" : "관심 저장"}</span></button>
+      </nav>
+      <section class="center-sheet-section">
+        <p class="center-sheet-kicker">센터 소개</p>
+        <h3>어떤 운동을 받을 수 있나요?</h3>
+        <p class="center-sheet-description">${escapeHtml(center.lead)}</p>
+        <div class="center-program-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      </section>
+      <section class="center-sheet-section">
+        <p class="center-sheet-kicker">센터장 정보</p>
+        <div class="center-operator-card">
+          <span class="center-operator-avatar" aria-hidden="true">${uiIcon("user-cog")}</span>
+          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인</span></div>
+        </div>
+      </section>
+      <section class="center-sheet-section">
+        <p class="center-sheet-kicker">이용 안내</p>
+        <h3>방문 전에 확인하세요</h3>
+        <dl class="center-info-list">
+          <div><dt>이용 금액</dt><dd>${escapeHtml(center.price)}</dd></div>
+          <div><dt>운영 시간</dt><dd>${escapeHtml(center.openingHours)}</dd></div>
+          <div><dt>주소</dt><dd>${escapeHtml(center.address || center.area)}</dd></div>
+          ${center.phone ? `<div><dt>전화</dt><dd>${escapeHtml(center.phone)}</dd></div>` : ""}
+          ${website ? `<div><dt>웹사이트</dt><dd><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">센터 사이트 열기 ${uiIcon("external-link")}</a></dd></div>` : ""}
+        </dl>
+      </section>
+      <section class="center-sheet-section">
+        <div class="center-review-heading"><div><p class="center-sheet-kicker">이용 후기</p><h3>방문자가 남긴 후기</h3></div><span>${escapeHtml(center.reviews)}개</span></div>
+        <div id="centerSheetReviewList" class="center-sheet-reviews"><p class="center-sheet-loading">후기를 불러오는 중입니다.</p></div>
+      </section>
+    </div>
+    <footer class="center-sheet-footer">
+      <button class="center-sheet-route-button icon-label" type="button" data-center-route>${uiIcon("map-pin")} 길찾기</button>
+      ${phoneLink
+        ? `<a class="center-sheet-contact-button icon-label" href="tel:${escapeHtml(phoneLink)}" data-center-contact>${uiIcon("phone-call")} 전화 상담</a>`
+        : `<button class="center-sheet-contact-button" type="button" disabled>전화번호 등록 전</button>`}
+    </footer>`;
+
+  centerExperienceContent.querySelectorAll("[data-center-sheet-close]").forEach((button) => button.addEventListener("click", closeCenterExperience));
+  centerExperienceContent.querySelectorAll("[data-center-route]").forEach((button) => button.addEventListener("click", () => renderCenterExperienceRoute(center)));
+  centerExperienceContent.querySelector("[data-center-favorite]")?.addEventListener("click", () => toggleFavoriteCenter(center.id));
+  centerExperienceContent.querySelector("[data-center-phone]")?.addEventListener("click", () => {
+    if (!phoneLink) return;
+    trackEvent("contact_click", center.id, "phone_sheet");
+    window.location.href = `tel:${phoneLink}`;
+  });
+  centerExperienceContent.querySelector("[data-center-contact]")?.addEventListener("click", () => trackEvent("contact_click", center.id, "phone_sheet"));
+  loadCenterSheetReviews(center.id);
+}
+
+async function loadCenterSheetReviews(centerId) {
+  const list = centerExperienceContent?.querySelector("#centerSheetReviewList");
+  if (!list) return;
+  try {
+    const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error();
+    list.innerHTML = data.reviews?.length
+      ? data.reviews.slice(0, 4).map((review) => `<article>
+          <div><strong>${escapeHtml(review.nickname)}</strong><span class="stars">${ratingIcons(review.rating)}</span></div>
+          <p>${escapeHtml(review.content)}</p>
+          <time>${new Date(review.created_at).toLocaleDateString("ko-KR")}</time>
+        </article>`).join("")
+      : `<div class="center-sheet-empty"><span>${uiIcon("message-circle")}</span><strong>아직 등록된 후기가 없어요</strong><p>센터 정보를 확인하고 방문 후 첫 후기를 남겨보세요.</p></div>`;
+  } catch {
+    list.innerHTML = `<p class="center-sheet-loading">후기를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.</p>`;
+  }
+}
+
+function haversineDistanceKm(origin, destination) {
+  const toRadians = (degrees) => degrees * Math.PI / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDistance = toRadians(destination.lat - origin.lat);
+  const longitudeDistance = toRadians(destination.lng - origin.lng);
+  const a = Math.sin(latitudeDistance / 2) ** 2
+    + Math.cos(toRadians(origin.lat)) * Math.cos(toRadians(destination.lat))
+    * Math.sin(longitudeDistance / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function routeEstimate(mode, distanceKm) {
+  const speed = mode === "walk" ? 4.5 : mode === "car" ? 28 : 18;
+  const minutes = Math.max(1, Math.round((distanceKm / speed) * 60));
+  if (minutes < 60) return `약 ${minutes}분`;
+  return `약 ${Math.floor(minutes / 60)}시간 ${minutes % 60}분`;
+}
+
+function routeModeLabel(mode) {
+  return mode === "walk" ? "도보" : mode === "car" ? "자동차" : "대중교통";
+}
+
+function naverSearchUrl(center) {
+  return safeExternalUrl(center.naverMapUrl)
+    || `https://map.naver.com/p/search/${encodeURIComponent(center.address || center.name)}`;
+}
+
+function naverRouteScheme(center) {
+  const modePath = routeMode === "walk" ? "walk" : routeMode === "car" ? "car" : "public";
+  const params = new URLSearchParams({
+    dlat: String(center.lat),
+    dlng: String(center.lng),
+    dname: center.name,
+    appname: "com.movemap.app",
+  });
+  if (routeOrigin) {
+    params.set("slat", String(routeOrigin.lat));
+    params.set("slng", String(routeOrigin.lng));
+    params.set("sname", "내 위치");
+  }
+  return `nmap://route/${modePath}?${params.toString()}`;
+}
+
+function renderRouteSummary(center) {
+  const summary = centerExperienceContent?.querySelector("#routeSummary");
+  if (!summary) return;
+  if (!routeOrigin) {
+    summary.innerHTML = `<div class="route-summary-placeholder">${uiIcon("locate")}<div><strong>현재 위치를 사용하면 예상 거리를 볼 수 있어요</strong><span>위치 정보는 길찾기 화면에서만 사용합니다.</span></div></div>`;
+    return;
+  }
+  const distanceKm = haversineDistanceKm(routeOrigin, center);
+  summary.innerHTML = `<div class="route-summary-result">
+    <div><span>${routeModeLabel(routeMode)} 참고 시간</span><strong>${routeEstimate(routeMode, distanceKm)}</strong></div>
+    <div><span>직선거리</span><strong>${distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)}km`}</strong></div>
+  </div><p>${uiIcon("info")} 실제 경로·교통 상황이 반영되지 않은 참고값입니다. 정확한 안내는 네이버 지도에서 확인하세요.</p>`;
+}
+
+function mountRouteMiniMap(center) {
+  const element = centerExperienceContent?.querySelector("#routeMiniMap");
+  if (!element) return;
+  if (!window.naver?.maps) {
+    element.innerHTML = `<div class="route-map-fallback">${uiIcon("map-pin")}<span>${escapeHtml(center.address || center.area)}</span></div>`;
+    return;
+  }
+  const position = new naver.maps.LatLng(center.lat, center.lng);
+  routeMiniMap = new naver.maps.Map(element, {
+    center: position,
+    zoom: 15,
+    zoomControl: false,
+    mapDataControl: false,
+    scaleControl: false,
+    logoControlOptions: { position: naver.maps.Position.BOTTOM_LEFT },
+  });
+  routeMiniMarker = new naver.maps.Marker({
+    position,
+    map: routeMiniMap,
+    icon: createMarkerIcon(true, center),
+  });
+}
+
+function useCurrentLocationForRoute(center) {
+  const button = centerExperienceContent?.querySelector("[data-route-location]");
+  const status = centerExperienceContent?.querySelector("#routeLocationStatus");
+  if (!navigator.geolocation) {
+    if (status) status.textContent = "이 브라우저에서는 현재 위치를 사용할 수 없습니다.";
+    return;
+  }
+  if (button) button.disabled = true;
+  if (status) status.textContent = "현재 위치를 확인하고 있습니다…";
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      routeOrigin = { lat: position.coords.latitude, lng: position.coords.longitude };
+      renderCenterExperienceRoute(center);
+    },
+    () => {
+      if (button) button.disabled = false;
+      if (status) status.textContent = "위치 권한을 허용하면 현재 위치에서 길을 찾을 수 있습니다.";
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function openNaverRoute(center) {
+  trackEvent("contact_click", center.id, "route_sheet");
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.location.href = naverRouteScheme(center);
+    return;
+  }
+  window.open(naverSearchUrl(center), "_blank", "noopener,noreferrer");
+}
+
+function renderCenterExperienceRoute(center) {
+  centerExperienceView = "route";
+  centerExperienceContent.innerHTML = `
+    <header class="center-sheet-header">
+      <button class="center-sheet-back icon-only" type="button" data-route-back aria-label="센터 상세로 돌아가기">${uiIcon("arrow-left")}</button>
+      <div><span>지도에서 바로 확인</span><strong id="centerExperienceTitle">길찾기</strong></div>
+      <button class="center-sheet-close icon-only" type="button" data-center-sheet-close aria-label="길찾기 닫기">${uiIcon("x")}</button>
+    </header>
+    <div class="center-sheet-scroll route-sheet-scroll">
+      <div id="routeMiniMap" class="route-mini-map" aria-label="${escapeHtml(center.name)} 위치 지도"></div>
+      <section class="route-destination-card">
+        <div class="route-point">
+          <i class="route-point-start"></i>
+          <div><span>출발</span><strong>${routeOrigin ? "내 현재 위치" : "현재 위치를 설정해 주세요"}</strong></div>
+          <button type="button" data-route-location>${uiIcon("locate")} ${routeOrigin ? "다시 찾기" : "현재 위치 사용"}</button>
+        </div>
+        <div class="route-line" aria-hidden="true"></div>
+        <div class="route-point">
+          <i class="route-point-end"></i>
+          <div><span>도착</span><strong>${escapeHtml(center.name)}</strong><small>${escapeHtml(center.address || center.area)}</small></div>
+        </div>
+      </section>
+      <p id="routeLocationStatus" class="route-location-status">${routeOrigin ? "현재 위치가 설정되었습니다." : "위치 권한은 버튼을 누를 때만 요청합니다."}</p>
+      <section class="route-mode-section">
+        <p class="center-sheet-kicker">이동 수단</p>
+        <div class="route-mode-tabs" role="tablist" aria-label="이동 수단 선택">
+          ${[
+            ["public", "대중교통"],
+            ["car", "자동차"],
+            ["walk", "도보"],
+          ].map(([mode, label]) => `<button type="button" role="tab" data-route-mode="${mode}" aria-selected="${routeMode === mode}" class="${routeMode === mode ? "active" : ""}">${label}</button>`).join("")}
+        </div>
+      </section>
+      <section id="routeSummary" class="route-summary"></section>
+      <section class="route-guide-card">
+        <span>${uiIcon("info")}</span>
+        <div><strong>정확한 경로는 네이버 지도에서 안내합니다</strong><p>DAIL에서는 센터 위치와 기본 정보를 확인하고, 외부 지도에서 실시간 교통과 도보 경로를 이어서 볼 수 있어요.</p></div>
+      </section>
+    </div>
+    <footer class="center-sheet-footer route-sheet-footer">
+      <button class="center-sheet-contact-button route-external-button icon-label" type="button" data-route-external>네이버 지도에서 길찾기 ${uiIcon("external-link")}</button>
+    </footer>`;
+
+  centerExperienceContent.querySelector("[data-route-back]")?.addEventListener("click", () => renderCenterExperienceDetail(center));
+  centerExperienceContent.querySelector("[data-center-sheet-close]")?.addEventListener("click", closeCenterExperience);
+  centerExperienceContent.querySelector("[data-route-location]")?.addEventListener("click", () => useCurrentLocationForRoute(center));
+  centerExperienceContent.querySelectorAll("[data-route-mode]").forEach((button) => button.addEventListener("click", () => {
+    routeMode = button.dataset.routeMode;
+    renderCenterExperienceRoute(center);
+  }));
+  centerExperienceContent.querySelector("[data-route-external]")?.addEventListener("click", () => openNaverRoute(center));
+  renderRouteSummary(center);
+  window.requestAnimationFrame(() => mountRouteMiniMap(center));
+}
+
+let centerExperienceCloseTimer = null;
+function openCenterExperience(id, view = "detail") {
+  const center = centers.find((item) => item.id === id);
+  if (!center || !centerExperienceOverlay || !centerExperienceContent) return;
+  window.clearTimeout(centerExperienceCloseTimer);
+  centerExperienceId = id;
+  centerExperienceView = view;
+  if (view === "detail") {
+    routeOrigin = null;
+    routeMode = "public";
+  }
+  centerExperienceOverlay.hidden = false;
+  document.body.classList.add("center-experience-open");
+  window.requestAnimationFrame(() => centerExperienceOverlay.classList.add("is-visible"));
+  if (view === "route") renderCenterExperienceRoute(center);
+  else {
+    renderCenterExperienceDetail(center);
+    trackEvent("center_view", center.id, "detail_sheet");
+  }
+  centerExperienceSheet.scrollTop = 0;
+  window.setTimeout(() => centerExperienceContent.querySelector(".center-sheet-close")?.focus(), 50);
+}
+
+function closeCenterExperience() {
+  if (!centerExperienceOverlay || centerExperienceOverlay.hidden) return;
+  centerExperienceOverlay.classList.remove("is-visible");
+  document.body.classList.remove("center-experience-open");
+  centerExperienceCloseTimer = window.setTimeout(() => {
+    centerExperienceOverlay.hidden = true;
+    centerExperienceContent.innerHTML = "";
+    centerExperienceId = "";
+    centerExperienceView = "detail";
+    routeOrigin = null;
+    routeMiniMap = null;
+    routeMiniMarker = null;
+  }, 180);
 }
 
 function showCenterInfoWindow(center) {
@@ -472,7 +848,14 @@ function showCenterInfoWindow(center) {
 }
 
 window.closeDailMapPopup = clearSelectedCenter;
-window.trackDailContact = id => trackEvent("contact_click", id, "map_popup");
+window.openDailCenterSheet = id => openCenterExperience(id, "detail");
+window.openDailRouteSheet = id => openCenterExperience(id, "route");
+centerExperienceScrim?.addEventListener("click", closeCenterExperience);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && centerExperienceOverlay && !centerExperienceOverlay.hidden) {
+    closeCenterExperience();
+  }
+});
 
 function renderPins() {
   document.querySelectorAll(".pin").forEach((pin) => {
