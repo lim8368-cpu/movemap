@@ -506,6 +506,8 @@ function clearAdminSessionCookie(req) {
 }
 
 function centerFromRow(row, photoUrl = "", photoUrls = []) {
+  const { normalizeSchedule, scheduleSummary } = require("./_booking");
+  const openingSchedule = normalizeSchedule(row.opening_schedule);
   return {
     id: row.id,
     name: row.name,
@@ -515,7 +517,10 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     naverMapUrl: row.naver_map_url,
     phone: row.phone || "",
     website: row.website || "",
-    openingHours: row.opening_hours || "",
+    openingHours: row.opening_hours || scheduleSummary(openingSchedule),
+    openingSchedule,
+    bookingSlotMinutes: Number(row.booking_slot_minutes || 60),
+    bookingEnabled: row.booking_enabled !== false,
     distance: "신규",
     rating: row.rating || "신규",
     reviews: row.reviews || "0",
@@ -523,6 +528,7 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     tags: row.tags || [],
     categories: row.categories || [],
     therapist: String(row.therapist || "").replace(/물리치료사(?!\s*출신)/g, "물리치료사 출신"),
+    managerCareer: row.manager_career || "",
     price: row.price,
     conversion: row.conversion,
     lat: row.lat,

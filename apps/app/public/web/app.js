@@ -10,6 +10,7 @@ const sampleCenters = [
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
     therapist: "김민재 센터장 · 물리치료사 출신",
+    managerCareer: "대학병원 재활의학과 물리치료사 출신\n근골격계 재활운동 지도 9년\n허리·수술 후 일상 복귀 프로그램 운영",
     price: "첫 평가 30,000원",
     conversion: "전화 상담 가능",
     address: "서울 강남구 강남대로",
@@ -30,6 +31,7 @@ const sampleCenters = [
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
     therapist: "박서연 대표 · 물리치료사 출신",
+    managerCareer: "재활병원 물리치료사 출신\n직장인 자세·목·어깨 운동 지도\n소그룹 자세 분석 프로그램 운영",
     price: "체험 수업 20,000원",
     conversion: "예약 후 방문",
     address: "서울 마포구 양화로",
@@ -50,6 +52,7 @@ const sampleCenters = [
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
     therapist: "이도윤 원장 · 물리치료사 출신",
+    managerCareer: "종합병원 물리치료사 출신\n수술 후 및 시니어 운동 지도\n보행·근력 회복 프로그램 운영",
     price: "방문 상담 무료",
     conversion: "센터 문의",
     address: "경기 성남시 분당구 성남대로",
@@ -70,6 +73,7 @@ const sampleCenters = [
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
     therapist: "최하린 대표 · 물리치료사 출신",
+    managerCareer: "스포츠재활센터 물리치료사 출신\n골프·테니스 컨디셔닝 지도\n어깨 가동성 프로그램 운영",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
     address: "서울 강남구 도산대로",
@@ -139,6 +143,10 @@ let routePlaceRequestId = 0;
 let routeMiniMap = null;
 let routeMiniMarker = null;
 let routeMiniOriginMarker = null;
+let bookingSelectedDate = "";
+let bookingSelectedSlot = null;
+let bookingAvailability = null;
+let bookingRequestId = 0;
 let publicConfig = {
   naverMapNcpKeyId: "",
   auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
@@ -160,6 +168,63 @@ function ratingIcons(rating) {
   return Array.from({ length: 5 }, (_, index) => uiIcon("star", index < score ? "is-filled" : "")).join("");
 }
 
+const PUBLIC_DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const PUBLIC_DEFAULT_SCHEDULE = {
+  monday: { closed: false, open: "09:00", close: "21:00" },
+  tuesday: { closed: false, open: "09:00", close: "21:00" },
+  wednesday: { closed: false, open: "09:00", close: "21:00" },
+  thursday: { closed: false, open: "09:00", close: "21:00" },
+  friday: { closed: false, open: "09:00", close: "21:00" },
+  saturday: { closed: false, open: "10:00", close: "17:00" },
+  sunday: { closed: true, open: "10:00", close: "17:00" },
+};
+
+function normalizeOpeningSchedule(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(Object.keys(PUBLIC_DEFAULT_SCHEDULE).map((key) => {
+    const fallback = PUBLIC_DEFAULT_SCHEDULE[key];
+    const item = source[key] && typeof source[key] === "object" ? source[key] : {};
+    return [key, {
+      closed: Boolean(item.closed),
+      open: /^\d{2}:(?:00|30)$/.test(item.open) ? item.open : fallback.open,
+      close: /^\d{2}:(?:00|30)$/.test(item.close) ? item.close : fallback.close,
+    }];
+  }));
+}
+
+function koreaDateKey(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+function bookingDateChoices(count = 14) {
+  const today = new Date(`${koreaDateKey()}T00:00:00+09:00`);
+  return Array.from({ length: count }, (_, index) => {
+    const value = new Date(today.getTime() + index * 24 * 60 * 60 * 1000);
+    const date = koreaDateKey(value);
+    const weekday = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", weekday: "short" }).format(value);
+    const day = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", day: "numeric" }).format(value);
+    return { date, weekday, day, today: index === 0 };
+  });
+}
+
+function formatBookingDateTime(startAt) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(startAt));
+}
+
 function normalizeCenter(center) {
   const operatorText = String(center.therapist || "운영자 정보 확인 중")
     .replace(/물리치료사(?:\s*\d+년|\s*운영 확인|\s*면허 확인)?/g, "물리치료사 출신");
@@ -173,12 +238,16 @@ function normalizeCenter(center) {
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
     categories: Array.isArray(center.categories) ? center.categories : [],
     therapist: operatorText,
+    managerCareer: center.managerCareer || center.manager_career || "센터장이 커리어 정보를 준비하고 있습니다.",
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
     address: center.address || center.area || "",
     phone: center.phone || "",
     website: center.website || "",
     openingHours: center.openingHours || center.opening_hours || "운영시간은 센터에 문의해 주세요.",
+    openingSchedule: normalizeOpeningSchedule(center.openingSchedule || center.opening_schedule),
+    bookingSlotMinutes: Number(center.bookingSlotMinutes || center.booking_slot_minutes || 60),
+    bookingEnabled: center.bookingEnabled !== false && center.booking_enabled !== false,
     naverMapUrl: center.naverMapUrl || center.naver_map_url || "",
     photoUrl: center.photoUrl || "",
     photoUrls: Array.isArray(center.photoUrls)
@@ -544,12 +613,140 @@ function toggleFavoriteCenter(centerId) {
   }
 }
 
+function centerBookingMarkup(center) {
+  const dates = bookingDateChoices();
+  bookingSelectedDate = dates.some((item) => item.date === bookingSelectedDate)
+    ? bookingSelectedDate
+    : dates[0].date;
+  if (center.bookingEnabled === false) {
+    return `<section id="centerBookingSection" class="center-sheet-section center-booking-section">
+      <p class="center-sheet-kicker">온라인 예약</p>
+      <div class="booking-disabled">${uiIcon("calendar")}<div><strong>현재 온라인 예약을 받고 있지 않아요</strong><p>전화로 가능한 시간을 확인해 주세요.</p></div></div>
+    </section>`;
+  }
+  return `<section id="centerBookingSection" class="center-sheet-section center-booking-section">
+    <div class="center-booking-heading"><div><p class="center-sheet-kicker">온라인 예약</p><h3>방문할 날짜와 시간을 선택하세요</h3></div><span>${center.bookingSlotMinutes}분 단위</span></div>
+    <div class="booking-date-strip" role="list" aria-label="예약 날짜">
+      ${dates.map((item) => `<button type="button" data-booking-date="${item.date}" class="${item.date === bookingSelectedDate ? "active" : ""}">
+        <small>${item.today ? "오늘" : item.weekday}</small><strong>${item.day}</strong>
+      </button>`).join("")}
+    </div>
+    <div id="bookingSlotPanel" class="booking-slot-panel"><p class="booking-loading">예약 가능한 시간을 확인하고 있습니다.</p></div>
+    <div id="bookingFormPanel"></div>
+  </section>`;
+}
+
+function renderBookingSlots(center) {
+  const panel = centerExperienceContent?.querySelector("#bookingSlotPanel");
+  const formPanel = centerExperienceContent?.querySelector("#bookingFormPanel");
+  if (!panel || !formPanel) return;
+  const slots = bookingAvailability?.slots || [];
+  panel.innerHTML = slots.length
+    ? `<div class="booking-slot-grid">${slots.map((slot) =>
+        `<button type="button" data-booking-slot="${escapeHtml(slot.startAt)}" ${slot.available ? "" : "disabled"} class="${bookingSelectedSlot?.startAt === slot.startAt ? "active" : ""}">
+          ${escapeHtml(slot.time)}${slot.available ? "" : "<small>예약됨</small>"}
+        </button>`
+      ).join("")}</div>`
+    : `<div class="booking-no-slots">${uiIcon("calendar")}<strong>선택한 날짜는 예약 가능한 시간이 없어요</strong><p>다른 날짜를 선택해 주세요.</p></div>`;
+  formPanel.innerHTML = bookingSelectedSlot
+    ? `<form id="centerBookingForm" class="center-booking-form">
+        <div class="selected-booking-time">${uiIcon("calendar")}<div><span>선택한 예약 시간</span><strong>${escapeHtml(formatBookingDateTime(bookingSelectedSlot.startAt))}</strong></div></div>
+        <div class="booking-form-grid">
+          <label>이름<input name="customerName" maxlength="40" required value="${escapeHtml(currentUserProfile?.profile?.nickname || "")}" placeholder="예약자 이름" /></label>
+          <label>전화번호<input name="customerPhone" inputmode="tel" maxlength="30" required placeholder="010-0000-0000" /></label>
+          <label class="wide">불편한 부위<input name="painArea" maxlength="100" required placeholder="예: 오른쪽 어깨, 허리" /></label>
+          <label class="wide">센터에 전할 내용 <small>선택</small><textarea name="customerNote" maxlength="500" rows="3" placeholder="운동 시 참고할 내용을 적어주세요. 진단서나 상세 의료기록은 입력하지 마세요."></textarea></label>
+        </div>
+        <label class="booking-consent"><input name="privacyConsent" type="checkbox" required /><span>예약 진행을 위해 이름, 전화번호, 불편 부위를 센터에 전달하는 데 동의합니다.</span></label>
+        <button type="submit" class="booking-submit">이 시간으로 예약 요청</button>
+        <p class="booking-form-message" aria-live="polite"></p>
+      </form>`
+    : "";
+  panel.querySelectorAll("[data-booking-slot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      bookingSelectedSlot = slots.find((slot) => slot.startAt === button.dataset.bookingSlot) || null;
+      renderBookingSlots(center);
+      centerExperienceContent?.querySelector("#centerBookingForm")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+  centerExperienceContent?.querySelector("#centerBookingForm")?.addEventListener("submit", (event) => submitCenterBooking(event, center));
+}
+
+async function loadBookingAvailability(center) {
+  const panel = centerExperienceContent?.querySelector("#bookingSlotPanel");
+  if (!panel) return;
+  const requestId = ++bookingRequestId;
+  bookingSelectedSlot = null;
+  panel.innerHTML = '<p class="booking-loading">예약 가능한 시간을 확인하고 있습니다.</p>';
+  centerExperienceContent.querySelector("#bookingFormPanel").innerHTML = "";
+  try {
+    const response = await fetch(`${API_BASE}/api/bookings?centerId=${encodeURIComponent(center.id)}&date=${encodeURIComponent(bookingSelectedDate)}`);
+    const data = await response.json().catch(() => ({}));
+    if (requestId !== bookingRequestId || centerExperienceId !== center.id) return;
+    if (!response.ok) throw new Error(data.error || "예약 시간을 불러오지 못했습니다.");
+    bookingAvailability = data;
+    renderBookingSlots(center);
+  } catch (error) {
+    if (requestId !== bookingRequestId) return;
+    panel.innerHTML = `<div class="booking-no-slots is-error">${uiIcon("info")}<strong>${escapeHtml(error.message)}</strong><button type="button" data-booking-retry>다시 시도</button></div>`;
+    panel.querySelector("[data-booking-retry]")?.addEventListener("click", () => loadBookingAvailability(center));
+  }
+}
+
+async function submitCenterBooking(event, center) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector(".booking-form-message");
+  const session = await activeAuthSession();
+  if (!session) {
+    message.textContent = "예약하려면 먼저 로그인해 주세요.";
+    openAuth("login");
+    return;
+  }
+  if (!bookingSelectedSlot) return;
+  const values = new FormData(form);
+  const button = form.querySelector('[type="submit"]');
+  button.disabled = true;
+  button.textContent = "예약 요청 중…";
+  const response = await fetch(`${API_BASE}/api/bookings`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": clientIdempotencyKey(),
+      "X-DAIL-Source": "web",
+    },
+    body: JSON.stringify({
+      centerId: center.id,
+      startAt: bookingSelectedSlot.startAt,
+      customerName: values.get("customerName"),
+      customerPhone: values.get("customerPhone"),
+      painArea: values.get("painArea"),
+      customerNote: values.get("customerNote"),
+      privacyConsent: values.get("privacyConsent") === "on",
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  button.disabled = false;
+  button.textContent = "이 시간으로 예약 요청";
+  if (!response.ok) {
+    message.textContent = data.error || "예약을 접수하지 못했습니다.";
+    if (response.status === 409) loadBookingAvailability(center);
+    return;
+  }
+  form.innerHTML = `<div class="booking-success">${uiIcon("circle-check")}<div><strong>예약 요청을 보냈습니다</strong><p>${escapeHtml(data.message || "센터 확인 후 예약이 확정됩니다.")}</p></div></div>`;
+  trackEvent("contact_click", center.id, "booking_sheet");
+}
+
 function renderCenterExperienceDetail(center) {
   const tags = centerExperienceTags(center);
   const website = safeExternalUrl(center.website);
   const phoneLink = String(center.phone || "").replace(/[^\d+]/g, "");
   const saved = isFavoriteCenter(center.id);
   centerExperienceView = "detail";
+  bookingSelectedDate = bookingDateChoices()[0].date;
+  bookingSelectedSlot = null;
+  bookingAvailability = null;
   centerExperienceContent.innerHTML = `
     <header class="center-sheet-header">
       <div><span>센터 상세</span><strong id="centerExperienceTitle">센터 정보</strong></div>
@@ -564,6 +761,7 @@ function renderCenterExperienceDetail(center) {
         <p class="center-sheet-address icon-label">${uiIcon("map-pin")}<span>${escapeHtml(center.address || center.area)}</span></p>
       </section>
       <nav class="center-sheet-quick-actions" aria-label="센터 빠른 메뉴">
+        <button type="button" data-center-booking>${uiIcon("calendar")}<span>예약</span></button>
         <button type="button" data-center-route>${uiIcon("map-pin")}<span>길찾기</span></button>
         <button type="button" data-center-phone ${phoneLink ? "" : "disabled"}>${uiIcon("phone-call")}<span>${phoneLink ? "전화" : "전화 준비중"}</span></button>
         <button type="button" data-center-favorite class="${saved ? "is-saved" : ""}" aria-pressed="${saved}">${uiIcon("heart")}<span>${saved ? "저장됨" : "관심 저장"}</span></button>
@@ -576,11 +774,14 @@ function renderCenterExperienceDetail(center) {
       </section>
       <section class="center-sheet-section">
         <p class="center-sheet-kicker">센터장 정보</p>
-        <div class="center-operator-card">
+        <button class="center-operator-card" type="button" data-center-operator aria-expanded="false">
           <span class="center-operator-avatar" aria-hidden="true">${uiIcon("user-cog")}</span>
-          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인</span></div>
-        </div>
+          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인 · 커리어 보기</span></div>
+          ${uiIcon("chevron-down")}
+        </button>
+        <div class="center-operator-career" data-center-operator-career hidden><b>주요 커리어</b><p>${escapeHtml(center.managerCareer)}</p></div>
       </section>
+      ${centerBookingMarkup(center)}
       <section class="center-sheet-section">
         <p class="center-sheet-kicker">이용 안내</p>
         <h3>방문 전에 확인하세요</h3>
@@ -599,20 +800,33 @@ function renderCenterExperienceDetail(center) {
     </div>
     <footer class="center-sheet-footer">
       <button class="center-sheet-route-button icon-label" type="button" data-center-route>${uiIcon("map-pin")} 길찾기</button>
-      ${phoneLink
-        ? `<a class="center-sheet-contact-button icon-label" href="tel:${escapeHtml(phoneLink)}" data-center-contact>${uiIcon("phone-call")} 전화 상담</a>`
-        : `<button class="center-sheet-contact-button" type="button" disabled>전화번호 등록 전</button>`}
+      <button class="center-sheet-contact-button icon-label" type="button" data-center-booking>${uiIcon("calendar")} 시간 예약</button>
     </footer>`;
 
   centerExperienceContent.querySelectorAll("[data-center-sheet-close]").forEach((button) => button.addEventListener("click", closeCenterExperience));
   centerExperienceContent.querySelectorAll("[data-center-route]").forEach((button) => button.addEventListener("click", () => renderCenterExperienceRoute(center)));
   centerExperienceContent.querySelector("[data-center-favorite]")?.addEventListener("click", () => toggleFavoriteCenter(center.id));
+  centerExperienceContent.querySelectorAll("[data-center-booking]").forEach((button) => button.addEventListener("click", () => {
+    centerExperienceContent.querySelector("#centerBookingSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  centerExperienceContent.querySelector("[data-center-operator]")?.addEventListener("click", (event) => {
+    const button = event.currentTarget;
+    const expanded = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", String(!expanded));
+    centerExperienceContent.querySelector("[data-center-operator-career]").hidden = expanded;
+  });
+  centerExperienceContent.querySelectorAll("[data-booking-date]").forEach((button) => button.addEventListener("click", () => {
+    bookingSelectedDate = button.dataset.bookingDate;
+    centerExperienceContent.querySelectorAll("[data-booking-date]").forEach((item) => item.classList.toggle("active", item === button));
+    loadBookingAvailability(center);
+  }));
   centerExperienceContent.querySelector("[data-center-phone]")?.addEventListener("click", () => {
     if (!phoneLink) return;
     trackEvent("contact_click", center.id, "phone_sheet");
     window.location.href = `tel:${phoneLink}`;
   });
   centerExperienceContent.querySelector("[data-center-contact]")?.addEventListener("click", () => trackEvent("contact_click", center.id, "phone_sheet"));
+  if (center.bookingEnabled !== false) loadBookingAvailability(center);
   loadCenterSheetReviews(center.id);
 }
 
@@ -1055,6 +1269,10 @@ function closeCenterExperience() {
     routeLocationState = "idle";
     routeLocationMessage = "";
     routeLocationRequestId += 1;
+    bookingRequestId += 1;
+    bookingSelectedDate = "";
+    bookingSelectedSlot = null;
+    bookingAvailability = null;
     resetRoutePlaceSearch();
     routeMiniMap = null;
     routeMiniMarker = null;

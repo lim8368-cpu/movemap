@@ -22,7 +22,38 @@ let currentCenterId = "";
 let currentRole = "";
 let hasUnsavedChanges = false;
 let latestInvitationLinks = {};
+let currentPhotoItems = [];
+let currentBookings = [];
+let bookingFilter = "upcoming";
+let currentSchedule = {};
+let currentSlotMinutes = 60;
 let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
+
+const DAY_ROWS = [
+  ["monday", "월요일"],
+  ["tuesday", "화요일"],
+  ["wednesday", "수요일"],
+  ["thursday", "목요일"],
+  ["friday", "금요일"],
+  ["saturday", "토요일"],
+  ["sunday", "일요일"],
+];
+const DEFAULT_SCHEDULE = {
+  monday: { closed: false, open: "09:00", close: "21:00" },
+  tuesday: { closed: false, open: "09:00", close: "21:00" },
+  wednesday: { closed: false, open: "09:00", close: "21:00" },
+  thursday: { closed: false, open: "09:00", close: "21:00" },
+  friday: { closed: false, open: "09:00", close: "21:00" },
+  saturday: { closed: false, open: "10:00", close: "17:00" },
+  sunday: { closed: true, open: "10:00", close: "17:00" },
+};
+const BOOKING_STATUS_LABELS = {
+  pending: "확인 대기",
+  confirmed: "예약 확정",
+  completed: "이용 완료",
+  cancelled: "예약 취소",
+  no_show: "노쇼",
+};
 
 const ownerOnboardingMessage = invitationToken
   ? "초대받은 DAIL 계정으로 로그인하면 센터 구성원 합류가 완료됩니다."
@@ -59,6 +90,115 @@ const statusLabel = (status) => ({
   revoked: "권한 회수",
   invited: "초대 중",
 })[status] || status || "-";
+
+function timeOptions(selected) {
+  const options = [];
+  for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
+    const value = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+    options.push(`<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`);
+  }
+  return options.join("");
+}
+
+function normalizeSchedule(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(DAY_ROWS.map(([key]) => {
+    const fallback = DEFAULT_SCHEDULE[key];
+    const item = source[key] && typeof source[key] === "object" ? source[key] : {};
+    return [key, {
+      closed: Boolean(item.closed),
+      open: /^\d{2}:(?:00|30)$/.test(item.open) ? item.open : fallback.open,
+      close: /^\d{2}:(?:00|30)$/.test(item.close) ? item.close : fallback.close,
+    }];
+  }));
+}
+
+function scheduleSummary(scheduleValue = currentSchedule) {
+  const schedule = normalizeSchedule(scheduleValue);
+  const weekday = ["monday", "tuesday", "wednesday", "thursday", "friday"].map((key) => schedule[key]);
+  const sameWeekday = weekday.every((item) =>
+    item.closed === weekday[0].closed && item.open === weekday[0].open && item.close === weekday[0].close
+  );
+  const parts = [];
+  if (sameWeekday) {
+    parts.push(weekday[0].closed ? "평일 휴무" : `평일 ${weekday[0].open}–${weekday[0].close}`);
+  } else {
+    DAY_ROWS.slice(0, 5).forEach(([key, label]) => {
+      const item = schedule[key];
+      parts.push(`${label.slice(0, 1)} ${item.closed ? "휴무" : `${item.open}–${item.close}`}`);
+    });
+  }
+  DAY_ROWS.slice(5).forEach(([key, label]) => {
+    const item = schedule[key];
+    parts.push(`${label.slice(0, 1)} ${item.closed ? "휴무" : `${item.open}–${item.close}`}`);
+  });
+  return parts.join(" · ");
+}
+
+function scheduleSlotsForDate(date) {
+  const marker = new Date(`${date}T12:00:00+09:00`);
+  const dayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][marker.getUTCDay()];
+  const item = currentSchedule[dayKey];
+  if (!item || item.closed) return [];
+  const toMinutes = (value) => {
+    const [hour, minute] = value.split(":").map(Number);
+    return hour * 60 + minute;
+  };
+  const values = [];
+  for (let cursor = toMinutes(item.open); cursor + currentSlotMinutes <= toMinutes(item.close); cursor += currentSlotMinutes) {
+    values.push(`${String(Math.floor(cursor / 60)).padStart(2, "0")}:${String(cursor % 60).padStart(2, "0")}`);
+  }
+  return values;
+}
+
+function bookingDateTime(startAt) {
+  const value = new Date(startAt);
+  const dateParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const dateMap = Object.fromEntries(dateParts.map((part) => [part.type, part.value]));
+  return {
+    date: `${dateMap.year}-${dateMap.month}-${dateMap.day}`,
+    time: new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Seoul",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(value),
+  };
+}
+
+function renderWeeklySchedule() {
+  currentSchedule = normalizeSchedule(currentSchedule);
+  document.querySelector("#weeklySchedule").innerHTML = DAY_ROWS.map(([key, label]) => {
+    const item = currentSchedule[key];
+    return `<div class="schedule-row ${item.closed ? "is-closed" : ""}" data-schedule-day="${key}">
+      <strong>${label}</strong>
+      <label class="day-toggle"><input type="checkbox" data-schedule-closed ${item.closed ? "" : "checked"} /><span>${item.closed ? "휴무" : "운영"}</span></label>
+      <label><span>시작</span><select data-schedule-open ${item.closed ? "disabled" : ""}>${timeOptions(item.open)}</select></label>
+      <i>–</i>
+      <label><span>종료</span><select data-schedule-close ${item.closed ? "disabled" : ""}>${timeOptions(item.close)}</select></label>
+    </div>`;
+  }).join("");
+  centerForm.elements.opening_schedule.value = JSON.stringify(currentSchedule);
+  centerForm.elements.opening_hours.value = scheduleSummary(currentSchedule);
+}
+
+function renderCenterPhotos() {
+  const list = document.querySelector("#centerPhotoList");
+  list.innerHTML = currentPhotoItems.length
+    ? currentPhotoItems.map((item, index) => `<figure class="center-photo-item">
+        <img src="${escapeHtml(item.url)}" alt="센터 사진 ${index + 1}" />
+        ${index === 0 ? "<figcaption>대표 사진</figcaption>" : ""}
+        ${currentRole === "viewer" ? "" : `<button type="button" data-photo-delete="${escapeHtml(item.path)}">삭제</button>`}
+      </figure>`).join("")
+    : `<div class="photo-empty">${uiIcon("image")}<b>등록된 센터 사진이 없습니다</b><span>첫 번째 사진이 상세보기 대표 사진으로 노출됩니다.</span></div>`;
+  const input = document.querySelector("#centerPhotoInput");
+  input.disabled = currentRole === "viewer" || currentPhotoItems.length >= 5;
+}
 
 function tagValues() {
   return tagField.value.split(",").map((tag) => tag.trim()).filter(Boolean);
@@ -193,6 +333,9 @@ function formValues() {
   const data = new FormData(centerForm);
   const values = Object.fromEntries(data.entries());
   values.categories = data.getAll("categories");
+  values.opening_schedule = normalizeSchedule(currentSchedule);
+  values.booking_slot_minutes = Number(values.booking_slot_minutes || 60);
+  values.booking_enabled = centerForm.elements.booking_enabled.checked;
   return values;
 }
 
@@ -210,6 +353,10 @@ function updatePreview() {
   ].slice(0, 6);
   document.querySelector("#previewTags").innerHTML = items.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
   document.querySelector('[data-count="lead"]').textContent = values.lead.length;
+  const cover = document.querySelector(".preview-cover");
+  const photo = currentPhotoItems[0]?.url || "";
+  cover.style.backgroundImage = photo ? `linear-gradient(rgba(15,28,46,.16),rgba(15,28,46,.32)),url("${photo.replaceAll('"', "%22")}")` : "";
+  cover.classList.toggle("has-photo", Boolean(photo));
 }
 
 function syncCategories(center) {
@@ -222,9 +369,9 @@ function syncCategories(center) {
 function profileStatus(center) {
   const items = [
     { label: "센터 기본 정보", done: Boolean(center.name && center.area && center.address) },
-    { label: "연락처와 운영시간", done: Boolean(center.phone && center.openingHours) },
+    { label: "사진과 운영시간", done: Boolean((center.photoUrls || []).length && center.openingHours) },
     { label: "소개와 전문 분야", done: Boolean(center.lead && (center.tags || []).length >= 2) },
-    { label: "가격 안내", done: Boolean(center.price) },
+    { label: "센터장 커리어와 가격", done: Boolean(center.managerCareer && center.price) },
   ];
   const score = Math.round(items.filter((item) => item.done).length / items.length * 100);
   document.querySelector("#completionValue").textContent = `${score}%`;
@@ -236,7 +383,7 @@ function profileStatus(center) {
 
 function setFormAccess(role) {
   const readOnly = role === "viewer";
-  centerForm.querySelectorAll("input, textarea, button").forEach((element) => {
+  centerForm.querySelectorAll("input, textarea, select, button").forEach((element) => {
     if (element.type === "hidden") return;
     element.disabled = readOnly;
   });
@@ -285,11 +432,19 @@ function fillDashboard(data) {
     lead: data.center.lead,
     tags: (data.center.tags || []).join(", "),
     therapist: data.center.therapist,
+    manager_career: data.center.managerCareer,
     price: data.center.price,
+    booking_slot_minutes: String(data.center.bookingSlotMinutes || 60),
   };
   Object.entries(fields).forEach(([name, value]) => {
     centerForm.elements[name].value = value || "";
   });
+  currentSchedule = normalizeSchedule(data.center.openingSchedule);
+  currentSlotMinutes = Number(data.center.bookingSlotMinutes || 60);
+  centerForm.elements.booking_enabled.checked = data.center.bookingEnabled !== false;
+  currentPhotoItems = data.center.photoItems || (data.center.photoUrls || []).map((url) => ({ path: "", url }));
+  renderWeeklySchedule();
+  renderCenterPhotos();
   syncCategories(data.center);
   setFormAccess(currentRole);
   renderTags();
@@ -320,7 +475,7 @@ async function loadDashboard(centerId = currentCenterId, allowSocialSession = tr
   const data = await response.json().catch(() => ({}));
   if (!response.ok) return showLogin(data.error || "센터 정보를 불러오지 못했습니다.");
   fillDashboard(data);
-  await loadMembers();
+  await Promise.all([loadMembers(), loadBookings()]);
 }
 
 function renderMembers(data) {
@@ -359,6 +514,154 @@ async function loadMembers() {
     return;
   }
   renderMembers(data);
+}
+
+function filteredBookings() {
+  const now = Date.now();
+  if (bookingFilter === "upcoming") {
+    return currentBookings.filter((booking) =>
+      ["pending", "confirmed"].includes(booking.status) && new Date(booking.start_at).getTime() >= now
+    );
+  }
+  if (bookingFilter === "completed") return currentBookings.filter((booking) => booking.status === "completed");
+  if (bookingFilter === "cancelled") return currentBookings.filter((booking) => booking.status === "cancelled");
+  return currentBookings;
+}
+
+function bookingTimeOptions(booking, date) {
+  const current = bookingDateTime(booking.start_at);
+  const values = scheduleSlotsForDate(date);
+  if (date === current.date && !values.includes(current.time)) values.push(current.time);
+  return values.sort().map((time) =>
+    `<option value="${time}" ${time === current.time ? "selected" : ""}>${time}</option>`
+  ).join("");
+}
+
+function renderOwnerBookings() {
+  const upcomingCount = currentBookings.filter((booking) =>
+    ["pending", "confirmed"].includes(booking.status) && new Date(booking.start_at).getTime() >= Date.now()
+  ).length;
+  document.querySelector("#bookingCount").textContent = `예정 예약 ${upcomingCount}건`;
+  document.querySelectorAll("[data-booking-filter]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.bookingFilter === bookingFilter);
+  });
+  const bookings = filteredBookings();
+  const canManage = ["owner", "manager"].includes(currentRole);
+  document.querySelector("#ownerBookingList").innerHTML = bookings.length
+    ? bookings.map((booking) => {
+        const current = bookingDateTime(booking.start_at);
+        return `<article class="owner-booking-card" data-owner-booking="${escapeHtml(booking.id)}">
+          <header><div><span class="booking-status status-${escapeHtml(booking.status)}">${escapeHtml(BOOKING_STATUS_LABELS[booking.status] || booking.status)}</span><strong>${escapeHtml(formatDate(booking.start_at))}</strong></div><small>접수 ${formatDate(booking.created_at)}</small></header>
+          <div class="booking-customer">
+            <div><span>예약자</span><strong>${escapeHtml(booking.customer_name)}</strong></div>
+            <div><span>전화번호</span><a href="tel:${escapeHtml(String(booking.customer_phone).replace(/[^\d+]/g, ""))}">${escapeHtml(booking.customer_phone)}</a></div>
+            <div class="wide"><span>불편 부위</span><strong>${escapeHtml(booking.pain_area)}</strong></div>
+            ${booking.customer_note ? `<div class="wide"><span>전달 사항</span><p>${escapeHtml(booking.customer_note)}</p></div>` : ""}
+          </div>
+          ${canManage ? `<div class="booking-editor">
+            <label>상태<select data-booking-status><option value="pending">확인 대기</option><option value="confirmed">예약 확정</option><option value="completed">이용 완료</option><option value="cancelled">예약 취소</option><option value="no_show">노쇼</option></select></label>
+            <label>날짜<input type="date" data-booking-date value="${current.date}" /></label>
+            <label>시간<select data-booking-time>${bookingTimeOptions(booking, current.date)}</select></label>
+            <button type="button" data-booking-save>예약 수정 저장</button>
+          </div>` : `<p class="booking-readonly">예약 변경은 소유자 또는 매니저 권한에서만 가능합니다.</p>`}
+          <p class="booking-message" aria-live="polite"></p>
+        </article>`;
+      }).join("")
+    : '<div class="booking-empty"><span>' + uiIcon("calendar") + '</span><strong>해당하는 예약이 없습니다</strong><p>사용자가 예약하면 이곳에서 바로 확인할 수 있습니다.</p></div>';
+  bookings.forEach((booking) => {
+    const card = document.querySelector(`[data-owner-booking="${CSS.escape(booking.id)}"]`);
+    if (card?.querySelector("[data-booking-status]")) card.querySelector("[data-booking-status]").value = booking.status;
+  });
+}
+
+async function loadBookings() {
+  const response = await fetch(`/api/owner-bookings?centerId=${encodeURIComponent(currentCenterId)}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    document.querySelector("#ownerBookingList").innerHTML =
+      `<p class="empty">${escapeHtml(data.error || "예약 정보를 불러오지 못했습니다.")}</p>`;
+    return;
+  }
+  currentBookings = data.bookings || [];
+  renderOwnerBookings();
+}
+
+async function updateBooking(card) {
+  const bookingId = card.dataset.ownerBooking;
+  const date = card.querySelector("[data-booking-date]").value;
+  const time = card.querySelector("[data-booking-time]").value;
+  const message = card.querySelector(".booking-message");
+  const button = card.querySelector("[data-booking-save]");
+  if (!date || !time) {
+    message.textContent = "변경할 날짜와 시간을 선택해 주세요.";
+    return;
+  }
+  button.disabled = true;
+  message.textContent = "저장 중…";
+  const response = await fetch("/api/owner-bookings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      centerId: currentCenterId,
+      bookingId,
+      status: card.querySelector("[data-booking-status]").value,
+      startAt: new Date(`${date}T${time}:00+09:00`).toISOString(),
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  button.disabled = false;
+  if (!response.ok) {
+    message.textContent = data.error || "예약을 수정하지 못했습니다.";
+    return;
+  }
+  currentBookings = data.bookings || [];
+  renderOwnerBookings();
+}
+
+async function uploadCenterPhotos(files) {
+  if (hasUnsavedChanges) {
+    window.alert("입력 중인 센터 정보를 먼저 저장한 뒤 사진을 추가해 주세요.");
+    return;
+  }
+  const message = document.querySelector("#photoUploadMessage");
+  const available = Math.max(0, 5 - currentPhotoItems.length);
+  const selected = [...files].slice(0, available);
+  if (!selected.length) return;
+  message.textContent = `${selected.length}장 업로드 중…`;
+  for (let index = 0; index < selected.length; index += 1) {
+    const file = selected[index];
+    const response = await fetch(`/api/owner-uploads?centerId=${encodeURIComponent(currentCenterId)}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      message.textContent = data.error || `${file.name} 업로드에 실패했습니다.`;
+      return;
+    }
+    currentPhotoItems = data.photoItems || currentPhotoItems;
+    renderCenterPhotos();
+    updatePreview();
+    message.textContent = `${index + 1}/${selected.length}장 업로드 완료`;
+  }
+  message.textContent = "센터 사진이 저장되었습니다.";
+}
+
+async function deleteCenterPhoto(path) {
+  const message = document.querySelector("#photoUploadMessage");
+  const response = await fetch(`/api/owner-uploads?centerId=${encodeURIComponent(currentCenterId)}&path=${encodeURIComponent(path)}`, {
+    method: "DELETE",
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    message.textContent = data.error || "사진을 삭제하지 못했습니다.";
+    return;
+  }
+  currentPhotoItems = data.photoItems || [];
+  renderCenterPhotos();
+  updatePreview();
+  message.textContent = "센터 사진을 삭제했습니다.";
 }
 
 async function inviteMember(email, role) {
@@ -461,8 +764,77 @@ document.querySelector("#inviteActivationForm").addEventListener("submit", async
   }
 });
 
+document.querySelector("#weeklySchedule").addEventListener("change", (event) => {
+  const row = event.target.closest("[data-schedule-day]");
+  if (!row || currentRole === "viewer") return;
+  const day = row.dataset.scheduleDay;
+  if (event.target.matches("[data-schedule-closed]")) {
+    currentSchedule[day].closed = !event.target.checked;
+  } else if (event.target.matches("[data-schedule-open]")) {
+    currentSchedule[day].open = event.target.value;
+  } else if (event.target.matches("[data-schedule-close]")) {
+    currentSchedule[day].close = event.target.value;
+  }
+  renderWeeklySchedule();
+  updatePreview();
+  setDirtyState(true);
+});
+
+document.querySelectorAll("[data-schedule-copy]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (currentRole === "viewer") return;
+    if (button.dataset.scheduleCopy === "weekdays") {
+      ["tuesday", "wednesday", "thursday", "friday"].forEach((key) => {
+        currentSchedule[key] = { ...currentSchedule.monday };
+      });
+    } else {
+      currentSchedule.sunday = { ...currentSchedule.saturday };
+    }
+    renderWeeklySchedule();
+    updatePreview();
+    setDirtyState(true);
+  });
+});
+
+centerForm.elements.booking_slot_minutes.addEventListener("change", (event) => {
+  currentSlotMinutes = Number(event.target.value || 60);
+});
+
+document.querySelector("#centerPhotoInput").addEventListener("change", async (event) => {
+  await uploadCenterPhotos(event.target.files || []);
+  event.target.value = "";
+});
+
+document.querySelector("#centerPhotoList").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-photo-delete]");
+  if (!button || !window.confirm("이 센터 사진을 삭제할까요?")) return;
+  button.disabled = true;
+  await deleteCenterPhoto(button.dataset.photoDelete);
+});
+
+document.querySelectorAll("[data-booking-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    bookingFilter = button.dataset.bookingFilter;
+    renderOwnerBookings();
+  });
+});
+
+document.querySelector("#ownerBookingList").addEventListener("change", (event) => {
+  const dateInput = event.target.closest("[data-booking-date]");
+  if (!dateInput) return;
+  const card = dateInput.closest("[data-owner-booking]");
+  const booking = currentBookings.find((item) => item.id === card.dataset.ownerBooking);
+  card.querySelector("[data-booking-time]").innerHTML = bookingTimeOptions(booking, dateInput.value);
+});
+
+document.querySelector("#ownerBookingList").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-booking-save]");
+  if (!button) return;
+  await updateBooking(button.closest("[data-owner-booking]"));
+});
+
 centerForm.addEventListener("input", (event) => {
-  if (event.target === tagInput || currentRole === "viewer") return;
+  if (event.target === tagInput || event.target.id === "centerPhotoInput" || currentRole === "viewer") return;
   updatePreview();
   setDirtyState(true);
 });

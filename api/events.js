@@ -19,7 +19,7 @@ const EVENT_TYPES = new Map([
   ["contact_click", "contact"],
   ["contact", "contact"],
 ]);
-const ALLOWED_DETAILS = new Set(["map_popup", "select_center", "center_card", "detail_page", "detail_sheet", "route_sheet", "phone_sheet", ""]);
+const ALLOWED_DETAILS = new Set(["map_popup", "select_center", "center_card", "detail_page", "detail_sheet", "route_sheet", "phone_sheet", "booking_sheet", ""]);
 
 function analyticsSecret() {
   const secret = process.env.ANALYTICS_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET;

@@ -7,8 +7,25 @@ const {
   supabaseRequest,
 } = require("./_shared");
 const { requireOwnerAccess } = require("./_platform-auth");
+const { normalizeSchedule, scheduleSummary } = require("./_booking");
 
-const EDITABLE_FIELDS = ["name", "area", "address", "naver_map_url", "lead", "tags", "categories", "therapist", "price", "phone", "website", "opening_hours"];
+const EDITABLE_FIELDS = [
+  "name",
+  "area",
+  "address",
+  "naver_map_url",
+  "lead",
+  "tags",
+  "categories",
+  "therapist",
+  "manager_career",
+  "price",
+  "phone",
+  "website",
+  "opening_schedule",
+  "booking_slot_minutes",
+  "booking_enabled",
+];
 const ALLOWED_CATEGORIES = new Set(["재활운동", "통증관리", "자세교정", "체형관리", "스포츠재활", "시니어운동", "산전산후", "다이어트"]);
 
 function cleanText(value, maxLength) {
@@ -34,7 +51,14 @@ async function centerData(centerId) {
     ? approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / approvedReviews.length
     : 0;
   return {
-    center: { ...centerFromRow(row, photoUrls[0] || "", photoUrls), phone: row.phone || "", website: row.website || "", openingHours: row.opening_hours || "", status: row.status, updatedAt: row.updated_at },
+    center: {
+      ...centerFromRow(row, photoUrls[0] || "", photoUrls),
+      phone: row.phone || "",
+      website: row.website || "",
+      status: row.status,
+      updatedAt: row.updated_at,
+      photoItems: paths.map((path, index) => ({ path, url: photoUrls[index] || "" })),
+    },
     totals: {
       views,
       contactClicks,
@@ -101,8 +125,19 @@ module.exports = async function handler(req, res) {
         patch.tags = Array.isArray(body.tags) ? body.tags.map((tag) => cleanText(tag, 30)).filter(Boolean).slice(0, 12) : [];
       } else if (field === "categories") {
         patch.categories = Array.isArray(body.categories) ? [...new Set(body.categories.map((value) => cleanText(value, 20)).filter((value) => ALLOWED_CATEGORIES.has(value)))].slice(0, 8) : [];
+      } else if (field === "opening_schedule") {
+        patch.opening_schedule = normalizeSchedule(body.opening_schedule);
+        patch.opening_hours = scheduleSummary(patch.opening_schedule);
+      } else if (field === "booking_slot_minutes") {
+        const duration = Number(body.booking_slot_minutes);
+        if (![30, 60, 90, 120].includes(duration)) {
+          return sendJson(res, 400, { error: "예약 단위는 30분, 60분, 90분, 120분 중에서 선택해 주세요." });
+        }
+        patch.booking_slot_minutes = duration;
+      } else if (field === "booking_enabled") {
+        patch.booking_enabled = body.booking_enabled === true || body.booking_enabled === "true" || body.booking_enabled === "on";
       } else {
-        const limit = field === "lead" ? 800 : field === "opening_hours" ? 500 : 200;
+        const limit = field === "lead" ? 800 : field === "manager_career" ? 2000 : 200;
         patch[field] = cleanText(body[field], limit);
         if (field === "therapist") {
           patch[field] = patch[field].replace(/물리치료사(?!\s*출신)/g, "물리치료사 출신");
