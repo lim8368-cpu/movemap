@@ -109,6 +109,8 @@ let heroMap = null;
 let heroUserMarker = null;
 let heroCenterMarkers = [];
 let centerFocusTimers = [];
+let clusterTransitionTimer = null;
+let markerRevealTimer = null;
 let panelGestureActive = false;
 let publicConfig = {
   naverMapNcpKeyId: "",
@@ -478,10 +480,10 @@ function groupCentersForZoom() {
   return [...groups.values()];
 }
 
-function createClusterIcon(count) {
+function createClusterIcon(count, isOpening = false) {
   const size = count >= 10 ? 62 : 56;
   return {
-    content: `<button class="cluster-marker ${count >= 10 ? "large" : ""}" type="button" aria-label="${count}개 센터 보기"><strong>${count}</strong><span>센터</span></button>`,
+    content: `<button class="cluster-marker ${count >= 10 ? "large" : ""} ${isOpening ? "is-opening" : ""}" type="button" aria-label="${count}개 센터 보기"><strong>${count}</strong><span>센터</span></button>`,
     size: new naver.maps.Size(size, size),
     anchor: new naver.maps.Point(size / 2, size / 2),
   };
@@ -491,14 +493,6 @@ function clusterCenter(group) {
   const lat = group.reduce((sum, center) => sum + center.lat, 0) / group.length;
   const lng = group.reduce((sum, center) => sum + center.lng, 0) / group.length;
   return new naver.maps.LatLng(lat, lng);
-}
-
-function boundsForCenters(group) {
-  const bounds = new naver.maps.LatLngBounds();
-  group.forEach((center) => {
-    bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
-  });
-  return bounds;
 }
 
 function targetZoomForCluster(group) {
@@ -516,17 +510,44 @@ function targetZoomForCluster(group) {
 }
 
 function animateClusterZoom(group) {
+  const targetCenter = clusterCenter(group);
+  const targetZoom = Math.min(
+    CENTER_MARKER_MIN_ZOOM,
+    Math.max(naverMap.getZoom() + 2, targetZoomForCluster(group))
+  );
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const duration = reduceMotion ? 0 : 680;
+  const mapArea = mapElement.closest(".map-area");
+
+  window.clearTimeout(clusterTransitionTimer);
+  window.clearTimeout(markerRevealTimer);
+  naverMap.stop?.();
+  naverMap.__forceIndividualMarkers = false;
   naverMap.__clusterAnimating = true;
-  naverMap.fitBounds(boundsForCenters(group), {
-    top: 150,
-    right: 220,
-    bottom: 220,
-    left: 150,
-  });
-  window.setTimeout(() => {
+  mapArea?.classList.remove("is-revealing-centers");
+  mapArea?.classList.add("is-cluster-transitioning");
+  mapStatus.textContent = "선택한 지역으로 이동 중";
+
+  if (duration && typeof naverMap.morph === "function") {
+    naverMap.morph(targetCenter, targetZoom, {
+      duration,
+      easing: "easeOutCubic",
+    });
+  } else {
+    naverMap.setCenter(targetCenter);
+    naverMap.setZoom(targetZoom, true);
+  }
+
+  clusterTransitionTimer = window.setTimeout(() => {
     naverMap.__clusterAnimating = false;
+    naverMap.__forceIndividualMarkers = true;
+    mapArea?.classList.remove("is-cluster-transitioning");
+    mapArea?.classList.add("is-revealing-centers");
     syncMarkerVisibility();
-  }, 320);
+    markerRevealTimer = window.setTimeout(() => {
+      mapArea?.classList.remove("is-revealing-centers");
+    }, 380);
+  }, duration + 90);
 }
 
 function zoomToCluster(group) {
@@ -534,16 +555,6 @@ function zoomToCluster(group) {
   renderDetail();
   renderPins();
   renderList();
-  naverMap.__forceIndividualMarkers = true;
-
-  if (group.length === 1) {
-    const center = group[0];
-    naverMap.panTo(new naver.maps.LatLng(center.lat, center.lng));
-    naverMap.setZoom(CENTER_MARKER_MIN_ZOOM, true);
-    window.setTimeout(syncMarkerVisibility, 180);
-    return;
-  }
-
   animateClusterZoom(group);
 }
 
@@ -565,6 +576,7 @@ function rebuildClusterMarkers() {
     });
 
     naver.maps.Event.addListener(marker, "click", (event) => {
+      marker.setIcon(createClusterIcon(group.length, true));
       zoomToCluster(group);
       event?.domEvent?.stopPropagation?.();
     });
@@ -574,6 +586,8 @@ function rebuildClusterMarkers() {
 }
 
 function syncMarkerVisibility() {
+  if (naverMap?.__clusterAnimating) return;
+
   const showIndividuals = shouldShowIndividualMarkers();
   naverMarkers.forEach(({ marker }) => {
     marker.setMap(showIndividuals ? naverMap : null);
@@ -591,10 +605,7 @@ function syncMarkerVisibility() {
 }
 
 function handleMapZoomChanged() {
-  if (naverMap.__clusterAnimating) {
-    syncMarkerVisibility();
-    return;
-  }
+  if (naverMap.__clusterAnimating) return;
 
   if (naverMap.getZoom() < CENTER_MARKER_MIN_ZOOM) {
     selectedId = "";
@@ -762,7 +773,7 @@ function createMarkerIcon(isSelected, center) {
   const ratingMarkup = rating === "신규"
     ? `<span class="marker-new">신규</span>`
     : `${uiIcon("star", "is-filled")}<span>${escapeHtml(rating)}</span>`;
-  const size = 148;
+  const size = 156;
 
   return {
     content: `
@@ -771,8 +782,8 @@ function createMarkerIcon(isSelected, center) {
         <span class="marker-rating icon-label">${ratingMarkup}</span>
       </button>
     `,
-    size: new naver.maps.Size(size, 54),
-    anchor: new naver.maps.Point(size / 2, 52),
+    size: new naver.maps.Size(size, 46),
+    anchor: new naver.maps.Point(size / 2, 43),
   };
 }
 
@@ -834,6 +845,9 @@ async function initNaverMap() {
       logoControl: true,
       mapDataControl: false,
       zoomControl: false,
+      overlayZoomEffect: "all",
+      tileTransition: true,
+      tileDuration: 320,
     });
 
     refreshNaverMapLayout(naverMap, mapElement);

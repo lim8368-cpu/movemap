@@ -22,52 +22,38 @@
       .marker {
         position: relative;
         isolation: isolate;
-        width: 144px;
-        height: 46px;
-        border: 1px solid rgba(15, 23, 42, 0.14);
-        border-radius: 14px;
-        padding: 0 9px 0 44px;
-        background: rgba(255, 255, 255, 0.98);
+        width: 150px;
+        height: 42px;
+        padding: 0 9px 0 6px;
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid rgba(15, 23, 42, 0.11);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.97);
         color: #0f172a;
-        box-shadow: 0 8px 22px rgba(15, 28, 46, 0.18);
+        box-shadow: 0 7px 18px rgba(15, 28, 46, 0.16);
         text-align: left;
         white-space: nowrap;
       }
 
       .marker::before {
         content: "";
-        position: absolute;
-        left: 7px;
-        top: 7px;
         width: 30px;
         height: 30px;
-        border-radius: 10px;
+        border-radius: 50%;
         background: radial-gradient(circle at center, #fff 0 3px, transparent 3.5px),
           linear-gradient(145deg, #0d9488, #0f766e);
       }
 
-      .marker::after {
-        content: "";
-        position: absolute;
-        z-index: -1;
-        left: calc(50% - 5px);
-        bottom: -5px;
-        width: 10px;
-        height: 10px;
-        border-right: 1px solid rgba(15, 23, 42, 0.14);
-        border-bottom: 1px solid rgba(15, 23, 42, 0.14);
-        background: inherit;
-        transform: rotate(45deg);
-      }
-
       .marker strong,
       .marker span {
-        display: block;
-        max-width: 86px;
+        min-width: 0;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        line-height: 1.15;
+        line-height: 1;
       }
 
       .marker strong {
@@ -76,7 +62,9 @@
       }
 
       .marker span {
-        margin-top: 3px;
+        padding: 6px;
+        border-radius: 999px;
+        background: #fff7ed;
         color: #d97706;
         font-size: 9px;
         font-weight: 800;
@@ -93,6 +81,31 @@
         font-weight: 900;
         box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.14),
           0 14px 32px rgba(15, 118, 110, 0.28);
+      }
+
+      .cluster.is-opening {
+        pointer-events: none;
+        animation: cluster-open 0.68s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      body.is-revealing-centers .marker {
+        animation: marker-reveal 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      @keyframes cluster-open {
+        0% { opacity: 1; transform: scale(1); }
+        38% { opacity: 1; transform: scale(1.14); }
+        100% { opacity: 0.18; transform: scale(0.78); }
+      }
+
+      @keyframes marker-reveal {
+        0% { opacity: 0; transform: scale(0.84); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .cluster.is-opening,
+        body.is-revealing-centers .marker { animation: none; }
       }
 
       .notice {
@@ -203,6 +216,9 @@
           logoControl: true,
           mapDataControl: false,
           zoomControl: false,
+          overlayZoomEffect: "all",
+          tileTransition: true,
+          tileDuration: 320,
         });
 
         rebuildMarkers();
@@ -228,8 +244,8 @@
             title: center.name,
             icon: {
               content: markerContent(center),
-              size: new naver.maps.Size(144, 54),
-              anchor: new naver.maps.Point(72, 52),
+              size: new naver.maps.Size(150, 46),
+              anchor: new naver.maps.Point(75, 43),
             },
           });
 
@@ -321,48 +337,40 @@
         return CENTER_MARKER_MIN_ZOOM;
       }
 
-      function boundsForGroup(group) {
-        const bounds = new naver.maps.LatLngBounds();
-        group.forEach((center) => {
-          bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
-        });
-        return bounds;
-      }
-
       function zoomToGroup(group) {
         const targetCenter = centerForGroup(group);
-        const targetZoom = targetZoomForGroup(group);
-        const currentZoom = map.getZoom();
-        const midZoom = Math.min(Math.max(currentZoom + 1, targetZoom - 1), targetZoom);
+        const targetZoom = Math.min(
+          CENTER_MARKER_MIN_ZOOM,
+          Math.max(map.getZoom() + 2, targetZoomForGroup(group))
+        );
+        const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        const duration = reduceMotion ? 0 : 680;
 
-        map.__forceIndividualMarkers = true;
+        clearCenterFocusTimers();
+        map.stop?.();
+        map.__forceIndividualMarkers = false;
         map.__clusterAnimating = true;
-        map.panTo(targetCenter);
+        document.body.classList.remove("is-revealing-centers");
 
-        window.setTimeout(() => {
-          map.setZoom(midZoom, true);
-        }, 150);
-
-        window.setTimeout(() => {
+        if (duration && typeof map.morph === "function") {
+          map.morph(targetCenter, targetZoom, {
+            duration,
+            easing: "easeOutCubic",
+          });
+        } else {
+          map.setCenter(targetCenter);
           map.setZoom(targetZoom, true);
-          map.panTo(targetCenter);
-        }, 380);
+        }
 
-        window.setTimeout(() => {
-          if (group.length > 1) {
-            map.fitBounds(boundsForGroup(group), {
-              top: 78,
-              right: 70,
-              bottom: 114,
-              left: 70,
-            });
-          }
-        }, 650);
-
-        window.setTimeout(() => {
+        queueCenterFocusStep(() => {
           map.__clusterAnimating = false;
+          map.__forceIndividualMarkers = true;
+          document.body.classList.add("is-revealing-centers");
           syncMarkerMode();
-        }, 940);
+          queueCenterFocusStep(() => {
+            document.body.classList.remove("is-revealing-centers");
+          }, 380);
+        }, duration + 90);
       }
 
       function groupedCenters() {
@@ -391,6 +399,11 @@
             },
           });
           naver.maps.Event.addListener(marker, "click", () => {
+            marker.setIcon({
+              content: `<button class="cluster is-opening" type="button" aria-label="${group.length}개 센터 보기">${group.length}</button>`,
+              size: new naver.maps.Size(56, 56),
+              anchor: new naver.maps.Point(28, 28),
+            });
             zoomToGroup(group);
           });
           return marker;
@@ -398,6 +411,8 @@
       }
 
       function syncMarkerMode() {
+        if (map.__clusterAnimating) return;
+
         const showIndividuals = shouldShowIndividuals();
         centerMarkers.forEach((marker) => marker.setMap(showIndividuals ? map : null));
         if (showIndividuals) {
@@ -409,10 +424,7 @@
       }
 
       function handleZoomChanged() {
-        if (map.__clusterAnimating) {
-          syncMarkerMode();
-          return;
-        }
+        if (map.__clusterAnimating) return;
 
         if (map.getZoom() < CENTER_MARKER_MIN_ZOOM) {
           map.__forceIndividualMarkers = false;
