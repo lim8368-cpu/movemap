@@ -2,7 +2,9 @@ import React, { useCallback, useRef, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -16,11 +18,50 @@ const API_BASE = String(
   process.env.EXPO_PUBLIC_API_BASE_URL || "https://dail.157-90-26-205.sslip.io"
 ).replace(/\/$/, "");
 
+const NAVER_MAP_STORE_URLS = {
+  ios: {
+    native: "itms-apps://apps.apple.com/kr/app/id311867728",
+    web: "https://apps.apple.com/kr/app/id311867728",
+  },
+  android: {
+    native: "market://details?id=com.nhn.android.nmap",
+    web: "https://play.google.com/store/apps/details?id=com.nhn.android.nmap",
+  },
+};
+
 const SCREENS = [
   { id: "centers", label: "센터 찾기", icon: "map-outline", activeIcon: "map", path: "/" },
   { id: "register", label: "센터 등록", icon: "add-circle-outline", activeIcon: "add-circle", path: "/register/" },
   { id: "account", label: "내 정보", icon: "person-circle-outline", activeIcon: "person-circle", path: "/?login=1" },
 ];
+
+async function openNaverMap(url) {
+  try {
+    await Linking.openURL(url);
+    return;
+  } catch {
+    // 네이버 지도 앱이 없으면 운영체제별 앱 스토어로 안내한다.
+  }
+
+  const storeUrls = NAVER_MAP_STORE_URLS[Platform.OS];
+  if (!storeUrls) {
+    Alert.alert("네이버 지도를 열 수 없습니다", "네이버 지도 앱을 설치한 뒤 다시 시도해 주세요.");
+    return;
+  }
+
+  try {
+    await Linking.openURL(storeUrls.native);
+  } catch {
+    try {
+      await Linking.openURL(storeUrls.web);
+    } catch {
+      Alert.alert(
+        "앱 스토어를 열 수 없습니다",
+        "네이버 지도 앱을 직접 설치한 뒤 다시 시도해 주세요."
+      );
+    }
+  }
+}
 
 function screenForUrl(url) {
   try {
@@ -54,6 +95,11 @@ export default function App() {
       const requested = new URL(request.url);
       const appOrigin = new URL(API_BASE).origin;
 
+      if (requested.protocol === "nmap:") {
+        openNaverMap(request.url);
+        return false;
+      }
+
       const authHosts = ["kauth.kakao.com", "accounts.kakao.com", "nid.naver.com", "appleid.apple.com"];
       const isAuthHost = authHosts.includes(requested.hostname) || requested.hostname.endsWith(".supabase.co");
       if (["http:", "https:"].includes(requested.protocol) && requested.origin !== appOrigin && !isAuthHost) {
@@ -78,7 +124,7 @@ export default function App() {
           ref={webViewRef}
           source={{ uri: currentUrl }}
           style={styles.webView}
-          originWhitelist={["http://*", "https://*", "about:*", "data:*", "blob:*"]}
+          originWhitelist={["http://*", "https://*", "about:*", "data:*", "blob:*", "nmap://*"]}
           javaScriptEnabled
           domStorageEnabled
           sharedCookiesEnabled
