@@ -765,14 +765,6 @@ async function useCurrentLocationForRoute(center) {
     return;
   }
 
-  const permission = await navigator.permissions?.query?.({ name: "geolocation" }).catch(() => null);
-  if (permission?.state === "denied") {
-    routeLocationState = "error";
-    routeLocationMessage = "Safari의 위치 권한이 꺼져 있어요";
-    renderCenterExperienceRoute(center);
-    return;
-  }
-
   routeLocationState = "loading";
   routeLocationMessage = "";
   if (button) {
