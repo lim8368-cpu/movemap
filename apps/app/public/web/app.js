@@ -446,7 +446,6 @@ function renderList() {
         <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
           <div class="card-top">
             <div>
-              <span class="badge badge-pt icon-label">${uiIcon("badge-check")}물리치료사 출신</span>
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
