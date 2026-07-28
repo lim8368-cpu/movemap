@@ -12,13 +12,73 @@ const centerBadge = document.querySelector("#centerOperationBadge");
 const centerTitle = document.querySelector("#centerOperationTitle");
 const centerMessage = document.querySelector("#centerOperationMessage");
 const centerAction = document.querySelector("#centerOperationAction");
+let authConfig = { supabaseUrl: "", supabaseAnonKey: "" };
 
-function session() {
+function storedSession() {
   try {
     return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
   } catch {
     return null;
   }
+}
+
+async function loadAuthConfig() {
+  try {
+    const response = await fetch("/api/config", { headers: { "X-DAIL-Source": "web" } });
+    if (!response.ok) throw new Error();
+    const config = await response.json();
+    authConfig = config.auth || authConfig;
+  } catch {
+    authConfig = { supabaseUrl: "", supabaseAnonKey: "" };
+  }
+}
+
+async function refreshSession(current) {
+  if (!current?.refresh_token || !authConfig.supabaseUrl || !authConfig.supabaseAnonKey) return null;
+  try {
+    const response = await fetch(`${authConfig.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: {
+        apikey: authConfig.supabaseAnonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: current.refresh_token }),
+    });
+    if (!response.ok) return null;
+    const next = await response.json();
+    next.expires_at = Math.floor(Date.now() / 1000) + (Number(next.expires_in) || 3600);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+async function activeSession(forceRefresh = false) {
+  let current = storedSession();
+  if (!current) return null;
+  const expiresSoon = Number(current.expires_at || 0) < Math.floor(Date.now() / 1000) + 60;
+  if (forceRefresh || expiresSoon) current = await refreshSession(current);
+  if (!current) localStorage.removeItem(AUTH_STORAGE_KEY);
+  return current;
+}
+
+async function requestWithAuth(url, options = {}, preferredSession = null) {
+  let auth = preferredSession || await activeSession();
+  if (!auth?.access_token) return { auth: null, response: null };
+  const send = (current) => fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${current.access_token}`,
+    },
+  });
+  let response = await send(auth);
+  if (response.status === 401) {
+    auth = await refreshSession(auth);
+    if (auth?.access_token) response = await send(auth);
+  }
+  return { auth, response };
 }
 
 function escapeHtml(value) {
@@ -99,36 +159,35 @@ async function loadFavorites(auth) {
   favoritesSection.hidden = false;
   favoriteCenterList.innerHTML = '<p class="favorite-loading">저장한 센터를 불러오는 중입니다.</p>';
   try {
-    const response = await fetch("/api/favorites", {
+    const result = await requestWithAuth("/api/favorites", {
       headers: {
-        Authorization: `Bearer ${auth.access_token}`,
         "X-DAIL-Source": "web",
       },
-    });
+    }, auth);
+    const response = result.response;
     if (!response.ok) throw new Error();
     const data = await response.json();
     renderFavorites(data.favorites || []);
   } catch {
     favoriteCenterList.innerHTML = `<div class="favorite-error">${icon("info")}<div><b>저장한 센터를 불러오지 못했습니다.</b><button type="button" id="favoriteRetry">다시 시도</button></div></div>`;
-    document.querySelector("#favoriteRetry")?.addEventListener("click", () => loadFavorites(auth));
+    document.querySelector("#favoriteRetry")?.addEventListener("click", () => loadFavorites(null));
   }
 }
 
 async function removeFavorite(centerId) {
-  const auth = session();
-  if (!auth?.access_token) return location.replace("/?login=1");
   const card = favoriteCenterList.querySelector(`[data-favorite-center="${centerId}"]`);
   const button = card?.querySelector("[data-favorite-remove]");
   if (button) button.disabled = true;
-  const response = await fetch("/api/favorites", {
+  const result = await requestWithAuth("/api/favorites", {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${auth.access_token}`,
       "Content-Type": "application/json",
       "X-DAIL-Source": "web",
     },
     body: JSON.stringify({ centerId }),
   });
+  const response = result.response;
+  if (!response) return location.replace("/?login=1");
   if (!response.ok) {
     if (button) button.disabled = false;
     return;
@@ -140,8 +199,10 @@ async function removeFavorite(centerId) {
 }
 
 async function load(){
-  const auth=session();if(!auth?.access_token)return location.replace("/?login=1");
-  const response=await fetch("/api/auth/profile",{headers:{Authorization:`Bearer ${auth.access_token}`}});
+  await loadAuthConfig();
+  const result=await requestWithAuth("/api/auth/profile");
+  const auth=result.auth,response=result.response;
+  if(!auth?.access_token||!response)return location.replace("/?login=1");
   if(response.status===401){localStorage.removeItem(AUTH_STORAGE_KEY);return location.replace("/?login=1")}
   if(!response.ok){loading.textContent="회원 정보를 불러오지 못했습니다.";return}
   const data=await response.json();
@@ -154,9 +215,11 @@ async function load(){
   await loadFavorites(auth);
 }
 form.addEventListener("submit",async event=>{
-  event.preventDefault();const auth=session();if(!auth?.access_token)return location.replace("/?login=1");
+  event.preventDefault();
   const button=form.querySelector("button");button.disabled=true;message.className="message";message.textContent="저장하는 중입니다.";
-  const response=await fetch("/api/auth/profile",{method:"PATCH",headers:{Authorization:`Bearer ${auth.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({nickname:document.querySelector("#accountNickname").value.trim(),acceptRequired:true,marketingAgreed:document.querySelector("#marketingAgreement").checked})});
+  const result=await requestWithAuth("/api/auth/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({nickname:document.querySelector("#accountNickname").value.trim(),acceptRequired:true,marketingAgreed:document.querySelector("#marketingAgreement").checked})});
+  const response=result.response;
+  if(!response){button.disabled=false;return location.replace("/?login=1")}
   const data=await response.json().catch(()=>({}));button.disabled=false;if(!response.ok){message.className="message error";message.textContent=data.error||"회원 정보를 저장하지 못했습니다.";return}message.textContent="변경사항을 저장했습니다.";window.setTimeout(()=>location.replace("/"),500);
 });
 load();
