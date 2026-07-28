@@ -112,7 +112,7 @@ function renderCenterAccess(data){
 function favoriteCardMarkup(item) {
   const center = item.center || {};
   const detailUrl = `/?center=${encodeURIComponent(center.id || "")}#search`;
-  const tags = [...(center.categories || []), ...(center.tags || [])]
+  const tags = [...new Set([...(center.categories || []), ...(center.tags || [])])]
     .filter(Boolean)
     .slice(0, 3);
   const photo = center.photoUrl

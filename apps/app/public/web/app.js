@@ -586,14 +586,29 @@ function openCenterDetail(id) {
   selectCenter(id, { openDetail: true });
 }
 
+function mapPopupPhotoMarkup(center) {
+  const photo = center.photoUrls?.[0] || center.photoUrl || "";
+  if (photo) {
+    return `<div class="map-popup-photo">
+      <img src="${escapeHtml(photo)}" alt="${escapeHtml(center.name)} 센터 사진" loading="lazy" decoding="async" />
+    </div>`;
+  }
+  return `<div class="map-popup-photo map-popup-photo-placeholder" role="img" aria-label="${escapeHtml(center.name)} 센터 기본 이미지">
+    <span aria-hidden="true"><i></i>DAIL</span>
+  </div>`;
+}
+
 function centerPopupContent(center) {
   return `<article class="map-popup">
     <button class="map-popup-close icon-only" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">${uiIcon("x")}</button>
-    <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3>${center.distance ? `<span class="map-popup-distance">${escapeHtml(center.distance)}</span>` : ""}</div>
-    <p class="map-popup-category">DAIL 등록 운동센터</p>
-    <p class="map-popup-location">${escapeHtml(center.area)}</p>
-    <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
-    <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
+    ${mapPopupPhotoMarkup(center)}
+    <div class="map-popup-body">
+      <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3>${center.distance ? `<span class="map-popup-distance">${escapeHtml(center.distance)}</span>` : ""}</div>
+      <p class="map-popup-category">DAIL 등록 운동센터</p>
+      <p class="map-popup-location">${escapeHtml(center.area)}</p>
+      <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
+    </div>
   </article>`;
 }
 
