@@ -147,6 +147,10 @@ let bookingSelectedDate = "";
 let bookingSelectedSlot = null;
 let bookingAvailability = null;
 let bookingRequestId = 0;
+const LEGACY_FAVORITES_KEY = "dail_favorite_centers";
+const PENDING_FAVORITE_KEY = "dail_pending_favorite_center";
+const favoriteCenterIds = new Set();
+let favoriteSyncReady = false;
 let publicConfig = {
   naverMapNcpKeyId: "",
   auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} },
@@ -585,30 +589,104 @@ function centerPhotoMarkup(center) {
 }
 
 function isFavoriteCenter(centerId) {
+  return favoriteCenterIds.has(centerId);
+}
+
+function legacyFavoriteIds() {
   try {
-    return JSON.parse(localStorage.getItem("dail_favorite_centers") || "[]").includes(centerId);
+    const ids = JSON.parse(localStorage.getItem(LEGACY_FAVORITES_KEY) || "[]");
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function updateFavoriteButton(centerId, { busy = false } = {}) {
+  const button = centerExperienceContent?.querySelector("[data-center-favorite]");
+  if (button) {
+    const saved = favoriteCenterIds.has(centerId);
+    button.classList.toggle("is-saved", saved);
+    button.setAttribute("aria-pressed", String(saved));
+    button.setAttribute("aria-busy", String(busy));
+    button.disabled = busy;
+    button.querySelector("span").textContent = saved ? "저장됨" : "관심 저장";
+  }
+}
+
+async function saveFavoriteRequest(session, centerId, method = "POST") {
+  return fetch(`${API_BASE}/api/favorites`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+      "X-DAIL-Source": "web",
+    },
+    body: JSON.stringify({ centerId }),
+  });
+}
+
+async function loadFavoriteCenters(session = null, { applyPending = true } = {}) {
+  const auth = session || await activeAuthSession();
+  favoriteCenterIds.clear();
+  favoriteSyncReady = false;
+  if (!auth) return false;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/favorites`, {
+      headers: {
+        Authorization: `Bearer ${auth.access_token}`,
+        "X-DAIL-Source": "web",
+      },
+    });
+    if (!response.ok) throw new Error("favorites unavailable");
+    const data = await response.json();
+    (data.favorites || []).forEach((item) => {
+      if (item.center?.id) favoriteCenterIds.add(item.center.id);
+    });
+
+    const pendingId = applyPending ? sessionStorage.getItem(PENDING_FAVORITE_KEY) : "";
+    const candidates = [...new Set([...legacyFavoriteIds(), pendingId].filter(Boolean))]
+      .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    for (const centerId of candidates) {
+      if (favoriteCenterIds.has(centerId)) continue;
+      const saveResponse = await saveFavoriteRequest(auth, centerId);
+      if (saveResponse.ok) favoriteCenterIds.add(centerId);
+    }
+    localStorage.removeItem(LEGACY_FAVORITES_KEY);
+    if (applyPending) sessionStorage.removeItem(PENDING_FAVORITE_KEY);
+    favoriteSyncReady = true;
+    return true;
   } catch {
     return false;
   }
 }
 
-function toggleFavoriteCenter(centerId) {
-  let favorites = [];
-  try {
-    favorites = JSON.parse(localStorage.getItem("dail_favorite_centers") || "[]");
-  } catch {
-    favorites = [];
+async function toggleFavoriteCenter(centerId) {
+  const session = await activeAuthSession();
+  if (!session) {
+    sessionStorage.setItem(PENDING_FAVORITE_KEY, centerId);
+    const message = document.querySelector("#authMessage");
+    if (message) message.textContent = "로그인하면 관심 센터가 계정에 저장되고 다른 기기에서도 확인할 수 있습니다.";
+    openAuth("login");
+    return;
   }
-  favorites = favorites.includes(centerId)
-    ? favorites.filter((id) => id !== centerId)
-    : [...favorites, centerId];
-  localStorage.setItem("dail_favorite_centers", JSON.stringify(favorites));
-  const button = centerExperienceContent?.querySelector("[data-center-favorite]");
-  if (button) {
-    const saved = favorites.includes(centerId);
-    button.classList.toggle("is-saved", saved);
-    button.setAttribute("aria-pressed", String(saved));
-    button.querySelector("span").textContent = saved ? "저장됨" : "관심 저장";
+
+  if (!favoriteSyncReady) await loadFavoriteCenters(session);
+  const wasSaved = favoriteCenterIds.has(centerId);
+  if (wasSaved) favoriteCenterIds.delete(centerId);
+  else favoriteCenterIds.add(centerId);
+  updateFavoriteButton(centerId, { busy: true });
+
+  try {
+    const response = await saveFavoriteRequest(session, centerId, wasSaved ? "DELETE" : "POST");
+    if (!response.ok) throw new Error("favorite update failed");
+    updateFavoriteButton(centerId);
+  } catch {
+    if (wasSaved) favoriteCenterIds.add(centerId);
+    else favoriteCenterIds.delete(centerId);
+    updateFavoriteButton(centerId);
+    const button = centerExperienceContent?.querySelector("[data-center-favorite]");
+    if (button) button.title = "관심 센터를 저장하지 못했습니다. 다시 시도해 주세요.";
   }
 }
 
@@ -763,7 +841,7 @@ function renderCenterExperienceDetail(center) {
         <button type="button" data-center-booking>${uiIcon("calendar")}<span>예약</span></button>
         <button type="button" data-center-route>${uiIcon("map-pin")}<span>길찾기</span></button>
         <button type="button" data-center-phone ${phoneLink ? "" : "disabled"}>${uiIcon("phone-call")}<span>${phoneLink ? "전화" : "전화 준비중"}</span></button>
-        <button type="button" data-center-favorite class="${saved ? "is-saved" : ""}" aria-pressed="${saved}">${uiIcon("heart")}<span>${saved ? "저장됨" : "관심 저장"}</span></button>
+        <button type="button" data-center-favorite data-center-id="${escapeHtml(center.id)}" class="${saved ? "is-saved" : ""}" aria-pressed="${saved}">${uiIcon("heart")}<span>${saved ? "저장됨" : "관심 저장"}</span></button>
       </nav>
       <section class="center-sheet-section">
         <p class="center-sheet-kicker">센터 소개</p>
@@ -1829,6 +1907,12 @@ async function initApp() {
   renderDetail();
   renderList();
   initNaverMap();
+  const requestedCenterId = new URLSearchParams(location.search).get("center");
+  if (requestedCenterId && centers.some((center) => center.id === requestedCenterId)) {
+    selectCenter(requestedCenterId, { openDetail: true });
+    document.querySelector("#search")?.scrollIntoView({ block: "start" });
+    history.replaceState(null, "", `${location.pathname}#search`);
+  }
 }
 
 initApp();
@@ -1866,7 +1950,7 @@ function renderAuthState(data){
 }
 async function initUserAuth(){
   const providers=publicConfig.auth?.providers||{};document.querySelectorAll("[data-auth-provider]").forEach(button=>{const ready=Boolean(providers[button.dataset.authProvider]);button.dataset.ready=String(ready);button.title=ready?"":"개발자 로그인 키 설정 후 사용할 수 있습니다."});
-  const data=await loadUserProfile();renderAuthState(data);
+  const data=await loadUserProfile();renderAuthState(data);if(data)await loadFavoriteCenters(null,{applyPending:!data.needsOnboarding});else{favoriteCenterIds.clear();favoriteSyncReady=false}
   if(data?.needsOnboarding){onboardingForm.elements.nickname.value=data.profile?.nickname||"";openAuth("onboarding")}
   const params=new URLSearchParams(location.search);if(params.get("auth")==="success"){history.replaceState(null,"",`${location.pathname}${location.hash}`);if(data?.needsOnboarding)openAuth("onboarding");else if(data)openAuth("account")}
   if(params.get("login")==="1"){history.replaceState(null,"",location.pathname);openAuth(data?"account":"login")}
@@ -1876,8 +1960,8 @@ document.querySelector("#authCloseButton")?.addEventListener("click",closeAuth);
 document.querySelector("#accountFindCenters")?.addEventListener("click",closeAuth);
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!authOverlay.hidden)closeAuth()});
 document.querySelectorAll("[data-auth-provider]").forEach(button=>button.addEventListener("click",()=>{const provider=button.dataset.authProvider;if(button.dataset.ready!=="true"){document.querySelector("#authMessage").textContent=`${provider==='kakao'?'카카오':provider==='naver'?'네이버':'Apple'} 개발자 설정이 필요합니다.`;return}location.href=`/api/auth/start?provider=${encodeURIComponent(provider)}`}));
-onboardingForm?.addEventListener("submit",async event=>{event.preventDefault();const message=document.querySelector("#onboardingMessage"),session=await activeAuthSession();if(!session)return openAuth("login");const submit=onboardingForm.querySelector("[type=submit]");submit.disabled=true;message.textContent="";const response=await fetch("/api/auth/profile",{method:"PATCH",headers:{Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({nickname:onboardingForm.elements.nickname.value.trim(),acceptRequired:onboardingForm.elements.requiredAgreement.checked,marketingAgreed:onboardingForm.elements.marketingAgreement.checked})});const data=await response.json().catch(()=>({}));submit.disabled=false;if(!response.ok){message.textContent=data.error||"회원 정보를 저장하지 못했습니다.";return}renderAuthState(data);openAuth("account")});
-async function logoutUser(){const session=storedAuthSession();if(session?.access_token&&publicConfig.auth?.supabaseUrl)fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/logout`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,Authorization:`Bearer ${session.access_token}`}}).catch(()=>{});localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth()}
+onboardingForm?.addEventListener("submit",async event=>{event.preventDefault();const message=document.querySelector("#onboardingMessage"),session=await activeAuthSession();if(!session)return openAuth("login");const submit=onboardingForm.querySelector("[type=submit]");submit.disabled=true;message.textContent="";const response=await fetch("/api/auth/profile",{method:"PATCH",headers:{Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({nickname:onboardingForm.elements.nickname.value.trim(),acceptRequired:onboardingForm.elements.requiredAgreement.checked,marketingAgreed:onboardingForm.elements.marketingAgreement.checked})});const data=await response.json().catch(()=>({}));submit.disabled=false;if(!response.ok){message.textContent=data.error||"회원 정보를 저장하지 못했습니다.";return}renderAuthState(data);await loadFavoriteCenters(session);openAuth("account")});
+async function logoutUser(){const session=storedAuthSession();if(session?.access_token&&publicConfig.auth?.supabaseUrl)fetch(`${publicConfig.auth.supabaseUrl}/auth/v1/logout`,{method:"POST",headers:{apikey:publicConfig.auth.supabaseAnonKey,Authorization:`Bearer ${session.access_token}`}}).catch(()=>{});localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;favoriteCenterIds.clear();favoriteSyncReady=false;renderAuthState(null);if(centerExperienceId)updateFavoriteButton(centerExperienceId);closeAuth()}
 headerLogoutButton?.addEventListener("click",logoutUser);
 document.querySelector("#logoutButton")?.addEventListener("click",logoutUser);
 document.querySelector("#deleteAccountButton")?.addEventListener("click",async()=>{if(!confirm("회원 정보와 계정을 삭제할까요? 삭제 후에는 복구할 수 없습니다."))return;const session=await activeAuthSession();if(!session)return;const response=await fetch("/api/auth/profile",{method:"DELETE",headers:{Authorization:`Bearer ${session.access_token}`}});if(!response.ok)return alert("회원 탈퇴를 처리하지 못했습니다.");localStorage.removeItem(AUTH_STORAGE_KEY);currentUserProfile=null;renderAuthState(null);closeAuth();alert("회원 탈퇴가 완료되었습니다.")});

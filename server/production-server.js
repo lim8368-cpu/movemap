@@ -56,6 +56,7 @@ const apiRoutes = new Map([
   ["/api/centers", require("../api/centers")],
   ["/api/config", require("../api/config")],
   ["/api/events", require("../api/events")],
+  ["/api/favorites", require("../api/favorites")],
   ["/api/login", require("../api/login")],
   ["/api/logout", require("../api/logout")],
   ["/api/owner-accounts", require("../api/owner-accounts")],

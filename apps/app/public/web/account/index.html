@@ -3,29 +3,74 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>내 정보 수정 | DAIL</title>
+  <title>마이 DAIL | 저장한 센터와 내 정보</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./account.css?v=20260727-social-owner" />
+  <link rel="stylesheet" href="./account.css?v=20260728-favorites" />
 </head>
 <body>
-  <header><a class="brand" href="/"><i></i><span>DAIL<small>다시 일상으로</small></span></a><a class="back" href="/">홈으로</a></header>
-  <main><section class="account-card">
-    <p class="kicker">MY DAIL</p><h1>내 정보 수정</h1><p class="lead">DAIL에서 사용할 회원 정보를 관리하세요.</p>
-    <form id="accountForm" hidden>
-      <label>이메일<input id="accountEmail" type="email" readonly /></label>
-      <label>닉네임<input id="accountNickname" name="nickname" maxlength="40" required /></label>
-      <label class="agree"><input id="marketingAgreement" type="checkbox" /><span>새로운 센터와 서비스 소식을 받습니다. <b>선택</b></span></label>
-      <button type="submit">변경사항 저장</button><p id="accountMessage" class="message" aria-live="polite"></p>
-    </form>
-    <p id="accountLoading" class="loading">회원 정보를 불러오는 중입니다.</p>
-    <section id="centerOperationCard" class="center-operation-card" hidden>
-      <span id="centerOperationBadge"></span>
-      <h2 id="centerOperationTitle"></h2>
-      <p id="centerOperationMessage"></p>
-      <a id="centerOperationAction" href="/register/"></a>
+  <header>
+    <a class="brand" href="/"><i></i><span>DAIL<small>다시 일상으로</small></span></a>
+    <a class="back" href="/#search">센터 찾기로 돌아가기</a>
+  </header>
+  <main class="account-shell">
+    <section class="account-hero">
+      <div>
+        <p class="kicker">MY DAIL</p>
+        <h1>저장한 센터와 내 정보</h1>
+        <p class="lead">관심 있는 센터를 모아두고 내 계정 정보를 관리하세요.</p>
+      </div>
+      <div class="account-hero-mark" aria-hidden="true">
+        <svg><use href="/assets/ui-icons.svg#heart"></use></svg>
+      </div>
     </section>
-  </section></main>
-  <script src="./account.js?v=20260727-social-owner"></script>
+
+    <p id="accountLoading" class="loading">회원 정보를 불러오는 중입니다.</p>
+
+    <section id="favoritesSection" class="account-panel favorites-panel" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="section-label">SAVED CENTERS</p>
+          <h2>저장한 센터 <span id="favoriteCount">0</span></h2>
+          <p>하트를 누른 센터가 이 계정에 안전하게 보관됩니다.</p>
+        </div>
+        <a href="/#search">센터 더 찾아보기</a>
+      </div>
+      <div id="favoriteCenterList" class="favorite-center-list" aria-live="polite"></div>
+    </section>
+
+    <div id="accountContent" class="account-grid" hidden>
+      <section class="account-panel profile-panel">
+        <p class="section-label">PROFILE</p>
+        <h2>회원 정보</h2>
+        <p class="panel-description">DAIL에서 사용할 기본 정보를 수정할 수 있습니다.</p>
+        <form id="accountForm">
+          <label>연결된 계정<input id="accountEmail" type="text" readonly /></label>
+          <label>닉네임<input id="accountNickname" name="nickname" maxlength="40" required /></label>
+          <label class="agree"><input id="marketingAgreement" type="checkbox" /><span>새로운 센터와 서비스 소식을 받습니다. <b>선택</b></span></label>
+          <button type="submit">변경사항 저장</button>
+          <p id="accountMessage" class="message" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="centerOperationCard" class="account-panel center-operation-card" hidden>
+        <span id="centerOperationBadge"></span>
+        <h2 id="centerOperationTitle"></h2>
+        <p id="centerOperationMessage"></p>
+        <a id="centerOperationAction" href="/register/"></a>
+      </section>
+    </div>
+  </main>
+  <template id="favoriteEmptyTemplate">
+    <div class="favorite-empty">
+      <span>
+        <svg><use href="/assets/ui-icons.svg#heart"></use></svg>
+      </span>
+      <h3>아직 저장한 센터가 없어요</h3>
+      <p>센터 상세에서 관심 저장을 누르면 이곳에서 한 번에 비교할 수 있습니다.</p>
+      <a href="/#search">내 주변 센터 찾아보기</a>
+    </div>
+  </template>
+  <script src="./account.js?v=20260728-favorites"></script>
 </body>
 </html>

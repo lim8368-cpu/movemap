@@ -55,6 +55,10 @@
       "destination": "/api/events"
     },
     {
+      "source": "/api/favorites",
+      "destination": "/api/favorites"
+    },
+    {
       "source": "/api/uploads",
       "destination": "/api/uploads"
     },

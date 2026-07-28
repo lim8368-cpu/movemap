@@ -27,6 +27,10 @@ module.exports = async function handler(req, res) {
     if (!user) return sendJson(res, 401, { error: "로그인이 필요합니다." });
 
     if (req.method === "DELETE") {
+      await supabaseRequest("user_favorites", {
+        method: "DELETE",
+        query: `?user_id=eq.${encodeURIComponent(user.id)}`,
+      });
       const serviceRoleKey = authSupabaseServiceRoleKey();
       const response = await fetch(`${authSupabaseUrl()}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
         method: "DELETE", headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },

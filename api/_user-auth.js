@@ -223,6 +223,7 @@ async function claimLegacyAuthIdentity(userId, confirmedEmail) {
     ["center_invitations", "accepted_by_user_id"],
     ["center_owner_accounts", "auth_user_id"],
     ["center_applications", "applicant_auth_user_id"],
+    ["user_favorites", "user_id"],
     ["platform_user_roles", "user_id"],
     ["platform_user_roles", "created_by_user_id"],
     ["access_logs", "actor_user_id"],
