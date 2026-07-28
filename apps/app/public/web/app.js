@@ -449,7 +449,7 @@ function renderList() {
       (center) => {
         const saved = isFavoriteCenter(center.id);
         return `
-        <article class="center-card ${center.id === selectedId ? "active" : ""}" data-card-id="${center.id}" role="button" tabindex="0" aria-label="${escapeHtml(center.name)} 센터 상세 보기">
+        <article class="center-card ${center.id === selectedId ? "active" : ""}" data-card-id="${center.id}" tabindex="0" aria-label="${escapeHtml(center.name)} 센터 상세 보기">
           <div class="card-top">
             <div>
               <h3>${escapeHtml(center.name)}</h3>
