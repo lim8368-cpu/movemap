@@ -15,6 +15,10 @@ const {
 const {
   requireAuthenticatedUser,
 } = require("./_platform-auth");
+const {
+  normalizeSchedule,
+  scheduleSummary,
+} = require("./_booking");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -92,6 +96,13 @@ module.exports = async function handler(req, res) {
     }
 
     const therapistBackground = body.therapistBackground === true;
+    if (!therapistBackground) {
+      sendJson(res, 403, {
+        error: "DAIL은 물리치료사 면허 보유자만 센터를 등록할 수 있습니다.",
+        code: "therapist_license_required",
+      });
+      return;
+    }
     const missingLicense = therapistBackground && [
       "licenseHolderName",
       "licenseNumber",
@@ -101,6 +112,16 @@ module.exports = async function handler(req, res) {
       sendJson(res, 400, { error: "물리치료사 출신 센터는 면허 확인 정보를 모두 입력해 주세요." });
       return;
     }
+    if (!body.openingSchedule || typeof body.openingSchedule !== "object" || Array.isArray(body.openingSchedule)) {
+      sendJson(res, 400, { error: "요일별 센터 운영시간을 설정해 주세요." });
+      return;
+    }
+    const openingSchedule = normalizeSchedule(body.openingSchedule);
+    if (Object.values(openingSchedule).every((day) => day.closed)) {
+      sendJson(res, 400, { error: "운영일을 하나 이상 선택해 주세요." });
+      return;
+    }
+    const openingHours = scheduleSummary(openingSchedule);
 
     const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -163,6 +184,8 @@ module.exports = async function handler(req, res) {
         license_number: therapistBackground ? body.licenseNumber.trim() : "해당 없음",
         license_image_path: therapistBackground ? body.licenseImagePath : null,
         services: body.services || null,
+        opening_schedule: openingSchedule,
+        opening_hours: openingHours,
         memo: body.memo || null,
         consent: true,
         status: "pending",

@@ -136,6 +136,98 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 .chips span { min-height: 38px; padding: 8px 14px; }
 .next, #submitButton, .back { min-height: 52px; }
 .license-box { padding: 20px; }
+.eligibility-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #f3c8c5;
+  border-radius: 12px;
+  background: #fff6f5;
+  color: #8f2f29;
+}
+.eligibility-notice[hidden] { display: none !important; }
+.eligibility-notice > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fee4e2;
+  color: #b42318;
+}
+.eligibility-notice .ui-icon { width: 18px; height: 18px; }
+.eligibility-notice strong { display: block; font-size: 13px; line-height: 1.45; }
+.eligibility-notice p { margin: 5px 0 0; color: #9c514c; font-size: 11px; font-weight: 500; line-height: 1.65; }
+.registration-schedule {
+  padding: 18px;
+  border: 1px solid #dfe6eb;
+  border-radius: 14px;
+  background: #fbfcfd;
+}
+.registration-schedule legend { margin: 0; padding: 0 3px; }
+.schedule-help { margin: 0 0 14px; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.schedule-tools { display: flex; gap: 8px; margin-bottom: 12px; }
+.schedule-tools button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d7e0e6;
+  border-radius: 9px;
+  background: #fff;
+  color: #435466;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+}
+.schedule-tools button:hover { border-color: #9ddbd3; background: #eefaf8; color: var(--teal); }
+.weekly-schedule { display: grid; gap: 8px; }
+.schedule-row {
+  min-height: 60px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: 64px 68px minmax(100px, 1fr) 12px minmax(100px, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e3e9ed;
+  border-radius: 11px;
+  background: #fff;
+}
+.schedule-row > strong { color: var(--navy); font-size: 11px; }
+.schedule-row > i { color: #9aa7b3; font-style: normal; text-align: center; }
+.schedule-row > label { margin: 0; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px; }
+.schedule-row > label > span { color: #8996a3; font-size: 9px; }
+.schedule-row select {
+  width: 100%;
+  height: 38px;
+  padding: 0 8px;
+  border: 1px solid #d4dde3;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 11px;
+}
+.schedule-row select:focus { border-color: var(--teal); outline: 3px solid rgba(13,148,136,.12); }
+.schedule-row .day-toggle { display: flex; grid-template-columns: none; align-items: center; gap: 6px; }
+.day-toggle input { width: 16px; height: 16px; margin: 0; accent-color: var(--teal); }
+.day-toggle span { color: #16756d !important; font-size: 10px !important; font-weight: 850; }
+.schedule-row.is-closed { background: #f4f6f8; }
+.schedule-row.is-closed > strong { color: #98a2b3; }
+.schedule-row.is-closed .day-toggle span { color: #8a97a3 !important; }
+.schedule-summary {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #eaf9f6;
+  color: #176b64;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.schedule-summary.error { background: #fff0ef; color: #b42318; }
 .faq { margin-top: 72px; }
 .faq-heading { margin-bottom: 28px; text-align: center; }
 .faq-heading > span { display: inline-block; margin-bottom: 10px; color: var(--teal); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
@@ -172,6 +264,11 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
   .registration-identity { grid-template-columns: 38px minmax(0, 1fr); }
   .registration-identity button { grid-column: 1 / -1; width: 100%; }
   .application-status-card { padding: 25px 19px; }
+  .registration-schedule { padding: 15px; }
+  .schedule-tools { flex-direction: column; }
+  .schedule-row { grid-template-columns: 60px 1fr; }
+  .schedule-row > label:not(.day-toggle) { grid-column: 1 / -1; }
+  .schedule-row > i { display: none; }
   .faq { margin-top: 56px; }
   .faq-heading { margin-bottom: 22px; text-align: left; }
   .faq-heading h2 { font-size: 23px; }

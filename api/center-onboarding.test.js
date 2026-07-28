@@ -38,13 +38,21 @@ function applicationRequest(token = "registration-token") {
       authorization: "Bearer social-access-token",
     },
     body: {
-      centerName: "일반 운동센터",
+      centerName: "물리치료사 운동센터",
       ownerName: "홍길동",
       phone: "010-1234-5678",
       email: "owner@example.com",
       area: "서울 중구",
       address: "서울 중구 세종대로 110",
-      therapistBackground: false,
+      therapistBackground: true,
+      licenseHolderName: "홍길동",
+      licenseNumber: "PT-12345",
+      licenseImagePath: "registration/registration-session-1/license.png",
+      openingSchedule: {
+        monday: { closed: false, open: "09:00", close: "20:00" },
+        saturday: { closed: false, open: "10:00", close: "15:00" },
+        sunday: { closed: true, open: "10:00", close: "17:00" },
+      },
       consent: true,
     },
   };
@@ -64,7 +72,7 @@ async function testRegistrationSessionIsRequired() {
   assert.equal(res.body.code, "registration_session_required");
 }
 
-async function testGeneralCenterApplicationUsesAuthenticatedSocialAccount() {
+async function testTherapistCenterApplicationUsesAuthenticatedSocialAccount() {
   let insertedApplication;
   let registrationConsumed = false;
   global.fetch = async function (url, init = {}) {
@@ -78,7 +86,7 @@ async function testGeneralCenterApplicationUsesAuthenticatedSocialAccount() {
       return jsonResponse([{
         id: "registration-session-1",
         ip_hash: privacyHash("unknown", "registration-ip"),
-        upload_paths: [],
+        upload_paths: ["registration/registration-session-1/license.png"],
         expires_at: new Date(Date.now() + 60_000).toISOString(),
         consumed_at: null,
       }]);
@@ -102,15 +110,47 @@ async function testGeneralCenterApplicationUsesAuthenticatedSocialAccount() {
   await centerApplications(applicationRequest(), res);
 
   assert.equal(res.statusCode, 202);
-  assert.equal(insertedApplication.therapist_background, false);
-  assert.equal(insertedApplication.license_holder_name, "해당 없음");
-  assert.equal(insertedApplication.license_number, "해당 없음");
-  assert.equal(insertedApplication.license_image_path, null);
+  assert.equal(insertedApplication.therapist_background, true);
+  assert.equal(insertedApplication.license_holder_name, "홍길동");
+  assert.equal(insertedApplication.license_number, "PT-12345");
+  assert.equal(insertedApplication.license_image_path, "registration/registration-session-1/license.png");
+  assert.equal(insertedApplication.opening_schedule.monday.open, "09:00");
+  assert.match(insertedApplication.opening_hours, /월 09:00–20:00/);
   assert.equal(insertedApplication.owner_password_scrypt, null);
   assert.equal(insertedApplication.applicant_auth_user_id, "auth-user-1");
   assert.equal(insertedApplication.registration_session_id, "registration-session-1");
   assert.equal("password" in insertedApplication, false);
   assert.equal(registrationConsumed, true);
+}
+
+async function testGeneralCenterApplicationIsRejected() {
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const method = init.method || "GET";
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
+    }
+    const table = parsed.pathname.split("/").pop();
+    if (table === "registration_sessions" && method === "GET") {
+      return jsonResponse([{
+        id: "registration-session-1",
+        ip_hash: privacyHash("unknown", "registration-ip"),
+        upload_paths: [],
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        consumed_at: null,
+      }]);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  const req = applicationRequest();
+  req.body.therapistBackground = false;
+  delete req.body.licenseHolderName;
+  delete req.body.licenseNumber;
+  delete req.body.licenseImagePath;
+  const res = responseRecorder();
+  await centerApplications(req, res);
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.code, "therapist_license_required");
 }
 
 async function testCenterApplicationRequiresAuthenticatedAccount() {
@@ -132,15 +172,22 @@ async function testApprovalCreatesOwnerMembership() {
   const application = {
     id: "application-1",
     status: "pending",
-    center_name: "일반 운동센터",
+    center_name: "물리치료사 운동센터",
     owner_name: "홍길동",
     email: "owner@example.com",
     applicant_auth_user_id: "auth-user-1",
     owner_password_scrypt: null,
-    therapist_background: false,
+    therapist_background: true,
+    license_holder_name: "홍길동",
     area: "서울 중구",
     address: "서울 중구 세종대로 110",
     services: "자세교정",
+    opening_schedule: {
+      monday: { closed: false, open: "08:00", close: "19:00" },
+      saturday: { closed: true, open: "10:00", close: "17:00" },
+      sunday: { closed: true, open: "10:00", close: "17:00" },
+    },
+    opening_hours: "월 08:00–19:00",
     photo_paths: [],
   };
 
@@ -179,7 +226,9 @@ async function testApprovalCreatesOwnerMembership() {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.ownerMembershipCreated, true);
   assert.equal(res.body.ownerAccountCreated, false);
-  assert.equal(centerBody.therapist, "홍길동 센터장");
+  assert.equal(centerBody.therapist, "홍길동 · 물리치료사 출신");
+  assert.equal(centerBody.opening_schedule.monday.open, "08:00");
+  assert.equal(centerBody.opening_hours, "월 08:00–19:00");
   assert.equal(membershipBody.user_id, "auth-user-1");
   assert.equal(membershipBody.role, "owner");
   assert.equal(membershipBody.status, "active");
@@ -227,7 +276,8 @@ async function testSocialSessionCreatesOwnerDashboardSession() {
   try {
     await testRegistrationSessionIsRequired();
     await testCenterApplicationRequiresAuthenticatedAccount();
-    await testGeneralCenterApplicationUsesAuthenticatedSocialAccount();
+    await testGeneralCenterApplicationIsRejected();
+    await testTherapistCenterApplicationUsesAuthenticatedSocialAccount();
     await testApprovalCreatesOwnerMembership();
     await testSocialSessionCreatesOwnerDashboardSession();
     console.log("Center onboarding tests passed");

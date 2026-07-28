@@ -5,6 +5,10 @@ const {
   sendJson,
   supabaseRequest,
 } = require("./_shared");
+const {
+  normalizeSchedule,
+  scheduleSummary,
+} = require("./_booking");
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -111,6 +115,8 @@ module.exports = async function handler(req, res) {
         plan: "free",
         photo_path: item.photo_path,
         photo_paths: item.photo_paths || (item.photo_path ? [item.photo_path] : []),
+        opening_schedule: normalizeSchedule(item.opening_schedule),
+        opening_hours: item.opening_hours || scheduleSummary(item.opening_schedule),
         status: "approved",
       },
     });

@@ -45,6 +45,9 @@ const challengeAnswer = document.querySelector("#challengeAnswer");
 const challengeStatus = document.querySelector("#challengeStatus");
 const turnstileChallenge = document.querySelector("#turnstileChallenge");
 const companyWebsite = document.querySelector("#companyWebsite");
+const eligibilityNotice = document.querySelector("#eligibilityNotice");
+const registrationWeeklySchedule = document.querySelector("#registrationWeeklySchedule");
+const scheduleSummaryElement = document.querySelector("#scheduleSummary");
 
 let currentStep = 1;
 let geocoderState = "loading";
@@ -58,8 +61,27 @@ let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {}
 let authSession = null;
 let authProfile = null;
 let registrationModulesStarted = false;
+let registrationSchedule = {};
 const AUTH_STORAGE_KEY = "dail_auth_session";
 const AUTH_RETURN_KEY = "dail_auth_return_to";
+const DAY_ROWS = [
+  ["monday", "월요일"],
+  ["tuesday", "화요일"],
+  ["wednesday", "수요일"],
+  ["thursday", "목요일"],
+  ["friday", "금요일"],
+  ["saturday", "토요일"],
+  ["sunday", "일요일"],
+];
+const DEFAULT_SCHEDULE = {
+  monday: { closed: false, open: "09:00", close: "21:00" },
+  tuesday: { closed: false, open: "09:00", close: "21:00" },
+  wednesday: { closed: false, open: "09:00", close: "21:00" },
+  thursday: { closed: false, open: "09:00", close: "21:00" },
+  friday: { closed: false, open: "09:00", close: "21:00" },
+  saturday: { closed: false, open: "10:00", close: "17:00" },
+  sunday: { closed: true, open: "10:00", close: "17:00" },
+};
 
 function escapeHtml(value) {
   return String(value || "")
@@ -68,6 +90,91 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function timeOptions(selected) {
+  const options = [];
+  for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
+    const value = String(Math.floor(minutes / 60)).padStart(2, "0") + ":" + String(minutes % 60).padStart(2, "0");
+    options.push('<option value="' + value + '"' + (value === selected ? " selected" : "") + ">" + value + "</option>");
+  }
+  return options.join("");
+}
+
+function normalizeSchedule(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return Object.fromEntries(DAY_ROWS.map(function (row) {
+    const key = row[0];
+    const fallback = DEFAULT_SCHEDULE[key];
+    const item = source[key] && typeof source[key] === "object" ? source[key] : {};
+    return [key, {
+      closed: item.closed === undefined ? fallback.closed : Boolean(item.closed),
+      open: /^\d{2}:(?:00|30)$/.test(item.open) ? item.open : fallback.open,
+      close: /^\d{2}:(?:00|30)$/.test(item.close) ? item.close : fallback.close,
+    }];
+  }));
+}
+
+function minutesFromTime(value) {
+  const parts = String(value || "").split(":").map(Number);
+  return parts[0] * 60 + parts[1];
+}
+
+function registrationScheduleSummary(value = registrationSchedule) {
+  const schedule = normalizeSchedule(value);
+  const weekday = ["monday", "tuesday", "wednesday", "thursday", "friday"].map(function (key) {
+    return schedule[key];
+  });
+  const sameWeekday = weekday.every(function (item) {
+    return item.closed === weekday[0].closed && item.open === weekday[0].open && item.close === weekday[0].close;
+  });
+  const parts = [];
+  if (sameWeekday) {
+    parts.push(weekday[0].closed ? "평일 휴무" : "평일 " + weekday[0].open + "–" + weekday[0].close);
+  } else {
+    DAY_ROWS.slice(0, 5).forEach(function (row) {
+      const item = schedule[row[0]];
+      parts.push(row[1].slice(0, 1) + " " + (item.closed ? "휴무" : item.open + "–" + item.close));
+    });
+  }
+  DAY_ROWS.slice(5).forEach(function (row) {
+    const item = schedule[row[0]];
+    parts.push(row[1].slice(0, 1) + " " + (item.closed ? "휴무" : item.open + "–" + item.close));
+  });
+  return parts.join(" · ");
+}
+
+function scheduleIsValid() {
+  const openDays = DAY_ROWS.filter(function (row) {
+    return !registrationSchedule[row[0]].closed;
+  });
+  return openDays.length > 0 && openDays.every(function (row) {
+    const item = registrationSchedule[row[0]];
+    return minutesFromTime(item.close) > minutesFromTime(item.open);
+  });
+}
+
+function renderRegistrationSchedule() {
+  registrationSchedule = normalizeSchedule(registrationSchedule);
+  registrationWeeklySchedule.innerHTML = DAY_ROWS.map(function (row) {
+    const key = row[0];
+    const label = row[1];
+    const item = registrationSchedule[key];
+    return '<div class="schedule-row ' + (item.closed ? "is-closed" : "") + '" data-schedule-day="' + key + '">' +
+      "<strong>" + label + "</strong>" +
+      '<label class="day-toggle"><input type="checkbox" data-schedule-closed ' + (item.closed ? "" : "checked") + " /><span>" + (item.closed ? "휴무" : "운영") + "</span></label>" +
+      '<label><span>시작</span><select data-schedule-open ' + (item.closed ? "disabled" : "") + ">" + timeOptions(item.open) + "</select></label>" +
+      "<i>–</i>" +
+      '<label><span>종료</span><select data-schedule-close ' + (item.closed ? "disabled" : "") + ">" + timeOptions(item.close) + "</select></label>" +
+      "</div>";
+  }).join("");
+  const summary = registrationScheduleSummary();
+  form.elements.openingSchedule.value = JSON.stringify(registrationSchedule);
+  form.elements.hours.value = summary;
+  scheduleSummaryElement.textContent = scheduleIsValid()
+    ? summary
+    : "운영일을 하나 이상 선택하고 종료 시간을 시작 시간보다 늦게 설정해주세요.";
+  scheduleSummaryElement.classList.toggle("error", !scheduleIsValid());
 }
 
 function showStep(step) {
@@ -91,7 +198,9 @@ function isTherapistBackground() {
 
 function syncBackground() {
   const yes = isTherapistBackground();
+  const selected = new FormData(form).get("therapistBackground");
   licenseFields.hidden = !yes;
+  eligibilityNotice.hidden = selected !== "no";
   licenseFields.querySelectorAll("input").forEach(function (input) {
     input.required = yes;
     if (!yes) input.value = "";
@@ -311,8 +420,19 @@ async function loadNaverGeocoder() {
 
 function validateStep(step) {
   const panel = document.querySelector('[data-step="' + step + '"]');
+  if (step === 1 && new FormData(form).get("therapistBackground") === "no") {
+    eligibilityNotice.hidden = false;
+    eligibilityNotice.scrollIntoView({ behavior: "smooth", block: "center" });
+    return false;
+  }
   if (step === 2 && !document.querySelector('[name="specialties"]:checked')) {
     window.alert("전문 분야를 하나 이상 선택해주세요.");
+    return false;
+  }
+  if (step === 2 && !scheduleIsValid()) {
+    scheduleSummaryElement.classList.add("error");
+    scheduleSummaryElement.textContent = "운영일을 하나 이상 선택하고 종료 시간을 시작 시간보다 늦게 설정해주세요.";
+    registrationWeeklySchedule.querySelector("select:not(:disabled),input")?.focus();
     return false;
   }
   const invalid = Array.from(panel.querySelectorAll("input,textarea")).find(function (element) {
@@ -552,6 +672,8 @@ function startRegistrationModules() {
   if (registrationModulesStarted) return;
   registrationModulesStarted = true;
   syncBackground();
+  registrationSchedule = normalizeSchedule(registrationSchedule);
+  renderRegistrationSchedule();
   loadNaverGeocoder();
   loadRegistrationChallenge();
 }
@@ -678,7 +800,39 @@ registrationLogout.addEventListener("click", async function () {
 });
 
 document.querySelectorAll('[name="therapistBackground"]').forEach(function (element) {
-  element.addEventListener("change", syncBackground);
+  element.addEventListener("change", function () {
+    syncBackground();
+    if (element.value === "yes" && currentStep === 1 && validateStep(1)) {
+      showStep(2);
+    }
+  });
+});
+
+registrationWeeklySchedule.addEventListener("change", function (event) {
+  const row = event.target.closest("[data-schedule-day]");
+  if (!row) return;
+  const day = row.dataset.scheduleDay;
+  if (event.target.matches("[data-schedule-closed]")) {
+    registrationSchedule[day].closed = !event.target.checked;
+  } else if (event.target.matches("[data-schedule-open]")) {
+    registrationSchedule[day].open = event.target.value;
+  } else if (event.target.matches("[data-schedule-close]")) {
+    registrationSchedule[day].close = event.target.value;
+  }
+  renderRegistrationSchedule();
+});
+
+document.querySelectorAll("[data-schedule-copy]").forEach(function (button) {
+  button.addEventListener("click", function () {
+    if (button.dataset.scheduleCopy === "weekdays") {
+      ["tuesday", "wednesday", "thursday", "friday"].forEach(function (day) {
+        registrationSchedule[day] = { ...registrationSchedule.monday };
+      });
+    } else {
+      registrationSchedule.sunday = { ...registrationSchedule.saturday };
+    }
+    renderRegistrationSchedule();
+  });
 });
 
 document.querySelectorAll("[data-next]").forEach(function (button) {
@@ -768,7 +922,9 @@ form.addEventListener("submit", async function (event) {
       services: Array.from(document.querySelectorAll('[name="specialties"]:checked'))
         .map(function (element) { return element.value; })
         .join(", "),
-      memo: [data.get("hours"), data.get("memo")].filter(Boolean).join("\n"),
+      openingSchedule: registrationSchedule,
+      openingHours: data.get("hours"),
+      memo: data.get("memo"),
       consent: data.get("consent") === "on",
       therapistBackground: isTherapistBackground(),
       registrationToken: registrationToken,
@@ -793,6 +949,8 @@ form.addEventListener("submit", async function (event) {
       throw new Error(result.error || "등록 신청에 실패했습니다.");
     }
     form.reset();
+    registrationSchedule = normalizeSchedule({});
+    renderRegistrationSchedule();
     clearSelectedAddress();
     syncBackground();
     registrationToken = "";
