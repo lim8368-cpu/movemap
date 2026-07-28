@@ -24,7 +24,7 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260728-center-photo-system" />
+  <link rel="stylesheet" href="./styles.css?v=20260728-header-mypage" />
   <link rel="stylesheet" href="./assets/ui-icons.css?v=20260721-icons" />
 </head>
 <body>
@@ -37,7 +37,7 @@
     <nav id="mainNav" class="main-nav" aria-label="주요 메뉴">
       <a href="#search">지도 검색</a><a href="#centers">센터 목록</a><a href="#about">서비스 소개</a><a href="/register/">센터 등록</a><a href="#app">모바일 앱</a>
     </nav>
-    <div class="header-actions"><a id="centerDashboardLink" class="text-link center-login-link" href="/center-dashboard/" hidden>센터 대시보드</a><button id="userMenuButton" class="user-login-button" type="button">로그인</button><button id="headerLogoutButton" class="header-logout-button" type="button" hidden>로그아웃</button><a class="button primary small" href="#search">센터 찾기</a></div>
+    <div class="header-actions"><a id="centerDashboardLink" class="text-link center-login-link" href="/center-dashboard/" hidden>센터 대시보드</a><button id="userMenuButton" class="user-login-button" type="button">로그인</button><a id="headerAccountLink" class="header-account-link" href="/account/" hidden>마이페이지</a><button id="headerLogoutButton" class="header-logout-button" type="button" hidden>로그아웃</button><a class="button primary small" href="#search">센터 찾기</a></div>
   </header>
 
   <main id="top">
@@ -159,7 +159,7 @@
       <div id="centerExperienceContent" class="center-experience-content" aria-live="polite"></div>
     </aside>
   </div>
-  <script src="./app.js?v=20260728-center-photo-system"></script>
+  <script src="./app.js?v=20260728-header-mypage"></script>
   <script>document.querySelector('.menu-toggle').addEventListener('click',function(){const open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));document.querySelector('.main-nav').classList.toggle('open',!open)});</script>
 </body>
 </html>

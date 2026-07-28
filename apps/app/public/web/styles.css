@@ -825,3 +825,31 @@ body.center-experience-open{overflow:hidden}
   .center-experience-scrim,.center-experience-sheet,.route-mini-map{transition:none}
   .route-place-results{animation:none}
 }
+
+/* 20260728: make the signed-in account destination explicit in the header. */
+.header-account-link{
+  min-height:38px;
+  padding:0 14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #bcebe5;
+  border-radius:9px;
+  background:#edfafa;
+  color:#0f766e;
+  font-size:13px;
+  font-weight:800;
+  white-space:nowrap;
+  transition:border-color .2s,background .2s,color .2s
+}
+.header-account-link:hover{
+  border-color:#7dd3c7;
+  background:#dff8f4;
+  color:#0b6b64
+}
+@media(max-width:640px){
+  .header-actions{gap:6px}
+  .user-login-button.signed-in{max-width:82px;padding:0 8px}
+  .header-account-link{min-height:40px;padding:0 10px;font-size:12px}
+  .brand-name{font-size:18px}
+}

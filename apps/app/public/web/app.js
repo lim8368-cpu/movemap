@@ -1994,7 +1994,7 @@ async function initApp() {
 initApp();
 
 const AUTH_STORAGE_KEY="dail_auth_session";
-const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerLogoutButton=document.querySelector("#headerLogoutButton"),centerDashboardLink=document.querySelector("#centerDashboardLink");
+const authOverlay=document.querySelector("#authOverlay"),authLoginView=document.querySelector("#authLoginView"),onboardingForm=document.querySelector("#onboardingForm"),accountView=document.querySelector("#accountView"),userMenuButton=document.querySelector("#userMenuButton"),headerAccountLink=document.querySelector("#headerAccountLink"),headerLogoutButton=document.querySelector("#headerLogoutButton"),centerDashboardLink=document.querySelector("#centerDashboardLink");
 let currentUserProfile=null;
 function captureAuthSessionFromHash(){
   const hash=new URLSearchParams(location.hash.slice(1));
@@ -2020,7 +2020,7 @@ async function loadUserProfile(){
   const response=await fetch("/api/auth/profile",{headers:{Authorization:`Bearer ${session.access_token}`}});if(response.status===401){localStorage.removeItem(AUTH_STORAGE_KEY);return null}if(!response.ok)return null;return response.json();
 }
 function renderAuthState(data){
-  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));headerLogoutButton.hidden=!data;
+  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));userMenuButton.setAttribute("aria-label",data?`${nickname}님 계정`:"로그인");headerAccountLink.hidden=!data;headerLogoutButton.hidden=!data;
   centerDashboardLink.hidden=!data?.centerAccess?.hasActiveMembership;
   if(!data)return;document.querySelector("#accountNickname").textContent=nickname;document.querySelector("#accountEmail").textContent=data.user?.email||`${data.user?.provider||"소셜"} 계정`;
 }
