@@ -446,14 +446,18 @@ function renderList() {
 
   centerList.innerHTML = filtered
     .map(
-      (center) => `
-        <button class="center-card ${center.id === selectedId ? "active" : ""}" type="button" data-card-id="${center.id}">
+      (center) => {
+        const saved = isFavoriteCenter(center.id);
+        return `
+        <article class="center-card ${center.id === selectedId ? "active" : ""}" data-card-id="${center.id}" role="button" tabindex="0" aria-label="${escapeHtml(center.name)} 센터 상세 보기">
           <div class="card-top">
             <div>
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
-            <span class="favorite" aria-hidden="true">${uiIcon("heart")}</span>
+            <button type="button" class="favorite ${saved ? "is-saved" : ""}" data-card-favorite="${center.id}" aria-label="${escapeHtml(center.name)} 관심 ${saved ? "저장 해제" : "저장"}" aria-pressed="${saved}">
+              ${uiIcon("heart")}
+            </button>
           </div>
           <div class="meta-row">
             <span>${escapeHtml(center.area)}</span>
@@ -462,8 +466,9 @@ function renderList() {
           </div>
           <div class="card-tags">${[...center.categories,...center.tags].slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
           <span class="card-cta icon-label">센터 상세 보기 ${uiIcon("arrow-right")}</span>
-        </button>
-      `
+        </article>
+      `;
+      }
     )
     .join("") || `<div class="empty-state"><strong>조건에 맞는 센터를 찾지 못했어요.</strong><span>지역을 넓히거나 조건을 지우면 더 많은 센터를 볼 수 있습니다.</span><button id="emptyResetButton" type="button">검색 조건 초기화</button></div>`;
 
@@ -480,7 +485,21 @@ function renderList() {
   document.querySelector("#emptyResetButton")?.addEventListener("click", resetFilters);
 
   document.querySelectorAll("[data-card-id]").forEach((card) => {
-    card.addEventListener("click", () => openCenterDetail(card.dataset.cardId));
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("[data-card-favorite]")) return;
+      openCenterDetail(card.dataset.cardId);
+    });
+    card.addEventListener("keydown", (event) => {
+      if (event.target.closest("[data-card-favorite]") || !["Enter", " "].includes(event.key)) return;
+      event.preventDefault();
+      openCenterDetail(card.dataset.cardId);
+    });
+  });
+  document.querySelectorAll("[data-card-favorite]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleFavoriteCenter(button.dataset.cardFavorite);
+    });
   });
 
   if (selectedId && !filtered.some((center) => center.id === selectedId)) {
@@ -602,15 +621,22 @@ function legacyFavoriteIds() {
 }
 
 function updateFavoriteButton(centerId, { busy = false } = {}) {
+  const saved = favoriteCenterIds.has(centerId);
   const button = centerExperienceContent?.querySelector("[data-center-favorite]");
   if (button) {
-    const saved = favoriteCenterIds.has(centerId);
     button.classList.toggle("is-saved", saved);
     button.setAttribute("aria-pressed", String(saved));
     button.setAttribute("aria-busy", String(busy));
     button.disabled = busy;
     button.querySelector("span").textContent = saved ? "저장됨" : "관심 저장";
   }
+  document.querySelectorAll(`[data-card-favorite="${centerId}"]`).forEach((cardButton) => {
+    cardButton.classList.toggle("is-saved", saved);
+    cardButton.setAttribute("aria-pressed", String(saved));
+    cardButton.setAttribute("aria-busy", String(busy));
+    cardButton.setAttribute("aria-label", `${centers.find((center) => center.id === centerId)?.name || "센터"} 관심 ${saved ? "저장 해제" : "저장"}`);
+    cardButton.disabled = busy;
+  });
 }
 
 async function saveFavoriteRequest(session, centerId, method = "POST") {
@@ -655,6 +681,7 @@ async function loadFavoriteCenters(session = null, { applyPending = true } = {})
     localStorage.removeItem(LEGACY_FAVORITES_KEY);
     if (applyPending) sessionStorage.removeItem(PENDING_FAVORITE_KEY);
     favoriteSyncReady = true;
+    document.querySelectorAll("[data-card-favorite]").forEach((button) => updateFavoriteButton(button.dataset.cardFavorite));
     return true;
   } catch {
     return false;

@@ -160,6 +160,41 @@
   .marker-name{font-size:11.5px}
   .marker-rating{min-height:22px;padding:0 6px;font-size:9px}
 }
+.center-card{
+  cursor:pointer;
+}
+.center-card:focus-visible{
+  border-color:var(--teal);
+  box-shadow:0 8px 20px rgba(13,148,136,.1);
+  outline:0;
+}
+.center-card .favorite{
+  width:34px;
+  height:34px;
+  margin:-5px -5px 0 auto;
+  padding:0;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:#64748b;
+}
+.center-card .favorite:hover,.center-card .favorite:focus-visible{
+  background:#ecfdf5;
+  color:var(--teal);
+  outline:0;
+}
+.center-card .favorite.is-saved{
+  background:#e6fffa;
+  color:var(--teal);
+}
+.center-card .favorite:disabled{
+  cursor:wait;
+  opacity:.65;
+}
+
 @media(prefers-reduced-motion:reduce){
   .cluster-marker.is-opening,.map-area.is-revealing-centers .naver-marker{animation:none}
 }
