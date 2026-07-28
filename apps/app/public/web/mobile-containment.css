@@ -1,0 +1,71 @@
+/*
+ * Prevent page-level horizontal drift on phones.
+ * Components that intentionally scroll horizontally keep their own overflow rules.
+ */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  position: relative;
+}
+
+header,
+main,
+footer,
+section,
+.site-header,
+.hero-inner,
+.layout,
+.sidebar,
+.map-area,
+.app-shell,
+.center-experience-overlay {
+  min-width: 0;
+  max-width: 100%;
+}
+
+img,
+video,
+canvas,
+iframe,
+svg {
+  max-width: 100%;
+}
+
+.center-experience-overlay {
+  overflow: hidden;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats,
+  .section,
+  .proof,
+  .search-section,
+  .app-promo,
+  .partner,
+  .store-buttons {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .store-buttons {
+    width: 100%;
+  }
+
+  .store-button {
+    min-width: 0;
+    flex: 1 1 145px;
+  }
+}

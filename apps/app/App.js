@@ -18,6 +18,27 @@ const API_BASE = String(
   process.env.EXPO_PUBLIC_API_BASE_URL || "https://dail.157-90-26-205.sslip.io"
 ).replace(/\/$/, "");
 
+const HORIZONTAL_CONTAINMENT_SCRIPT = `
+  (() => {
+    const contain = () => {
+      const root = document.documentElement;
+      if (root) {
+        root.style.width = "100%";
+        root.style.maxWidth = "100%";
+        root.style.overflowX = "hidden";
+      }
+      if (document.body) {
+        document.body.style.width = "100%";
+        document.body.style.maxWidth = "100%";
+        document.body.style.overflowX = "hidden";
+      }
+    };
+    contain();
+    document.addEventListener("DOMContentLoaded", contain, { once: true });
+  })();
+  true;
+`;
+
 const NAVER_MAP_STORE_URLS = {
   ios: {
     native: "itms-apps://apps.apple.com/kr/app/id311867728",
@@ -130,6 +151,11 @@ export default function App() {
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           allowsBackForwardNavigationGestures
+          directionalLockEnabled
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+          injectedJavaScriptBeforeContentLoaded={HORIZONTAL_CONTAINMENT_SCRIPT}
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode="always"

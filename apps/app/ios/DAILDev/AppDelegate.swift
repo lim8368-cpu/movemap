@@ -18,7 +18,11 @@ public final class AppDelegate: UIResponder, UIApplicationDelegate {
 }
 
 private final class DAILTabBarController: UITabBarController {
+  #if DEBUG
   private static let baseURL = URL(string: "https://develop.157-90-26-205.sslip.io")!
+  #else
+  private static let baseURL = URL(string: "https://dail.157-90-26-205.sslip.io")!
+  #endif
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -56,6 +60,31 @@ private final class DAILWebViewController: UIViewController, WKNavigationDelegat
     configuration.websiteDataStore = .default()
     configuration.allowsInlineMediaPlayback = true
     configuration.applicationNameForUserAgent = "DAIL-iOS"
+    configuration.userContentController.addUserScript(
+      WKUserScript(
+        source: """
+          (() => {
+            const contain = () => {
+              const root = document.documentElement;
+              if (root) {
+                root.style.width = '100%';
+                root.style.maxWidth = '100%';
+                root.style.overflowX = 'hidden';
+              }
+              if (document.body) {
+                document.body.style.width = '100%';
+                document.body.style.maxWidth = '100%';
+                document.body.style.overflowX = 'hidden';
+              }
+            };
+            contain();
+            document.addEventListener('DOMContentLoaded', contain, { once: true });
+          })();
+        """,
+        injectionTime: .atDocumentStart,
+        forMainFrameOnly: true
+      )
+    )
 
     let view = WKWebView(frame: .zero, configuration: configuration)
     view.translatesAutoresizingMaskIntoConstraints = false
@@ -63,6 +92,9 @@ private final class DAILWebViewController: UIViewController, WKNavigationDelegat
     view.uiDelegate = self
     view.allowsBackForwardNavigationGestures = true
     view.scrollView.contentInsetAdjustmentBehavior = .automatic
+    view.scrollView.alwaysBounceHorizontal = false
+    view.scrollView.showsHorizontalScrollIndicator = false
+    view.scrollView.isDirectionalLockEnabled = true
     view.backgroundColor = UIColor(red: 0.969, green: 0.980, blue: 0.973, alpha: 1)
     view.isOpaque = false
     return view
