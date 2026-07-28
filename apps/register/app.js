@@ -483,7 +483,7 @@ function renderSummary() {
     ["심사 연락 이메일", data.get("email")],
     ["주소", fullAddress()],
     ["지도 위치", latInput.value && lngInput.value ? "네이버 지도 확인 완료" : "운영팀 확인 예정"],
-    ["물리치료사 출신", isTherapistBackground() ? "예" : "아니오"],
+    ["대표자 물리치료사 면허", isTherapistBackground() ? "확인 대상" : "해당 없음"],
     ["전문 분야", specialties],
     ["운영 시간", data.get("hours") || "미입력"],
   ];

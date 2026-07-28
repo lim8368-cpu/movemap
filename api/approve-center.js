@@ -107,9 +107,7 @@ module.exports = async function handler(req, res) {
         lng: item.lng,
         lead: item.services || "센터가 등록한 운동 프로그램 정보입니다.",
         tags: [],
-        therapist: item.therapist_background
-          ? `${item.license_holder_name} · 물리치료사 출신`
-          : `${item.owner_name} 센터장`,
+        therapist: item.license_holder_name || `${item.owner_name} 센터장`,
         price: "센터 문의",
         conversion: "신규 등록 센터",
         plan: "free",

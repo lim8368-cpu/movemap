@@ -325,9 +325,7 @@ function applicationToCenter(db, application) {
     reviews: "0",
     lead: application.services || application.memo || "센터가 등록한 운동 프로그램 정보입니다.",
     tags: tagsFromText(application.services),
-    therapist: application.therapistBackground
-      ? `${application.licenseHolderName} · 물리치료사 출신`
-      : `${application.ownerName} 센터장`,
+    therapist: application.licenseHolderName || `${application.ownerName} 센터장`,
     price: "센터 문의",
     conversion: "신규 등록 센터",
     lat,
@@ -579,7 +577,7 @@ const server = http.createServer(async (req, res) => {
         "licenseImagePath",
       ].some((field) => !cleanText(body[field]));
       if (missingLicense) {
-        sendJson(res, 400, { error: "물리치료사 출신 센터는 면허 확인 정보를 모두 입력해 주세요." });
+        sendJson(res, 400, { error: "물리치료사 면허 확인 정보를 모두 입력해 주세요." });
         return;
       }
 

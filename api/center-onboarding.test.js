@@ -226,7 +226,7 @@ async function testApprovalCreatesOwnerMembership() {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.ownerMembershipCreated, true);
   assert.equal(res.body.ownerAccountCreated, false);
-  assert.equal(centerBody.therapist, "홍길동 · 물리치료사 출신");
+  assert.equal(centerBody.therapist, "홍길동");
   assert.equal(centerBody.opening_schedule.monday.open, "08:00");
   assert.equal(centerBody.opening_hours, "월 08:00–19:00");
   assert.equal(membershipBody.user_id, "auth-user-1");

@@ -49,6 +49,8 @@ async function testFavoriteList() {
         area: "서울 강남구",
         address: "서울 강남구 테스트로 1",
         tags: ["허리", "자세"],
+        therapist: "홍길동 센터장 · 물리치료사 출신",
+        manager_career: "재활병원 물리치료사 출신\n운동 지도 8년",
         status: "approved",
       }]);
     }
@@ -70,6 +72,9 @@ async function testFavoriteList() {
   assert.equal(res.body.favorites.length, 1);
   assert.equal(res.body.favorites[0].center.name, "DAIL 테스트 센터");
   assert.equal(res.body.favorites[0].center.rating, "4.5");
+  assert.equal(res.body.favorites[0].center.distance, "");
+  assert.equal(res.body.favorites[0].center.therapist, "홍길동 센터장");
+  assert.equal(res.body.favorites[0].center.managerCareer, "재활병원\n운동 지도 8년");
 }
 
 async function testFavoriteCreateAndDelete() {

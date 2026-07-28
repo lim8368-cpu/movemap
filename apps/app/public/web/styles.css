@@ -705,6 +705,15 @@ body.center-experience-open{overflow:hidden}
 .booking-disabled strong{color:#526272;font-size:11px}
 .booking-disabled p{margin:4px 0 0;font-size:9px}
 
+.meta-row{flex-wrap:wrap;align-items:center}
+.rating.is-new{padding:3px 7px;border-radius:999px;background:#eafaf7;color:#0f766e;font-size:10px;font-weight:800}
+.center-sheet-summary h2{margin-top:0}
+.center-sheet-rating .center-sheet-new{padding:5px 8px;border-radius:999px;background:#eafaf7;color:#0f766e;font-size:10px}
+.favorite-sync-message{margin:10px 20px 0;padding:10px 12px;display:flex;align-items:center;gap:7px;border-radius:10px;background:#ecfdf5;color:#42635f;font-size:10px}
+.favorite-sync-message[hidden]{display:none}
+.favorite-sync-message .ui-icon{flex:0 0 auto;color:var(--teal);font-size:14px}
+.favorite-sync-message a{margin-left:auto;color:#0f766e;font-weight:850;text-decoration:underline;text-underline-offset:2px}
+
 @media(max-width:640px){
   .center-experience-overlay{align-items:flex-end;padding:0}
   .center-experience-sheet{

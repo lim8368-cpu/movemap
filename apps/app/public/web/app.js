@@ -9,8 +9,8 @@ const sampleCenters = [
     reviews: "128",
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
-    therapist: "김민재 센터장 · 물리치료사 출신",
-    managerCareer: "대학병원 재활의학과 물리치료사 출신\n근골격계 재활운동 지도 9년\n허리·수술 후 일상 복귀 프로그램 운영",
+    therapist: "김민재 센터장",
+    managerCareer: "대학병원 재활의학과 근무\n근골격계 재활운동 지도 9년\n허리·수술 후 일상 복귀 프로그램 운영",
     price: "첫 평가 30,000원",
     conversion: "전화 상담 가능",
     address: "서울 강남구 강남대로",
@@ -30,8 +30,8 @@ const sampleCenters = [
     reviews: "94",
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
-    therapist: "박서연 대표 · 물리치료사 출신",
-    managerCareer: "재활병원 물리치료사 출신\n직장인 자세·목·어깨 운동 지도\n소그룹 자세 분석 프로그램 운영",
+    therapist: "박서연 대표",
+    managerCareer: "재활병원 근무\n직장인 자세·목·어깨 운동 지도\n소그룹 자세 분석 프로그램 운영",
     price: "체험 수업 20,000원",
     conversion: "예약 후 방문",
     address: "서울 마포구 양화로",
@@ -51,8 +51,8 @@ const sampleCenters = [
     reviews: "76",
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
-    therapist: "이도윤 원장 · 물리치료사 출신",
-    managerCareer: "종합병원 물리치료사 출신\n수술 후 및 시니어 운동 지도\n보행·근력 회복 프로그램 운영",
+    therapist: "이도윤 원장",
+    managerCareer: "종합병원 근무\n수술 후 및 시니어 운동 지도\n보행·근력 회복 프로그램 운영",
     price: "방문 상담 무료",
     conversion: "센터 문의",
     address: "경기 성남시 분당구 성남대로",
@@ -72,8 +72,8 @@ const sampleCenters = [
     reviews: "61",
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
-    therapist: "최하린 대표 · 물리치료사 출신",
-    managerCareer: "스포츠재활센터 물리치료사 출신\n골프·테니스 컨디셔닝 지도\n어깨 가동성 프로그램 운영",
+    therapist: "최하린 대표",
+    managerCareer: "스포츠재활센터 근무\n골프·테니스 컨디셔닝 지도\n어깨 가동성 프로그램 운영",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
     address: "서울 강남구 도산대로",
@@ -229,20 +229,34 @@ function formatBookingDateTime(startAt) {
   }).format(new Date(startAt));
 }
 
+function publicOperatorText(value) {
+  const text = String(value || "")
+    .replace(/\s*[·|/–-]?\s*물리치료사\s*출신\s*/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s*[·|/–-]\s*$/g, "")
+    .trim();
+  return text || "센터장 정보";
+}
+
+function publicCareerText(value) {
+  return String(value || "")
+    .replace(/[ \t]*물리치료사[ \t]*출신[ \t]*/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
 function normalizeCenter(center) {
-  const operatorText = String(center.therapist || "운영자 정보 확인 중")
-    .replace(/물리치료사(?:\s*\d+년|\s*운영 확인|\s*면허 확인)?/g, "물리치료사 출신");
   return {
     ...center,
     region: center.region || "other",
-    distance: center.distance || "신규",
+    distance: center.distance && center.distance !== "신규" ? center.distance : "",
     rating: center.rating || "신규",
     reviews: center.reviews || "0",
     lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
     categories: Array.isArray(center.categories) ? center.categories : [],
-    therapist: operatorText,
-    managerCareer: center.managerCareer || center.manager_career || "센터장이 커리어 정보를 준비하고 있습니다.",
+    therapist: publicOperatorText(center.therapist),
+    managerCareer: publicCareerText(center.managerCareer || center.manager_career) || "센터장이 커리어 정보를 준비하고 있습니다.",
     price: center.price || "센터 문의",
     conversion: center.conversion || "신규 등록 센터",
     address: center.address || center.area || "",
@@ -461,8 +475,10 @@ function renderList() {
           </div>
           <div class="meta-row">
             <span>${escapeHtml(center.area)}</span>
-            <span>${escapeHtml(center.distance)}</span>
-            <span class="rating icon-label">${uiIcon("star", "is-filled")}${escapeHtml(center.rating)}</span>
+            ${center.distance ? `<span>${escapeHtml(center.distance)}</span>` : ""}
+            ${center.rating === "신규"
+              ? '<span class="rating is-new">신규 센터</span>'
+              : `<span class="rating icon-label">${uiIcon("star", "is-filled")}${escapeHtml(center.rating)}</span>`}
           </div>
           <div class="card-tags">${[...center.categories,...center.tags].slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
           <span class="card-cta icon-label">센터 상세 보기 ${uiIcon("arrow-right")}</span>
@@ -573,8 +589,8 @@ function openCenterDetail(id) {
 function centerPopupContent(center) {
   return `<article class="map-popup">
     <button class="map-popup-close icon-only" type="button" aria-label="닫기" onclick="window.closeDailMapPopup()">${uiIcon("x")}</button>
-    <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3><span class="map-popup-distance">${escapeHtml(center.distance)}</span></div>
-    <p class="map-popup-category">운동센터 · <b>물리치료사 출신</b></p>
+    <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3>${center.distance ? `<span class="map-popup-distance">${escapeHtml(center.distance)}</span>` : ""}</div>
+    <p class="map-popup-category">DAIL 등록 운동센터</p>
     <p class="map-popup-location">${escapeHtml(center.area)}</p>
     <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
     <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
@@ -628,7 +644,13 @@ function updateFavoriteButton(centerId, { busy = false } = {}) {
     button.setAttribute("aria-pressed", String(saved));
     button.setAttribute("aria-busy", String(busy));
     button.disabled = busy;
-    button.querySelector("span").textContent = saved ? "저장됨" : "관심 저장";
+    button.querySelector("span").textContent = busy
+      ? (saved ? "해제 중…" : "저장 중…")
+      : (saved ? "저장됨" : "관심 저장");
+  }
+  const syncMessage = centerExperienceContent?.querySelector("[data-favorite-sync-message]");
+  if (syncMessage) {
+    syncMessage.hidden = busy || !saved;
   }
   document.querySelectorAll(`[data-card-favorite="${centerId}"]`).forEach((cardButton) => {
     cardButton.classList.toggle("is-saved", saved);
@@ -642,6 +664,7 @@ function updateFavoriteButton(centerId, { busy = false } = {}) {
 async function saveFavoriteRequest(session, centerId, method = "POST") {
   return fetch(`${API_BASE}/api/favorites`, {
     method,
+    keepalive: true,
     headers: {
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
@@ -698,19 +721,25 @@ async function toggleFavoriteCenter(centerId) {
     return;
   }
 
-  if (!favoriteSyncReady) await loadFavoriteCenters(session);
+  if (!favoriteSyncReady) {
+    const loaded = await loadFavoriteCenters(session);
+    if (!loaded) {
+      const button = centerExperienceContent?.querySelector("[data-center-favorite]");
+      if (button) button.title = "저장 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+      return;
+    }
+  }
   const wasSaved = favoriteCenterIds.has(centerId);
-  if (wasSaved) favoriteCenterIds.delete(centerId);
-  else favoriteCenterIds.add(centerId);
   updateFavoriteButton(centerId, { busy: true });
 
   try {
     const response = await saveFavoriteRequest(session, centerId, wasSaved ? "DELETE" : "POST");
     if (!response.ok) throw new Error("favorite update failed");
+    const data = await response.json().catch(() => ({}));
+    if (wasSaved || data.saved === false) favoriteCenterIds.delete(centerId);
+    else favoriteCenterIds.add(centerId);
     updateFavoriteButton(centerId);
   } catch {
-    if (wasSaved) favoriteCenterIds.add(centerId);
-    else favoriteCenterIds.delete(centerId);
     updateFavoriteButton(centerId);
     const button = centerExperienceContent?.querySelector("[data-center-favorite]");
     if (button) button.title = "관심 센터를 저장하지 못했습니다. 다시 시도해 주세요.";
@@ -859,9 +888,11 @@ function renderCenterExperienceDetail(center) {
     <div class="center-sheet-scroll">
       ${centerPhotoMarkup(center)}
       <section class="center-sheet-summary">
-        <span class="center-sheet-badge icon-label">${uiIcon("badge-check")} 물리치료사 출신</span>
         <h2>${escapeHtml(center.name)}</h2>
-        <p class="center-sheet-rating"><span class="stars">${ratingIcons(center.rating)}</span><b>${escapeHtml(center.rating)}</b><span>후기 ${escapeHtml(center.reviews)}개</span><i></i><span>${escapeHtml(center.distance)}</span></p>
+        <p class="center-sheet-rating">${center.rating === "신규"
+          ? '<b class="center-sheet-new">신규 센터</b><span>아직 등록된 후기가 없어요</span>'
+          : `<span class="stars">${ratingIcons(center.rating)}</span><b>${escapeHtml(center.rating)}</b><span>후기 ${escapeHtml(center.reviews)}개</span>`}
+          ${center.distance ? `<i></i><span>${escapeHtml(center.distance)}</span>` : ""}</p>
         <p class="center-sheet-address icon-label">${uiIcon("map-pin")}<span>${escapeHtml(center.address || center.area)}</span></p>
       </section>
       <nav class="center-sheet-quick-actions" aria-label="센터 빠른 메뉴">
@@ -870,6 +901,9 @@ function renderCenterExperienceDetail(center) {
         <button type="button" data-center-phone ${phoneLink ? "" : "disabled"}>${uiIcon("phone-call")}<span>${phoneLink ? "전화" : "전화 준비중"}</span></button>
         <button type="button" data-center-favorite data-center-id="${escapeHtml(center.id)}" class="${saved ? "is-saved" : ""}" aria-pressed="${saved}">${uiIcon("heart")}<span>${saved ? "저장됨" : "관심 저장"}</span></button>
       </nav>
+      <p class="favorite-sync-message" data-favorite-sync-message ${saved ? "" : "hidden"}>
+        ${uiIcon("circle-check")} 이 센터를 저장했습니다. <a href="/account/#favorites">마이 DAIL에서 보기</a>
+      </p>
       <section class="center-sheet-section">
         <p class="center-sheet-kicker">센터 소개</p>
         <h3>어떤 운동을 받을 수 있나요?</h3>
@@ -880,7 +914,7 @@ function renderCenterExperienceDetail(center) {
         <p class="center-sheet-kicker">센터장 정보</p>
         <button class="center-operator-card" type="button" data-center-operator aria-expanded="false">
           <span class="center-operator-avatar" aria-hidden="true">${uiIcon("user-cog")}</span>
-          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("badge-check")} 출신 정보 확인 · ${center.managerCareer ? "커리어 보기" : "커리어 등록 준비중"}</span></div>
+          <div><strong>${escapeHtml(center.therapist)}</strong><span class="icon-label">${uiIcon("user-cog")} ${center.managerCareer ? "센터장 커리어 보기" : "커리어 등록 준비중"}</span></div>
           ${uiIcon("chevron-down")}
         </button>
         <div class="center-operator-career" data-center-operator-career hidden><b>주요 커리어</b><p>${escapeHtml(center.managerCareer || "센터장이 커리어 정보를 준비하고 있습니다.")}</p></div>

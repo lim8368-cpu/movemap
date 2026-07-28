@@ -109,7 +109,7 @@ module.exports = async function handler(req, res) {
       "licenseImagePath",
     ].some((field) => !requiredString(body[field]));
     if (missingLicense) {
-      sendJson(res, 400, { error: "물리치료사 출신 센터는 면허 확인 정보를 모두 입력해 주세요." });
+      sendJson(res, 400, { error: "물리치료사 면허 확인 정보를 모두 입력해 주세요." });
       return;
     }
     if (!body.openingSchedule || typeof body.openingSchedule !== "object" || Array.isArray(body.openingSchedule)) {

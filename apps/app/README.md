@@ -1,6 +1,6 @@
 # DAIL 공통 앱
 
-물리치료사 출신이 운영하는 운동센터 정보를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
+물리치료사 면허 보유자가 운영하는 운동센터 정보를 지도에서 찾는 Expo React Native + React Native Web 공통 앱입니다.
 
 이 앱은 iOS, Android, Web을 같은 코드 흐름으로 관리하는 중심 앱입니다.
 
@@ -80,7 +80,7 @@ EXPO_PUBLIC_API_BASE_URL=http://내컴퓨터IP:8090 npm run app:start
 
 - 실제 지도 SDK 연결: 네이버 지도, 카카오 지도, Google Maps 중 선택
 - 센터장 회원가입/센터 등록
-- 물리치료사 출신 확인 프로세스
+- 물리치료사 면허 확인 프로세스
 - 상담 예약/문의 채팅
 - 후기, 즐겨찾기, 위치 기반 추천
 - 센터장용 홍보 대시보드

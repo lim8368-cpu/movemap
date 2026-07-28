@@ -139,9 +139,6 @@ module.exports = async function handler(req, res) {
       } else {
         const limit = field === "lead" ? 800 : field === "manager_career" ? 2000 : 200;
         patch[field] = cleanText(body[field], limit);
-        if (field === "therapist") {
-          patch[field] = patch[field].replace(/물리치료사(?!\s*출신)/g, "물리치료사 출신");
-        }
       }
     }
     if (!Object.keys(patch).length) return sendJson(res, 400, { error: "수정할 정보가 없습니다." });
