@@ -1421,6 +1421,28 @@ function renderCenterExperienceRoute(center) {
 let centerExperienceCloseTimer = null;
 let centerExperienceFocusTimer = null;
 let centerExperienceRevealFrame = null;
+let centerExperiencePageScrollY = 0;
+
+function lockCenterExperiencePage() {
+  if (document.documentElement.classList.contains("center-experience-open")) return;
+  centerExperiencePageScrollY = Math.max(
+    0,
+    window.scrollY || document.documentElement.scrollTop || 0
+  );
+  document.documentElement.classList.add("center-experience-open");
+  document.body.classList.add("center-experience-open");
+  document.body.style.top = `-${centerExperiencePageScrollY}px`;
+}
+
+function unlockCenterExperiencePage() {
+  const restoreScrollY = centerExperiencePageScrollY;
+  document.documentElement.classList.remove("center-experience-open");
+  document.body.classList.remove("center-experience-open");
+  document.body.style.removeProperty("top");
+  document.body.style.removeProperty("--center-experience-scrollbar-width");
+  window.scrollTo({ top: restoreScrollY, left: 0, behavior: "auto" });
+}
+
 function openCenterExperience(id, view = "detail") {
   const center = centers.find((item) => item.id === id);
   if (!center || !centerExperienceOverlay || !centerExperienceContent) return;
@@ -1445,7 +1467,7 @@ function openCenterExperience(id, view = "detail") {
     renderCenterExperienceDetail(center);
     trackEvent("center_view", center.id, "detail_sheet");
   }
-  document.body.classList.add("center-experience-open");
+  lockCenterExperiencePage();
   centerExperienceSheet.getBoundingClientRect();
   centerExperienceRevealFrame = window.requestAnimationFrame(() => {
     centerExperienceRevealFrame = window.requestAnimationFrame(() => {
@@ -1469,10 +1491,9 @@ function closeCenterExperience() {
     centerExperienceRevealFrame = null;
   }
   centerExperienceOverlay.classList.remove("is-visible");
-  document.body.classList.remove("center-experience-open");
   centerExperienceCloseTimer = window.setTimeout(() => {
     centerExperienceOverlay.hidden = true;
-    document.body.style.removeProperty("--center-experience-scrollbar-width");
+    unlockCenterExperiencePage();
     centerExperienceContent.innerHTML = "";
     centerExperienceId = "";
     centerExperienceView = "detail";

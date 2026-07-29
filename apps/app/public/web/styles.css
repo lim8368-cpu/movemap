@@ -374,8 +374,17 @@ body{
 
 /* In-map center detail drawer and route bottom sheet */
 body.center-experience-open{
+  position:fixed;
+  left:0;
+  right:0;
+  width:100%;
   overflow:hidden;
+  overscroll-behavior:none;
   padding-right:var(--center-experience-scrollbar-width,0px);
+}
+html.center-experience-open{
+  overflow:hidden;
+  overscroll-behavior:none;
 }
 .center-experience-overlay{
   position:fixed;
@@ -1047,7 +1056,7 @@ body.center-experience-open{
 .center-sheet-scroll{
   -webkit-overflow-scrolling:touch;
   touch-action:pan-y;
-  overscroll-behavior-y:auto;
+  overscroll-behavior-y:contain;
 }
 
 @media(max-width:640px){
@@ -1533,4 +1542,19 @@ footer{background:#111}
 
 @media(prefers-reduced-motion:reduce){
   .rehab-pill{transition:none}
+}
+
+/* Keep sheet scrolling isolated and tighten the final page rhythm. */
+html{overscroll-behavior-y:none}
+.center-experience-overlay,
+.center-experience-sheet,
+.center-sheet-scroll{overscroll-behavior-y:contain}
+.app-promo{padding-top:82px;padding-bottom:82px}
+.partner{padding-top:54px;padding-bottom:54px}
+footer{padding-top:48px}
+
+@media(max-width:640px){
+  .app-promo{padding-top:60px;padding-bottom:60px}
+  .partner{padding-top:48px;padding-bottom:48px}
+  footer{padding-top:44px}
 }
