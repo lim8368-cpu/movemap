@@ -7,6 +7,10 @@
   <title>DAIL | 다시 일상으로</title>
   <script>
     (() => {
+      if (/\bDAIL-(?:iOS|App|Android)\b/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add("dail-native-app");
+        document.documentElement.dataset.dailNativeApp = "true";
+      }
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       const navigation = performance.getEntriesByType?.("navigation")[0];
       const shouldStartAtTop = navigation?.type === "reload";
