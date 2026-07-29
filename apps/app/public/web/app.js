@@ -448,6 +448,7 @@ function matchesFilters(center) {
 function renderList() {
   const filtered = centers.filter(matchesFilters);
   resultCount.textContent = `${filtered.length}곳`;
+  syncRehabSelection();
 
   const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
   const filterLabels = [
@@ -1945,12 +1946,83 @@ regionButtons.forEach((button) => {
   });
 });
 
-document.querySelectorAll("[data-category]").forEach((link) => {
+function syncRehabSelection() {
+  const searchTerm = searchInput?.value.trim() || "";
+  document.querySelectorAll(".rehab-pill").forEach((link) => {
+    const categoryMatches = Boolean(link.dataset.category) && link.dataset.category === selectedCategory;
+    const searchMatches = !selectedCategory && Boolean(link.dataset.searchTerm) && link.dataset.searchTerm === searchTerm;
+    link.classList.toggle("is-selected", categoryMatches || searchMatches);
+    if (link.closest("[aria-hidden='true']")) return;
+    link.setAttribute("aria-current", categoryMatches || searchMatches ? "true" : "false");
+  });
+}
+
+document.querySelectorAll("[data-category], [data-search-term]").forEach((link) => {
   link.addEventListener("click", () => {
-    selectedCategory = link.dataset.category;
+    selectedCategory = link.dataset.category || "";
+    searchInput.value = link.dataset.searchTerm || "";
+    syncRehabSelection();
     window.setTimeout(renderList, 0);
   });
 });
+
+function initRehabMarquee() {
+  const viewport = document.querySelector(".rehab-marquee");
+  const track = viewport?.querySelector(".rehab-track");
+  const firstGroup = track?.querySelector(".rehab-group");
+  if (!viewport || !track || !firstGroup) return;
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let interactionPaused = false;
+  let resumeTimer = 0;
+  let lastFrame = performance.now();
+
+  const loopDistance = () => {
+    const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
+    return firstGroup.getBoundingClientRect().width + gap;
+  };
+  const pause = () => {
+    window.clearTimeout(resumeTimer);
+    interactionPaused = true;
+  };
+  const resumeAfter = (delay = 400) => {
+    window.clearTimeout(resumeTimer);
+    resumeTimer = window.setTimeout(() => {
+      interactionPaused = false;
+      lastFrame = performance.now();
+    }, delay);
+  };
+  const animate = (time) => {
+    const elapsed = Math.min(48, Math.max(0, time - lastFrame));
+    if (!interactionPaused && !reducedMotion.matches && !document.hidden) {
+      viewport.scrollLeft += elapsed * 0.032;
+      const distance = loopDistance();
+      if (distance > 0 && viewport.scrollLeft >= distance) viewport.scrollLeft -= distance;
+    }
+    lastFrame = time;
+    window.requestAnimationFrame(animate);
+  };
+
+  viewport.addEventListener("pointerenter", pause);
+  viewport.addEventListener("pointerleave", () => resumeAfter());
+  viewport.addEventListener("pointerdown", pause);
+  viewport.addEventListener("pointerup", () => resumeAfter(1400));
+  viewport.addEventListener("pointercancel", () => resumeAfter(1400));
+  viewport.addEventListener("wheel", () => {
+    pause();
+    resumeAfter(1400);
+  }, { passive: true });
+  viewport.addEventListener("focusin", pause);
+  viewport.addEventListener("focusout", (event) => {
+    if (!viewport.contains(event.relatedTarget)) resumeAfter();
+  });
+  document.addEventListener("visibilitychange", () => {
+    lastFrame = performance.now();
+  });
+  window.requestAnimationFrame(animate);
+}
+
+initRehabMarquee();
 
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
 areaSelect?.addEventListener("change", renderList);
