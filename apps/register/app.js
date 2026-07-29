@@ -426,7 +426,7 @@ function validateStep(step) {
     return false;
   }
   if (step === 2 && !document.querySelector('[name="specialties"]:checked')) {
-    window.alert("전문 분야를 하나 이상 선택해주세요.");
+    window.alert("주요 회복 분야를 하나 이상 선택해주세요.");
     return false;
   }
   if (step === 2 && !scheduleIsValid()) {
@@ -484,7 +484,7 @@ function renderSummary() {
     ["주소", fullAddress()],
     ["지도 위치", latInput.value && lngInput.value ? "네이버 지도 확인 완료" : "운영팀 확인 예정"],
     ["대표자 물리치료사 면허", isTherapistBackground() ? "확인 대상" : "해당 없음"],
-    ["전문 분야", specialties],
+    ["주요 회복 분야", specialties],
     ["운영 시간", data.get("hours") || "미입력"],
   ];
   document.querySelector("#reviewSummary").innerHTML = rows.map(function (row) {

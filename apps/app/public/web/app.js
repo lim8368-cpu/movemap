@@ -1,3 +1,21 @@
+const PUBLIC_CENTER_CATEGORY_ALIASES = new Map([
+  ["재활운동", "일상 기능 회복"],
+  ["통증관리", "통증 관리"],
+  ["자세교정", "자세·균형"],
+  ["체형관리", "자세·균형"],
+  ["스포츠재활", "스포츠 복귀"],
+  ["시니어운동", "시니어 보행"],
+  ["산전산후", "산전·산후 회복"],
+  ["다이어트", "일상 기능 회복"],
+]);
+
+function normalizePublicCenterCategories(values) {
+  return [...new Set((Array.isArray(values) ? values : []).map((value) => {
+    const category = String(value || "").trim();
+    return PUBLIC_CENTER_CATEGORY_ALIASES.get(category) || category;
+  }).filter(Boolean))];
+}
+
 const sampleCenters = [
   {
     id: "core",
@@ -9,6 +27,7 @@ const sampleCenters = [
     reviews: "128",
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
+    categories: ["허리·골반", "수술 후 회복", "일상 기능 회복"],
     therapist: "김민재 센터장",
     managerCareer: "대학병원 재활의학과 근무\n근골격계 재활운동 지도 9년\n허리·수술 후 일상 복귀 프로그램 운영",
     price: "첫 평가 30,000원",
@@ -30,6 +49,7 @@ const sampleCenters = [
     reviews: "94",
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
+    categories: ["목·어깨", "자세·균형"],
     therapist: "박서연 대표",
     managerCareer: "재활병원 근무\n직장인 자세·목·어깨 운동 지도\n소그룹 자세 분석 프로그램 운영",
     price: "체험 수업 20,000원",
@@ -51,6 +71,7 @@ const sampleCenters = [
     reviews: "76",
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
+    categories: ["수술 후 회복", "시니어 보행"],
     therapist: "이도윤 원장",
     managerCareer: "종합병원 근무\n수술 후 및 시니어 운동 지도\n보행·근력 회복 프로그램 운영",
     price: "방문 상담 무료",
@@ -72,6 +93,7 @@ const sampleCenters = [
     reviews: "61",
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
+    categories: ["목·어깨", "스포츠 복귀"],
     therapist: "최하린 대표",
     managerCareer: "스포츠재활센터 근무\n골프·테니스 컨디셔닝 지도\n어깨 가동성 프로그램 운영",
     price: "스포츠 평가 40,000원",
@@ -257,7 +279,7 @@ function normalizeCenter(center) {
     reviews: center.reviews || "0",
     lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
-    categories: Array.isArray(center.categories) ? center.categories : [],
+    categories: normalizePublicCenterCategories(center.categories),
     therapist: publicOperatorText(center.therapist),
     managerCareer: publicCareerText(center.managerCareer || center.manager_career) || "센터장이 커리어 정보를 준비하고 있습니다.",
     price: center.price || "센터 문의",

@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { normalizeCenterCategories } = require("./_center-categories");
 
 const ADMIN_SESSION_TTL_SECONDS = 15 * 60;
 const ADMIN_COOKIE_NAME = "movemap_admin_session";
@@ -15,6 +16,7 @@ const sampleCenters = [
     reviews: "128",
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
+    categories: ["허리·골반", "수술 후 회복", "일상 기능 회복"],
     therapist: "김민재 센터장",
     price: "첫 평가 30,000원",
     conversion: "전화 상담 가능",
@@ -35,6 +37,7 @@ const sampleCenters = [
     reviews: "94",
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
+    categories: ["목·어깨", "자세·균형"],
     therapist: "박서연 대표",
     price: "체험 수업 20,000원",
     conversion: "예약 후 방문",
@@ -55,6 +58,7 @@ const sampleCenters = [
     reviews: "76",
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
+    categories: ["수술 후 회복", "시니어 보행"],
     therapist: "이도윤 원장",
     price: "방문 상담 무료",
     conversion: "센터 문의",
@@ -75,6 +79,7 @@ const sampleCenters = [
     reviews: "61",
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
+    categories: ["목·어깨", "스포츠 복귀"],
     therapist: "최하린 대표",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
@@ -505,6 +510,29 @@ function clearAdminSessionCookie(req) {
   return `${ADMIN_COOKIE_NAME}=; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=0`;
 }
 
+function centerCategoriesFromRow(row) {
+  const stored = normalizeCenterCategories(row.categories);
+  if (stored.length) return stored;
+
+  const legacyServices = normalizeCenterCategories(row.lead);
+  if (legacyServices.length) return legacyServices;
+
+  const text = [row.lead, ...(row.tags || [])].filter(Boolean).join(" ");
+  const inferred = [
+    /허리|골반/.test(text) && "허리·골반",
+    /목|어깨/.test(text) && "목·어깨",
+    /무릎|발목/.test(text) && "무릎·발목",
+    /수술/.test(text) && "수술 후 회복",
+    /스포츠|골프|테니스|경기 복귀/.test(text) && "스포츠 복귀",
+    /자세|체형|균형/.test(text) && "자세·균형",
+    /시니어|고령|보행/.test(text) && "시니어 보행",
+    /산전|산후/.test(text) && "산전·산후 회복",
+    /통증/.test(text) && "통증 관리",
+    /재활|기능 회복|일상 복귀/.test(text) && "일상 기능 회복",
+  ].filter(Boolean);
+  return [...new Set(inferred)];
+}
+
 function centerFromRow(row, photoUrl = "", photoUrls = []) {
   const { normalizeSchedule, scheduleSummary } = require("./_booking");
   const openingSchedule = normalizeSchedule(row.opening_schedule);
@@ -526,7 +554,7 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     reviews: row.reviews || "0",
     lead: row.lead,
     tags: row.tags || [],
-    categories: row.categories || [],
+    categories: centerCategoriesFromRow(row),
     therapist: String(row.therapist || "")
       .replace(/\s*[·|/–-]?\s*물리치료사\s*출신\s*/g, " ")
       .replace(/\s{2,}/g, " ")

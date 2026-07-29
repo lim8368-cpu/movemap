@@ -48,6 +48,7 @@ function applicationRequest(token = "registration-token") {
       licenseHolderName: "홍길동",
       licenseNumber: "PT-12345",
       licenseImagePath: "registration/registration-session-1/license.png",
+      services: "허리·골반, 수술 후 회복",
       openingSchedule: {
         monday: { closed: false, open: "09:00", close: "20:00" },
         saturday: { closed: false, open: "10:00", close: "15:00" },
@@ -119,6 +120,7 @@ async function testTherapistCenterApplicationUsesAuthenticatedSocialAccount() {
   assert.equal(insertedApplication.owner_password_scrypt, null);
   assert.equal(insertedApplication.applicant_auth_user_id, "auth-user-1");
   assert.equal(insertedApplication.registration_session_id, "registration-session-1");
+  assert.equal(insertedApplication.services, "허리·골반, 수술 후 회복");
   assert.equal("password" in insertedApplication, false);
   assert.equal(registrationConsumed, true);
 }
@@ -181,7 +183,7 @@ async function testApprovalCreatesOwnerMembership() {
     license_holder_name: "홍길동",
     area: "서울 중구",
     address: "서울 중구 세종대로 110",
-    services: "자세교정",
+    services: "자세교정, 스포츠재활",
     opening_schedule: {
       monday: { closed: false, open: "08:00", close: "19:00" },
       saturday: { closed: true, open: "10:00", close: "17:00" },
@@ -227,6 +229,7 @@ async function testApprovalCreatesOwnerMembership() {
   assert.equal(res.body.ownerMembershipCreated, true);
   assert.equal(res.body.ownerAccountCreated, false);
   assert.equal(centerBody.therapist, "홍길동");
+  assert.deepEqual(centerBody.categories, ["자세·균형", "스포츠 복귀"]);
   assert.equal(centerBody.opening_schedule.monday.open, "08:00");
   assert.equal(centerBody.opening_hours, "월 08:00–19:00");
   assert.equal(membershipBody.user_id, "auth-user-1");

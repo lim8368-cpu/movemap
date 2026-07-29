@@ -9,6 +9,7 @@ const {
   normalizeSchedule,
   scheduleSummary,
 } = require("./_booking");
+const { normalizeCenterCategories } = require("./_center-categories");
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -48,8 +49,9 @@ module.exports = async function handler(req, res) {
 
     if (action === "update") {
       const body = await readBody(req);
-      const allowed = ["name", "region", "area", "address", "naver_map_url", "lat", "lng", "lead", "tags", "therapist", "price", "conversion", "plan", "status"];
+      const allowed = ["name", "region", "area", "address", "naver_map_url", "lat", "lng", "lead", "tags", "categories", "therapist", "price", "conversion", "plan", "status"];
       const patch = Object.fromEntries(allowed.filter((key) => body[key] !== undefined).map((key) => [key, body[key]]));
+      if (body.categories !== undefined) patch.categories = normalizeCenterCategories(body.categories);
       patch.updated_at = new Date().toISOString();
       await supabaseRequest("centers", { method: "PATCH", query: `?id=eq.${encodeURIComponent(applicationId)}`, body: patch });
       await recordAuditLog(req, {
@@ -107,6 +109,7 @@ module.exports = async function handler(req, res) {
         lng: item.lng,
         lead: item.services || "센터가 등록한 운동 프로그램 정보입니다.",
         tags: [],
+        categories: normalizeCenterCategories(item.services),
         therapist: item.license_holder_name || `${item.owner_name} 센터장`,
         price: "센터 문의",
         conversion: "신규 등록 센터",

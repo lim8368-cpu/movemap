@@ -19,6 +19,7 @@ const {
   normalizeSchedule,
   scheduleSummary,
 } = require("./_booking");
+const { normalizeCenterCategories } = require("./_center-categories");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -122,6 +123,11 @@ module.exports = async function handler(req, res) {
       return;
     }
     const openingHours = scheduleSummary(openingSchedule);
+    const categories = normalizeCenterCategories(body.services);
+    if (!categories.length) {
+      sendJson(res, 400, { error: "회복 분야를 하나 이상 선택해 주세요." });
+      return;
+    }
 
     const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -183,7 +189,7 @@ module.exports = async function handler(req, res) {
         license_holder_name: therapistBackground ? body.licenseHolderName.trim() : "해당 없음",
         license_number: therapistBackground ? body.licenseNumber.trim() : "해당 없음",
         license_image_path: therapistBackground ? body.licenseImagePath : null,
-        services: body.services || null,
+        services: categories.join(", "),
         opening_schedule: openingSchedule,
         opening_hours: openingHours,
         memo: body.memo || null,

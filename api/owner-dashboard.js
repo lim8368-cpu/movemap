@@ -8,6 +8,7 @@ const {
 } = require("./_shared");
 const { requireOwnerAccess } = require("./_platform-auth");
 const { normalizeSchedule, scheduleSummary } = require("./_booking");
+const { normalizeCenterCategories } = require("./_center-categories");
 
 const EDITABLE_FIELDS = [
   "name",
@@ -26,8 +27,6 @@ const EDITABLE_FIELDS = [
   "booking_slot_minutes",
   "booking_enabled",
 ];
-const ALLOWED_CATEGORIES = new Set(["재활운동", "통증관리", "자세교정", "체형관리", "스포츠재활", "시니어운동", "산전산후", "다이어트"]);
-
 function cleanText(value, maxLength) {
   return String(value || "").trim().slice(0, maxLength);
 }
@@ -124,7 +123,7 @@ module.exports = async function handler(req, res) {
       if (field === "tags") {
         patch.tags = Array.isArray(body.tags) ? body.tags.map((tag) => cleanText(tag, 30)).filter(Boolean).slice(0, 12) : [];
       } else if (field === "categories") {
-        patch.categories = Array.isArray(body.categories) ? [...new Set(body.categories.map((value) => cleanText(value, 20)).filter((value) => ALLOWED_CATEGORIES.has(value)))].slice(0, 8) : [];
+        patch.categories = normalizeCenterCategories(body.categories);
       } else if (field === "opening_schedule") {
         patch.opening_schedule = normalizeSchedule(body.opening_schedule);
         patch.opening_hours = scheduleSummary(patch.opening_schedule);
