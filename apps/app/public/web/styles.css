@@ -1545,7 +1545,8 @@ footer{background:#111}
 }
 
 /* Keep sheet scrolling isolated and tighten the final page rhythm. */
-html{overscroll-behavior-y:none}
+html,
+body{overscroll-behavior-y:none}
 .center-experience-overlay,
 .center-experience-sheet,
 .center-sheet-scroll{overscroll-behavior-y:contain}
