@@ -411,7 +411,7 @@ function setMapGesturesEnabled(enabled) {
   if (!naverMap?.setOptions) return;
   naverMap.setOptions({
     draggable: enabled,
-    scrollWheel: enabled,
+    scrollWheel: false,
     pinchZoom: enabled,
     keyboardShortcuts: enabled,
   });
@@ -1944,6 +1944,7 @@ async function initNaverMap() {
       logoControl: true,
       mapDataControl: false,
       zoomControl: false,
+      scrollWheel: false,
       overlayZoomEffect: "all",
       tileTransition: true,
       tileDuration: 320,
