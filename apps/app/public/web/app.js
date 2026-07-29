@@ -1977,6 +1977,7 @@ function initRehabMarquee() {
   let manualPaused = false;
   let resumeTimer = 0;
   let lastFrame = performance.now();
+  let automaticPosition = viewport.scrollLeft;
 
   const loopDistance = () => {
     const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
@@ -1998,9 +1999,12 @@ function initRehabMarquee() {
     const hoverPaused = hoverCapable.matches && viewport.matches(":hover");
     const focusPaused = viewport.contains(document.activeElement);
     if (!manualPaused && !hoverPaused && !focusPaused && !reducedMotion.matches && !document.hidden) {
-      viewport.scrollLeft += elapsed * 0.032;
+      automaticPosition += elapsed * 0.032;
       const distance = loopDistance();
-      if (distance > 0 && viewport.scrollLeft >= distance) viewport.scrollLeft -= distance;
+      if (distance > 0 && automaticPosition >= distance) automaticPosition -= distance;
+      viewport.scrollLeft = automaticPosition;
+    } else {
+      automaticPosition = viewport.scrollLeft;
     }
     lastFrame = time;
     window.requestAnimationFrame(animate);
