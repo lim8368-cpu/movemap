@@ -827,30 +827,39 @@ body.center-experience-open{overflow:hidden}
 }
 
 /* 20260728: make the signed-in account destination explicit in the header. */
+.user-login-button.signed-in,
 .header-account-link{
-  min-height:38px;
-  padding:0 14px;
+  width:88px;
+  height:40px;
+  min-height:40px;
+  padding:0 10px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  border:1px solid #bcebe5;
+  overflow:hidden;
+  border:1px solid #d8d8d4;
   border-radius:9px;
-  background:#edfafa;
-  color:#0f766e;
-  font-size:13px;
+  background:#fff;
+  color:#111;
+  font-size:12px;
   font-weight:800;
+  text-overflow:ellipsis;
   white-space:nowrap;
   transition:border-color .2s,background .2s,color .2s
 }
+.user-login-button.signed-in:hover,
+.user-login-button.signed-in:focus-visible,
+.header-account-link:focus-visible,
 .header-account-link:hover{
-  border-color:#7dd3c7;
-  background:#dff8f4;
-  color:#0b6b64
+  border-color:#111;
+  outline:0;
+  background:#111;
+  color:#fff
 }
 @media(max-width:640px){
   .header-actions{gap:6px}
-  .user-login-button.signed-in{max-width:82px;padding:0 8px}
-  .header-account-link{min-height:40px;padding:0 10px;font-size:12px}
+  .user-login-button.signed-in,
+  .header-account-link{width:78px;max-width:78px;height:40px;padding:0 6px;font-size:12px}
   .brand-name{font-size:18px}
 }
 
@@ -1247,16 +1256,16 @@ body.center-experience-open{overflow:hidden}
   transform:translateY(-1px);
 }
 .rehab-pill.is-selected{
-  border-color:#0f766e;
-  background:#0f766e;
+  border-color:#111;
+  background:#111;
   color:#fff;
-  box-shadow:0 10px 24px rgba(15,118,110,.18);
+  box-shadow:0 10px 24px rgba(17,17,17,.17);
 }
 .rehab-pill.is-selected b{
   background:#fff;
-  color:#0f766e;
+  color:#111;
 }
-.rehab-pill.is-selected small{color:#d8f4ef}
+.rehab-pill.is-selected small{color:#d8d8d4}
 .rehab-motion-note{
   width:min(1200px,calc(100% - 48px));
   margin:18px auto 0;
