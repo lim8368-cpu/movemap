@@ -1419,10 +1419,14 @@ function renderCenterExperienceRoute(center) {
 }
 
 let centerExperienceCloseTimer = null;
+let centerExperienceFocusTimer = null;
+let centerExperienceRevealFrame = null;
 function openCenterExperience(id, view = "detail") {
   const center = centers.find((item) => item.id === id);
   if (!center || !centerExperienceOverlay || !centerExperienceContent) return;
   window.clearTimeout(centerExperienceCloseTimer);
+  window.clearTimeout(centerExperienceFocusTimer);
+  if (centerExperienceRevealFrame) window.cancelAnimationFrame(centerExperienceRevealFrame);
   centerExperienceId = id;
   centerExperienceView = view;
   if (view === "detail") {
@@ -1432,26 +1436,43 @@ function openCenterExperience(id, view = "detail") {
     routeLocationMessage = "";
     resetRoutePlaceSearch();
   }
+  const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  document.body.style.setProperty("--center-experience-scrollbar-width", `${scrollbarWidth}px`);
+  centerExperienceOverlay.classList.remove("is-visible");
   centerExperienceOverlay.hidden = false;
-  document.body.classList.add("center-experience-open");
-  window.requestAnimationFrame(() => centerExperienceOverlay.classList.add("is-visible"));
   if (view === "route") renderCenterExperienceRoute(center);
   else {
     renderCenterExperienceDetail(center);
     trackEvent("center_view", center.id, "detail_sheet");
   }
+  document.body.classList.add("center-experience-open");
+  centerExperienceSheet.getBoundingClientRect();
+  centerExperienceRevealFrame = window.requestAnimationFrame(() => {
+    centerExperienceRevealFrame = window.requestAnimationFrame(() => {
+      centerExperienceOverlay.classList.add("is-visible");
+      centerExperienceRevealFrame = null;
+    });
+  });
   const sheetScroller = centerExperienceContent.querySelector(".center-sheet-scroll");
   if (sheetScroller) sheetScroller.scrollTop = 0;
   centerExperienceSheet.scrollTop = 0;
-  window.setTimeout(() => centerExperienceContent.querySelector(".center-sheet-close")?.focus(), 50);
+  centerExperienceFocusTimer = window.setTimeout(() => {
+    centerExperienceContent.querySelector(".center-sheet-close")?.focus({ preventScroll: true });
+  }, 320);
 }
 
 function closeCenterExperience() {
   if (!centerExperienceOverlay || centerExperienceOverlay.hidden) return;
+  window.clearTimeout(centerExperienceFocusTimer);
+  if (centerExperienceRevealFrame) {
+    window.cancelAnimationFrame(centerExperienceRevealFrame);
+    centerExperienceRevealFrame = null;
+  }
   centerExperienceOverlay.classList.remove("is-visible");
   document.body.classList.remove("center-experience-open");
   centerExperienceCloseTimer = window.setTimeout(() => {
     centerExperienceOverlay.hidden = true;
+    document.body.style.removeProperty("--center-experience-scrollbar-width");
     centerExperienceContent.innerHTML = "";
     centerExperienceId = "";
     centerExperienceView = "detail";
@@ -1467,7 +1488,7 @@ function closeCenterExperience() {
     routeMiniMap = null;
     routeMiniMarker = null;
     routeMiniOriginMarker = null;
-  }, 180);
+  }, 300);
 }
 
 function showCenterInfoWindow(center) {
