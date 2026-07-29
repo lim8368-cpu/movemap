@@ -77,9 +77,11 @@
         </div>
         <p class="rehab-guide"><span aria-hidden="true">↗</span> 선택하면 지도 검색으로 연결됩니다</p>
       </div>
-      <div class="rehab-marquee" aria-label="재활 분야 자동 슬라이드">
-        <div class="rehab-track">
-          <div class="rehab-group">
+      <div class="rehab-slider">
+        <button class="rehab-arrow rehab-arrow-previous" type="button" data-rehab-direction="-1" aria-label="이전 재활 분야 보기"><span aria-hidden="true">‹</span></button>
+        <div class="rehab-marquee" aria-label="재활 분야 자동 슬라이드">
+          <div class="rehab-track">
+            <div class="rehab-group">
             <a class="rehab-pill" href="#search" data-category="허리·골반"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></b><span>허리·골반<small>통증 이후 움직임 회복</small></span></a>
             <a class="rehab-pill" href="#search" data-category="목·어깨"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart-pulse"></use></svg></b><span>목·어깨<small>가동성과 자세 개선</small></span></a>
             <a class="rehab-pill" href="#search" data-category="무릎·발목"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#accessibility"></use></svg></b><span>무릎·발목<small>보행과 하체 기능 회복</small></span></a>
@@ -90,8 +92,8 @@
             <a class="rehab-pill" href="#search" data-category="산전·산후 회복"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#baby"></use></svg></b><span>산전·산후 회복<small>회복 단계별 전문 관리</small></span></a>
             <a class="rehab-pill" href="#search" data-category="통증 관리"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart-pulse"></use></svg></b><span>통증 관리<small>원인 중심의 맞춤 운동</small></span></a>
             <a class="rehab-pill" href="#search" data-category="일상 기능 회복"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></b><span>일상 기능 회복<small>다시 일상으로 돌아가기</small></span></a>
-          </div>
-          <div class="rehab-group" aria-hidden="true">
+            </div>
+            <div class="rehab-group" aria-hidden="true">
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="허리·골반"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></b><span>허리·골반<small>통증 이후 움직임 회복</small></span></a>
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="목·어깨"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart-pulse"></use></svg></b><span>목·어깨<small>가동성과 자세 개선</small></span></a>
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="무릎·발목"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#accessibility"></use></svg></b><span>무릎·발목<small>보행과 하체 기능 회복</small></span></a>
@@ -102,10 +104,12 @@
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="산전·산후 회복"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#baby"></use></svg></b><span>산전·산후 회복<small>회복 단계별 전문 관리</small></span></a>
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="통증 관리"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart-pulse"></use></svg></b><span>통증 관리<small>원인 중심의 맞춤 운동</small></span></a>
             <a class="rehab-pill" href="#search" tabindex="-1" data-category="일상 기능 회복"><b><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></b><span>일상 기능 회복<small>다시 일상으로 돌아가기</small></span></a>
+            </div>
           </div>
         </div>
+        <button class="rehab-arrow rehab-arrow-next" type="button" data-rehab-direction="1" aria-label="다음 재활 분야 보기"><span aria-hidden="true">›</span></button>
       </div>
-      <p class="rehab-motion-note">자동으로 움직입니다 · 직접 좌우로 밀어볼 수 있어요</p>
+      <p class="rehab-motion-note"><span class="rehab-note-desktop">자동으로 움직입니다 · 양끝 화살표로 자유롭게 탐색하세요</span><span class="rehab-note-touch">자동으로 움직입니다 · 직접 좌우로 밀어볼 수 있어요</span></p>
     </section>
 
     <section class="section featured">
@@ -199,7 +203,7 @@
       <div id="centerExperienceContent" class="center-experience-content" aria-live="polite"></div>
     </aside>
   </div>
-  <script src="./app.js?v=20260729-unified-rehab-categories"></script>
+  <script src="./app.js?v=20260729-desktop-carousel-controls"></script>
   <script>document.querySelector('.menu-toggle').addEventListener('click',function(){const open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));document.querySelector('.main-nav').classList.toggle('open',!open)});</script>
 </body>
 </html>

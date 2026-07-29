@@ -1995,7 +1995,7 @@ function initRehabMarquee() {
   if (!viewport || !track || !firstGroup) return;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const hoverCapable = window.matchMedia("(hover: hover)");
+  const navigationButtons = document.querySelectorAll("[data-rehab-direction]");
   let manualPaused = false;
   let resumeTimer = 0;
   let lastFrame = performance.now();
@@ -2004,6 +2004,11 @@ function initRehabMarquee() {
   const loopDistance = () => {
     const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
     return firstGroup.getBoundingClientRect().width + gap;
+  };
+  const pillDistance = () => {
+    const pill = firstGroup.querySelector(".rehab-pill");
+    const gap = Number.parseFloat(getComputedStyle(firstGroup).columnGap) || 0;
+    return (pill?.getBoundingClientRect().width || 0) + gap;
   };
   const pause = () => {
     window.clearTimeout(resumeTimer);
@@ -2018,9 +2023,8 @@ function initRehabMarquee() {
   };
   const animate = (time) => {
     const elapsed = Math.min(48, Math.max(0, time - lastFrame));
-    const hoverPaused = hoverCapable.matches && viewport.matches(":hover");
     const focusPaused = viewport.contains(document.activeElement);
-    if (!manualPaused && !hoverPaused && !focusPaused && !reducedMotion.matches && !document.hidden) {
+    if (!manualPaused && !focusPaused && !reducedMotion.matches && !document.hidden) {
       automaticPosition += elapsed * 0.032;
       const distance = loopDistance();
       if (distance > 0 && automaticPosition >= distance) automaticPosition -= distance;
@@ -2031,6 +2035,24 @@ function initRehabMarquee() {
     lastFrame = time;
     window.requestAnimationFrame(animate);
   };
+  const moveByOnePill = (direction) => {
+    const step = pillDistance();
+    const distance = loopDistance();
+    if (!step || !distance) return;
+
+    pause();
+    let start = viewport.scrollLeft;
+    if (direction < 0 && start < step) {
+      start += distance;
+      viewport.scrollLeft = start;
+      automaticPosition = start;
+    }
+    viewport.scrollTo({
+      left: start + (direction * step),
+      behavior: reducedMotion.matches ? "auto" : "smooth"
+    });
+    resumeAfter(1100);
+  };
 
   viewport.addEventListener("pointerdown", pause);
   viewport.addEventListener("pointerup", () => resumeAfter(1400));
@@ -2039,6 +2061,11 @@ function initRehabMarquee() {
     pause();
     resumeAfter(1400);
   }, { passive: true });
+  navigationButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      moveByOnePill(Number(button.dataset.rehabDirection) || 1);
+    });
+  });
   document.addEventListener("visibilitychange", () => {
     lastFrame = performance.now();
   });
