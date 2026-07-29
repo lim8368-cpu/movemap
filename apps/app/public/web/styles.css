@@ -160,6 +160,151 @@
   .marker-name{font-size:11.5px}
   .marker-rating{min-height:22px;padding:0 6px;font-size:9px}
 }
+
+/* 20260729: DAIL = Daily Life brand story preview. */
+.home-brand-story{
+  width:min(1320px,calc(100% - 48px));
+  margin:0 auto;
+  padding:126px 0;
+  display:grid;
+  grid-template-columns:1.08fr .92fr;
+  align-items:stretch;
+  gap:76px;
+}
+.home-brand-photo{
+  min-width:0;
+  min-height:660px;
+  margin:0;
+  overflow:hidden;
+  position:relative;
+  background:#e6e6e1;
+}
+.home-brand-photo:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 58%,rgba(7,13,12,.58));
+}
+.home-brand-photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.home-brand-photo figcaption{
+  position:absolute;
+  z-index:1;
+  right:30px;
+  bottom:27px;
+  left:30px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  color:#fff;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.16em;
+}
+.home-brand-photo figcaption span{
+  font-size:13px;
+  font-weight:650;
+  letter-spacing:-.02em;
+}
+.home-brand-copy{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding-right:max(0px,calc((100vw - 1320px)/5));
+}
+.home-brand-copy h2{
+  margin:13px 0 30px;
+  font-size:clamp(40px,4.4vw,62px);
+  line-height:1.14;
+  letter-spacing:-.055em;
+}
+.home-brand-copy h2 em{
+  color:#0d9488;
+  font-style:normal;
+}
+.home-brand-copy>p:not(.kicker){
+  max-width:530px;
+  margin:0;
+  color:#62645f;
+  font-size:17px;
+  line-height:1.78;
+}
+.home-brand-journey{
+  margin:42px 0 0;
+  padding:20px 0;
+  display:flex;
+  align-items:center;
+  gap:17px;
+  border-top:1px solid #dfdfda;
+  border-bottom:1px solid #dfdfda;
+  list-style:none;
+}
+.home-brand-journey li{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#a0a19c;
+  font-size:17px;
+}
+.home-brand-journey li span{
+  color:#999b95;
+  font-size:9px;
+  font-weight:800;
+}
+.home-brand-journey li b{color:#111;font-size:15px}
+.home-brand-link{
+  align-self:flex-start;
+  margin-top:36px;
+  padding:0 0 8px;
+  border-bottom:1px solid #111;
+  font-size:14px;
+  font-weight:800;
+}
+.home-brand-link .ui-icon{color:#0d9488}
+
+@media(max-width:900px){
+  .home-brand-story{
+    grid-template-columns:1fr;
+    gap:52px;
+  }
+  .home-brand-photo{min-height:540px}
+  .home-brand-copy{padding-right:0}
+  .home-brand-copy h2{font-size:52px}
+}
+
+@media(max-width:640px){
+  .home-brand-story{
+    width:100%;
+    padding:80px 20px;
+    gap:42px;
+  }
+  .home-brand-photo{
+    min-height:430px;
+    margin:0 -20px;
+  }
+  .home-brand-photo figcaption{
+    right:20px;
+    bottom:20px;
+    left:20px;
+    align-items:flex-start;
+    flex-direction:column;
+    gap:7px;
+  }
+  .home-brand-copy h2{
+    font-size:39px;
+    line-height:1.18;
+  }
+  .home-brand-copy h2 br:nth-of-type(3){display:none}
+  .home-brand-copy>p:not(.kicker){font-size:15px}
+  .home-brand-journey{gap:9px}
+  .home-brand-journey li{gap:5px;font-size:13px}
+  .home-brand-journey li b{font-size:13px}
+}
 .center-card{
   cursor:pointer;
 }
