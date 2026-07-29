@@ -161,7 +161,7 @@
   .marker-rating{min-height:22px;padding:0 6px;font-size:9px}
 }
 
-/* 20260729: DAIL = ‘다시’의 다 + ‘일상’의 일 brand story. */
+/* 20260729: DAIL — 다시, 일상으로 brand story. */
 .home-brand-story{
   width:min(1320px,calc(100% - 48px));
   margin:0 auto;
