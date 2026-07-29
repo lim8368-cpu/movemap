@@ -2114,6 +2114,42 @@ function initRehabMarquee() {
   window.requestAnimationFrame(animate);
 }
 
+function initStickyHeader() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+  const trackedLinks = [...header.querySelectorAll('.main-nav a[href^="#"]')].map((link) => ({
+    link,
+    section: document.querySelector(link.getAttribute("href")),
+  })).filter((item) => item.section);
+  let updateFrame = 0;
+
+  const update = () => {
+    const scrolled = window.scrollY > 24;
+    header.classList.toggle("is-scrolled", scrolled);
+
+    let activeLink = null;
+    const activationLine = header.getBoundingClientRect().height + 140;
+    trackedLinks.forEach((item) => {
+      if (item.section.getBoundingClientRect().top <= activationLine) activeLink = item.link;
+    });
+    trackedLinks.forEach(({ link }) => {
+      const active = scrolled && link === activeLink;
+      link.classList.toggle("is-active", active);
+      if (active) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+    updateFrame = 0;
+  };
+
+  window.addEventListener("scroll", () => {
+    if (updateFrame) return;
+    updateFrame = window.requestAnimationFrame(update);
+  }, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+  update();
+}
+
+initStickyHeader();
 initRehabMarquee();
 
 checkboxes.forEach((box) => box.addEventListener("change", renderList));

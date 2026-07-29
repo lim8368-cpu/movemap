@@ -1608,3 +1608,94 @@ footer{padding-top:48px}
   .featured .section-row{gap:18px}
   .featured .feature-cards{gap:14px;margin-top:26px}
 }
+
+/* Compact account controls and a calmer sticky navigation state. */
+.site-header{
+  transition:height .24s ease,background .24s ease,border-color .24s ease,box-shadow .24s ease;
+}
+.main-nav{
+  align-items:center;
+  gap:2px;
+  font-size:12px;
+}
+.main-nav a{
+  min-height:34px;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  border-radius:999px;
+  font-weight:650;
+  white-space:nowrap;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.main-nav a:hover,
+.main-nav a:focus-visible{
+  outline:0;
+  background:#f3f3f0;
+  color:#111;
+}
+.header-actions{gap:8px}
+.user-login-button.signed-in,
+.header-account-link{
+  width:auto;
+  max-width:88px;
+  height:34px;
+  min-height:34px;
+  padding:0 11px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:750;
+}
+.header-account-link{min-width:68px}
+.header-actions .button.small{
+  min-height:36px;
+  padding:0 16px;
+  border-radius:999px;
+  font-size:12px;
+}
+.header-logout-button{font-size:11px}
+
+@media(min-width:901px){
+  .site-header.is-scrolled{
+    height:62px;
+    border-bottom-color:transparent;
+    background:rgba(255,255,255,.88);
+    box-shadow:0 10px 30px rgba(17,17,17,.07);
+    -webkit-backdrop-filter:blur(18px) saturate(150%);
+    backdrop-filter:blur(18px) saturate(150%);
+  }
+  .site-header.is-scrolled .brand-mark{transform:scale(.92)}
+  .site-header.is-scrolled .brand-name small{display:none}
+  .site-header.is-scrolled .main-nav{
+    padding:4px;
+    border:1px solid #e7e7e3;
+    border-radius:999px;
+    background:rgba(247,247,245,.94);
+  }
+  .site-header.is-scrolled .main-nav a{
+    min-height:30px;
+    padding:0 12px;
+  }
+  .site-header.is-scrolled .main-nav a.is-active{
+    background:#111;
+    color:#fff;
+    box-shadow:0 4px 12px rgba(17,17,17,.14);
+  }
+}
+
+@media(max-width:640px){
+  .user-login-button.signed-in,
+  .header-account-link{
+    width:auto;
+    max-width:76px;
+    min-width:0;
+    height:40px;
+    min-height:40px;
+    padding:0 9px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .site-header,
+  .main-nav a{transition:none}
+}
