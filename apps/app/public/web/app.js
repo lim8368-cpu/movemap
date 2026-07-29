@@ -417,6 +417,33 @@ function setMapGesturesEnabled(enabled) {
   });
 }
 
+function keepPageScrollingOverCenterMap() {
+  if (!mapArea || !mapElement) return;
+
+  mapArea.addEventListener("wheel", (event) => {
+    const target = event.target;
+    const isMapSurface =
+      target instanceof Node &&
+      (mapElement.contains(target) || mapFallback?.contains(target));
+    if (!isMapSurface || !event.deltaY) return;
+
+    const deltaMultiplier =
+      event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? window.innerHeight
+          : 1;
+
+    event.preventDefault();
+    event.stopPropagation();
+    window.scrollBy({
+      top: event.deltaY * deltaMultiplier,
+      left: 0,
+      behavior: "auto",
+    });
+  }, { capture: true, passive: false });
+}
+
 function isolatePanelGesturesFromMap() {
   const panels = [sidebarPanel, detailPanel].filter(Boolean);
   const startGesture = (event) => {
@@ -2152,6 +2179,7 @@ function initStickyHeader() {
 
 initStickyHeader();
 initRehabMarquee();
+keepPageScrollingOverCenterMap();
 
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
 areaSelect?.addEventListener("change", renderList);
