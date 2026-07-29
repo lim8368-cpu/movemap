@@ -1973,7 +1973,8 @@ function initRehabMarquee() {
   if (!viewport || !track || !firstGroup) return;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let interactionPaused = false;
+  const hoverCapable = window.matchMedia("(hover: hover)");
+  let manualPaused = false;
   let resumeTimer = 0;
   let lastFrame = performance.now();
 
@@ -1983,18 +1984,20 @@ function initRehabMarquee() {
   };
   const pause = () => {
     window.clearTimeout(resumeTimer);
-    interactionPaused = true;
+    manualPaused = true;
   };
   const resumeAfter = (delay = 400) => {
     window.clearTimeout(resumeTimer);
     resumeTimer = window.setTimeout(() => {
-      interactionPaused = false;
+      manualPaused = false;
       lastFrame = performance.now();
     }, delay);
   };
   const animate = (time) => {
     const elapsed = Math.min(48, Math.max(0, time - lastFrame));
-    if (!interactionPaused && !reducedMotion.matches && !document.hidden) {
+    const hoverPaused = hoverCapable.matches && viewport.matches(":hover");
+    const focusPaused = viewport.contains(document.activeElement);
+    if (!manualPaused && !hoverPaused && !focusPaused && !reducedMotion.matches && !document.hidden) {
       viewport.scrollLeft += elapsed * 0.032;
       const distance = loopDistance();
       if (distance > 0 && viewport.scrollLeft >= distance) viewport.scrollLeft -= distance;
@@ -2003,8 +2006,6 @@ function initRehabMarquee() {
     window.requestAnimationFrame(animate);
   };
 
-  viewport.addEventListener("pointerenter", pause);
-  viewport.addEventListener("pointerleave", () => resumeAfter());
   viewport.addEventListener("pointerdown", pause);
   viewport.addEventListener("pointerup", () => resumeAfter(1400));
   viewport.addEventListener("pointercancel", () => resumeAfter(1400));
@@ -2012,10 +2013,6 @@ function initRehabMarquee() {
     pause();
     resumeAfter(1400);
   }, { passive: true });
-  viewport.addEventListener("focusin", pause);
-  viewport.addEventListener("focusout", (event) => {
-    if (!viewport.contains(event.relatedTarget)) resumeAfter();
-  });
   document.addEventListener("visibilitychange", () => {
     lastFrame = performance.now();
   });
