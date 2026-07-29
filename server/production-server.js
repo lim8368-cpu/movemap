@@ -185,6 +185,7 @@ function staticPathFor(pathname) {
   let requested = pathname;
   if (requested === "/") requested = "/index.html";
   if (requested === "/admin/") requested = "/admin/index.html";
+  if (requested === "/brand/") requested = "/brand/index.html";
   if (requested === "/register/") requested = "/register/index.html";
   if (requested === "/center-dashboard/") requested = "/center-dashboard/index.html";
   if (requested === "/account/") requested = "/account/index.html";
@@ -200,6 +201,7 @@ function staticPathFor(pathname) {
 function serveStatic(req, res, url) {
   if (
     url.pathname === "/admin" ||
+    url.pathname === "/brand" ||
     url.pathname === "/register" ||
     url.pathname === "/center-dashboard" ||
     url.pathname === "/account" ||
