@@ -92,6 +92,8 @@ const centerList = document.querySelector("#centerList");
 const resultCount = document.querySelector("#resultCount");
 const detailPanel = document.querySelector("#detailPanel");
 const searchInput = document.querySelector("#searchInput");
+const heroSearchForm = document.querySelector("#heroSearchForm");
+const heroSearchInput = document.querySelector("#heroSearchInput");
 const regionButtons = document.querySelectorAll("[data-region]");
 const checkboxes = document.querySelectorAll(".filter-grid input");
 const areaSelect = document.querySelector("#areaSelect");
@@ -102,6 +104,7 @@ const locateButton = document.querySelector("#locateButton");
 const zoomInButton = document.querySelector("#zoomInButton");
 const zoomOutButton = document.querySelector("#zoomOutButton");
 const sidebarPanel = document.querySelector(".sidebar");
+const mapArea = document.querySelector(".map-area");
 const heroMapElement = document.querySelector("#heroNaverMap");
 const heroMapStatus = document.querySelector("#heroMapStatus");
 const heroLocateButton = document.querySelector("#heroLocateButton");
@@ -580,10 +583,19 @@ async function submitReview(event, centerId) {
   form.reset(); message.textContent = data.message || "후기가 검토 대기 상태로 접수되었습니다.";
 }
 
+function scrollCenterMapIntoView(behavior = "smooth") {
+  if (!mapArea) return;
+  const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height || 0;
+  const top = Math.max(0, window.scrollY + mapArea.getBoundingClientRect().top - headerHeight - 10);
+  window.scrollTo({ top, left: 0, behavior });
+  window.setTimeout(() => refreshNaverMapLayout(naverMap, mapElement), behavior === "smooth" ? 320 : 40);
+}
+
 function openCenterDetail(id) {
   detailPanel.hidden = true;
   detailPanel.innerHTML = "";
   selectCenter(id, { openDetail: true });
+  window.requestAnimationFrame(() => scrollCenterMapIntoView("smooth"));
 }
 
 function mapPopupPhotoMarkup(center) {
@@ -1405,6 +1417,8 @@ function openCenterExperience(id, view = "detail") {
     renderCenterExperienceDetail(center);
     trackEvent("center_view", center.id, "detail_sheet");
   }
+  const sheetScroller = centerExperienceContent.querySelector(".center-sheet-scroll");
+  if (sheetScroller) sheetScroller.scrollTop = 0;
   centerExperienceSheet.scrollTop = 0;
   window.setTimeout(() => centerExperienceContent.querySelector(".center-sheet-close")?.focus(), 50);
 }
@@ -1941,6 +1955,13 @@ document.querySelectorAll("[data-category]").forEach((link) => {
 checkboxes.forEach((box) => box.addEventListener("change", renderList));
 areaSelect?.addEventListener("change", renderList);
 searchInput.addEventListener("input", renderList);
+heroSearchForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  searchInput.value = heroSearchInput?.value.trim() || "";
+  renderList();
+  document.querySelector("#search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => searchInput.focus({ preventScroll: true }), 320);
+});
 mapFallback.addEventListener("click", clearSelectedCenter);
 zoomInButton.addEventListener("click", () => {
   if (naverMap) {

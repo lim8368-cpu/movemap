@@ -23,6 +23,8 @@ const HORIZONTAL_CONTAINMENT_SCRIPT = `
     const contain = () => {
       const root = document.documentElement;
       if (root) {
+        root.classList.add("dail-native-app");
+        root.dataset.dailNativeApp = "true";
         root.style.width = "100%";
         root.style.maxWidth = "100%";
         root.style.overflowX = "hidden";
@@ -150,6 +152,7 @@ export default function App() {
           domStorageEnabled
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
+          applicationNameForUserAgent="DAIL-App"
           allowsBackForwardNavigationGestures
           directionalLockEnabled
           showsHorizontalScrollIndicator={false}
