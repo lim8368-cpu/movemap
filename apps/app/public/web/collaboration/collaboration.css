@@ -330,8 +330,14 @@
   position:absolute;
   right:22px;
 }
-.form-submit button:hover,
-.form-submit button:focus-visible{outline:0;background:var(--collaboration-teal);transform:translateY(-1px)}
+.form-submit button:not(:disabled){
+  background:#111;
+  color:#fff;
+  opacity:1;
+  box-shadow:0 10px 22px rgba(17,17,17,.14);
+}
+.form-submit button:not(:disabled):hover,
+.form-submit button:not(:disabled):focus-visible{outline:0;background:var(--collaboration-teal);transform:translateY(-1px)}
 .form-submit button:disabled{cursor:wait;opacity:.6;transform:none}
 
 .success-panel{
