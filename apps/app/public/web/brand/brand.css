@@ -285,7 +285,7 @@
   font-size:14px;
   line-height:1.78;
 }
-.brand-collaboration>i{
+.brand-collaboration-link{
   width:48px;
   height:48px;
   display:grid;
@@ -293,8 +293,17 @@
   border:1px solid #cbd1cc;
   border-radius:50%;
   color:var(--brand-mint);
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease;
 }
-.brand-collaboration>i .ui-icon{width:20px;height:20px}
+.brand-collaboration-link .ui-icon{width:20px;height:20px}
+.brand-collaboration-link:hover,
+.brand-collaboration-link:focus-visible{
+  outline:0;
+  border-color:var(--brand-navy);
+  background:var(--brand-navy);
+  color:#fff;
+  transform:translateX(3px);
+}
 
 .daily-moments{
   padding:140px max(24px,calc((100% - 1200px)/2));
@@ -647,7 +656,18 @@
     gap:24px;
   }
   .brand-collaboration>span{padding-top:0}
-  .brand-collaboration>i{display:none}
+  .brand-collaboration-link{
+    width:auto;
+    height:48px;
+    justify-self:stretch;
+    border-radius:999px;
+  }
+  .brand-collaboration-link:before{
+    content:"협업 제안 보내기";
+    margin-right:10px;
+    font-size:13px;
+    font-weight:800;
+  }
   .daily-moments-grid{margin-top:50px;grid-template-columns:1fr;grid-template-rows:none}
   .daily-moment{height:430px}
   .daily-moment-commute{grid-row:auto}
@@ -693,5 +713,6 @@
 
 @media(prefers-reduced-motion:reduce){
   .brand-story-page *{scroll-behavior:auto!important}
-  .daily-moment img{transition:none}
+  .daily-moment img,
+  .brand-collaboration-link{transition:none}
 }
