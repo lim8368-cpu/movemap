@@ -15,7 +15,6 @@ const COLLABORATION_TYPES = new Set([
   "service-partnership",
   "center-program",
   "product-brand",
-  "research-institution",
   "other",
 ]);
 
