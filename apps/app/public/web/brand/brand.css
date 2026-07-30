@@ -148,6 +148,154 @@
   letter-spacing:-.025em;
 }
 
+.brand-role{
+  padding:150px max(24px,calc((100% - 1120px)/2));
+  background:#f0f4f2;
+}
+.brand-role-intro{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  align-items:end;
+  gap:90px;
+}
+.brand-role-intro>p{
+  margin:0 0 4px;
+  color:#575b56;
+  font-size:18px;
+  line-height:1.82;
+  letter-spacing:-.02em;
+}
+.brand-role-problems{
+  margin-top:74px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+.brand-role-card{
+  min-height:430px;
+  padding:38px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #d9ded9;
+  background:#fff;
+}
+.brand-role-center{background:#e3ece9}
+.brand-role-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.brand-role-card-top>span,
+.brand-platform-position span,
+.brand-collaboration>span{
+  color:#737872;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.17em;
+}
+.brand-role-card-top>i{
+  width:50px;
+  height:50px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#f1f5f3;
+  color:var(--brand-mint);
+}
+.brand-role-center .brand-role-card-top>i{background:#fff}
+.brand-role-card-top .ui-icon{width:22px;height:22px}
+.brand-role-label{
+  margin:74px 0 14px;
+  color:var(--brand-mint);
+  font-size:12px;
+  font-weight:800;
+}
+.brand-role-card h3{
+  margin:0;
+  font-size:clamp(29px,3vw,40px);
+  line-height:1.24;
+  letter-spacing:-.045em;
+}
+.brand-role-card>p:last-child{
+  max-width:440px;
+  margin:auto 0 0;
+  color:#646963;
+  font-size:15px;
+  line-height:1.72;
+}
+.brand-platform-position{
+  margin-top:20px;
+  padding:44px 40px;
+  display:grid;
+  grid-template-columns:.66fr 1.25fr .9fr;
+  align-items:start;
+  gap:42px;
+  background:var(--brand-navy);
+  color:#fff;
+}
+.brand-platform-position>div{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.brand-platform-position span{color:var(--brand-mint-on-dark)}
+.brand-platform-position i{
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#1b2d43;
+  color:var(--brand-mint-on-dark);
+}
+.brand-platform-position .ui-icon{width:17px;height:17px}
+.brand-platform-position h3{
+  margin:0;
+  font-size:clamp(23px,2.5vw,34px);
+  line-height:1.4;
+  letter-spacing:-.035em;
+}
+.brand-platform-position>p{
+  margin:2px 0 0;
+  color:#b4bec8;
+  font-size:14px;
+  line-height:1.76;
+}
+.brand-collaboration{
+  margin-top:20px;
+  padding:38px 40px;
+  display:grid;
+  grid-template-columns:.55fr 1.35fr 50px;
+  align-items:start;
+  gap:44px;
+  border:1px solid #d8ddd8;
+  background:#fff;
+}
+.brand-collaboration>span{padding-top:8px;color:var(--brand-mint)}
+.brand-collaboration h3{
+  margin:0;
+  font-size:clamp(23px,2.6vw,34px);
+  line-height:1.4;
+  letter-spacing:-.035em;
+}
+.brand-collaboration p{
+  max-width:720px;
+  margin:20px 0 0;
+  color:#666a65;
+  font-size:14px;
+  line-height:1.78;
+}
+.brand-collaboration>i{
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  border:1px solid #cbd1cc;
+  border-radius:50%;
+  color:var(--brand-mint);
+}
+.brand-collaboration>i .ui-icon{width:20px;height:20px}
+
 .daily-moments{
   padding:140px max(24px,calc((100% - 1200px)/2));
   background:var(--brand-paper);
@@ -446,6 +594,9 @@
   }
   .brand-hero h1{font-size:76px}
   .brand-hero-photo{height:560px}
+  .brand-role-intro{gap:54px}
+  .brand-platform-position{grid-template-columns:.58fr 1.2fr 1fr;gap:28px}
+  .brand-collaboration{grid-template-columns:.44fr 1.4fr 48px;gap:28px}
   .brand-symbol-section{grid-template-columns:1fr;gap:60px}
   .symbol-intro>p{max-width:700px}
   .symbol-board{width:min(620px,100%);margin:auto}
@@ -469,6 +620,7 @@
   .brand-hero-photo{height:470px;margin:0 -20px}
   .brand-manifesto,
   .brand-meaning,
+  .brand-role,
   .daily-moments,
   .brand-journey,
   .brand-symbol-section,
@@ -478,6 +630,24 @@
   .brand-section-heading h2{font-size:clamp(38px,12vw,52px)}
   .brand-manifesto-body{margin-top:50px;grid-template-columns:1fr;gap:30px}
   .meaning-copy{margin-top:40px;font-size:17px}
+  .brand-role-intro{grid-template-columns:1fr;gap:34px}
+  .brand-role-intro>p{font-size:16px}
+  .brand-role-problems{margin-top:52px;grid-template-columns:1fr}
+  .brand-role-card{min-height:380px;padding:30px 26px}
+  .brand-role-label{margin-top:52px}
+  .brand-platform-position{
+    padding:34px 26px;
+    grid-template-columns:1fr;
+    gap:25px;
+  }
+  .brand-platform-position h3 br{display:none}
+  .brand-collaboration{
+    padding:34px 26px;
+    grid-template-columns:1fr;
+    gap:24px;
+  }
+  .brand-collaboration>span{padding-top:0}
+  .brand-collaboration>i{display:none}
   .daily-moments-grid{margin-top:50px;grid-template-columns:1fr;grid-template-rows:none}
   .daily-moment{height:430px}
   .daily-moment-commute{grid-row:auto}
