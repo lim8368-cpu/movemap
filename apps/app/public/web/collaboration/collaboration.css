@@ -144,8 +144,8 @@
 
 .collaboration-form-card fieldset{
   min-width:0;
-  margin:0;
-  padding:54px 0;
+  margin:54px 0 0;
+  padding:0 0 54px;
   border:0;
   border-bottom:1px solid #dedfdb;
 }
@@ -387,7 +387,7 @@
   .collaboration-guide h2{font-size:30px}
   .collaboration-form-card{margin:0;padding:38px 20px 45px;border-radius:22px;box-shadow:0 14px 36px rgba(17,17,17,.05)}
   .form-heading h2{font-size:31px}
-  .collaboration-form-card fieldset{padding:46px 0}
+  .collaboration-form-card fieldset{margin-top:44px;padding:0 0 46px}
   .collaboration-form-card legend{margin-bottom:32px}
   .form-grid{grid-template-columns:1fr}
   .collaboration-options{gap:7px}
