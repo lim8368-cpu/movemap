@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="../mobile-containment.css?v=20260729-monochrome-rehab" />
   <link rel="stylesheet" href="../assets/ui-icons.css?v=20260721-icons" />
   <link rel="stylesheet" href="./brand.css?v=20260730-brand-role" />
+  <link rel="stylesheet" href="../assets/site-header.css?v=20260802-shared-header2" />
+  <script defer src="../assets/site-header.js?v=20260802-shared-header2"></script>
 </head>
 <body class="brand-story-page">
   <header class="site-header">
@@ -18,15 +20,16 @@
       <span class="brand-mark" aria-hidden="true"><span></span></span>
       <span class="brand-name">DAIL<small>다시 일상으로</small></span>
     </a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="brandMainNav">메뉴</button>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="brandMainNav" aria-label="메뉴 열기">메뉴</button>
     <nav id="brandMainNav" class="main-nav" aria-label="주요 메뉴">
       <a href="/#search">지도 검색</a>
-      <a href="/#centers">센터 목록</a>
-      <a class="is-current" href="/brand/" aria-current="page">브랜드 이야기</a>
+      <a href="/#centers">전문 분야</a>
+      <span class="nav-dropdown"><a class="is-current" href="/brand/" aria-current="page" aria-haspopup="true">브랜드 이야기</a><span class="nav-submenu"><a href="/brand/">브랜드 이야기 보기</a><a href="/collaboration/">협업 제안</a></span></span>
       <a href="/register/">센터 등록</a>
+      <a href="/#app" data-web-only>모바일 앱</a>
     </nav>
     <div class="header-actions">
-      <a class="text-link" href="/account/">마이페이지</a>
+      <a class="shared-account-link" data-shared-account href="/?login=1">로그인</a>
       <a class="button primary small" href="/#search">센터 찾기</a>
     </div>
   </header>
@@ -247,20 +250,5 @@
     <p class="copyright">© 2026 DAIL. All rights reserved.</p>
   </footer>
 
-  <script>
-    (() => {
-      const toggle = document.querySelector(".menu-toggle");
-      const nav = document.getElementById("brandMainNav");
-      if (!toggle || !nav) return;
-      toggle.addEventListener("click", () => {
-        const open = nav.classList.toggle("open");
-        toggle.setAttribute("aria-expanded", String(open));
-      });
-      nav.addEventListener("click", () => {
-        nav.classList.remove("open");
-        toggle.setAttribute("aria-expanded", "false");
-      });
-    })();
-  </script>
 </body>
 </html>
