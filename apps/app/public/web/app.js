@@ -2213,24 +2213,6 @@ locateButton.addEventListener("click", () => {
   centerMapOnUser();
 });
 heroLocateButton?.addEventListener("click", locateHeroMap);
-document.querySelectorAll("[data-feature-center]").forEach(card => {
-  const showOnMap = () => {
-    const centerName = card.querySelector("h3")?.textContent.trim();
-    const matchedCenter = centers.find(center => center.id === card.dataset.featureCenter) || centers.find(center => center.name === centerName);
-    if (!matchedCenter) return;
-    const searchSection = document.querySelector("#search");
-    searchSection.scrollIntoView({ behavior: "auto", block: "start" });
-    window.setTimeout(() => {
-      openCenterDetail(matchedCenter.id);
-      searchSection.scrollIntoView({ behavior: "auto", block: "start" });
-    }, 80);
-  };
-  card.addEventListener("click", showOnMap);
-  card.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showOnMap(); }
-  });
-});
-
 async function initApp() {
   await loadPublicConfig();
   configureMobileDownloadLinks();
