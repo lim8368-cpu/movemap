@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
   Alert,
@@ -47,6 +48,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
         style.id = "dail-native-presentation";
         style.textContent = \`
           html.dail-native-app, html.dail-native-app body { overscroll-behavior: none; }
+          html.dail-native-app:not(.dail-app-view-map) body { padding-bottom: 104px !important; }
           html.dail-native-app body > header,
           html.dail-native-app body > footer { display: none !important; }
           html.dail-native-app [data-web-only] { display: none !important; }
@@ -137,7 +139,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
           }
           html.dail-app-view-map #search .map-toolbar { top: 126px !important; right: 12px !important; }
           html.dail-app-view-map #search .map-status { top: 128px !important; max-width: calc(100% - 130px); }
-          html.dail-app-view-map #search .detail-panel { bottom: 12px !important; }
+          html.dail-app-view-map #search .detail-panel { bottom: 98px !important; }
 
           html.dail-app-view-saved .account-hero,
           html.dail-app-view-saved .account-grid { display: none !important; }
@@ -160,7 +162,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
           html.dail-app-view-login main#top,
           html.dail-app-view-login body > footer { display: none !important; }
           html.dail-app-view-login body { min-height: 100dvh; background: #f7f7f5 !important; }
-          html.dail-app-view-login .auth-overlay { padding: 14px !important; background: #f7f7f5 !important; }
+          html.dail-app-view-login .auth-overlay { padding: 14px 14px 104px !important; background: #f7f7f5 !important; }
           html.dail-app-view-login .auth-modal { max-height: calc(100dvh - 28px) !important; border-radius: 22px !important; }
         \`;
         (document.head || root).appendChild(style);
@@ -618,31 +620,43 @@ export default function App() {
         </View>
       )}
 
-      <View style={styles.tabBar} accessibilityRole="tablist">
-        {TAB_SCREENS.map((tabScreen) => {
-          const active = activeScreen === tabScreen.id;
-          return (
-            <TouchableOpacity
-              key={tabScreen.id}
-              style={styles.tab}
-              onPress={() => openScreen(tabScreen)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              activeOpacity={0.72}
-            >
-              <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
-                <Ionicons
-                  name={active ? tabScreen.activeIcon : tabScreen.icon}
-                  size={21}
-                  color={active ? "#ffffff" : "#737a76"}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                />
-              </View>
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabScreen.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.tabDock} pointerEvents="box-none">
+        <View style={styles.tabGlassShadow}>
+          <BlurView
+            intensity={Platform.OS === "ios" ? 78 : 36}
+            tint={Platform.OS === "ios" ? "systemChromeMaterialLight" : "light"}
+            experimentalBlurMethod={Platform.OS === "android" ? "none" : undefined}
+            style={styles.tabGlass}
+          >
+            <View style={styles.tabGlassHighlight} pointerEvents="none" />
+            <View style={styles.tabBar} accessibilityRole="tablist">
+              {TAB_SCREENS.map((tabScreen) => {
+                const active = activeScreen === tabScreen.id;
+                return (
+                  <TouchableOpacity
+                    key={tabScreen.id}
+                    style={[styles.tab, active && styles.tabActive]}
+                    onPress={() => openScreen(tabScreen)}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: active }}
+                    activeOpacity={0.72}
+                  >
+                    <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
+                      <Ionicons
+                        name={active ? tabScreen.activeIcon : tabScreen.icon}
+                        size={21}
+                        color={active ? "#111111" : "#686d69"}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                      />
+                    </View>
+                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabScreen.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </BlurView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -660,7 +674,7 @@ const styles = StyleSheet.create({
   homeContent: {
     paddingHorizontal: 18,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 116,
   },
   homeHeader: {
     minHeight: 58,
@@ -1037,19 +1051,64 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
   },
+  tabDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: Platform.OS === "ios" ? 8 : 10,
+    zIndex: 50,
+    paddingHorizontal: 12,
+  },
+  tabGlassShadow: {
+    minHeight: 72,
+    borderRadius: 31,
+    backgroundColor: "rgba(248,248,246,.58)",
+    shadowColor: "#0b1720",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: Platform.OS === "ios" ? 0.2 : 0.12,
+    shadowRadius: 22,
+    elevation: 16,
+  },
+  tabGlass: {
+    minHeight: 72,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,.88)",
+    borderRadius: 31,
+    backgroundColor: "rgba(249,249,247,.46)",
+  },
+  tabGlassHighlight: {
+    position: "absolute",
+    top: 1,
+    left: 24,
+    right: 24,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,.96)",
+  },
   tabBar: {
     minHeight: 70,
-    paddingTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
     flexDirection: "row",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#d9dbd7",
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "transparent",
+    borderRadius: 24,
+  },
+  tabActive: {
+    borderColor: "rgba(255,255,255,.86)",
+    backgroundColor: "rgba(255,255,255,.58)",
+    shadowColor: "#111111",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   tabIconWrap: {
     width: 36,
@@ -1059,7 +1118,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tabIconWrapActive: {
-    backgroundColor: "#111111",
+    backgroundColor: "rgba(255,255,255,.42)",
   },
   tabText: {
     color: "#72756f",
