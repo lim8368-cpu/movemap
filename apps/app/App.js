@@ -393,7 +393,7 @@ function HomeScreen({ onOpen }) {
               <Ionicons
                 name={action.icon}
                 size={23}
-                color={action.primary ? "#ffffff" : "#265f52"}
+                color={action.primary ? "#ffffff" : "#158187"}
               />
             </View>
             <View style={styles.actionCopy}>
@@ -411,7 +411,7 @@ function HomeScreen({ onOpen }) {
               <Ionicons
                 name="arrow-forward"
                 size={16}
-                color={action.primary ? "#111111" : "#3b423f"}
+                color={action.primary ? "#111111" : "#343434"}
               />
             </View>
           </TouchableOpacity>
@@ -425,7 +425,7 @@ function HomeScreen({ onOpen }) {
         activeOpacity={0.82}
       >
         <View style={styles.trustIcon}>
-          <Ionicons name="shield-checkmark-outline" size={22} color="#265f52" />
+          <Ionicons name="shield-checkmark-outline" size={22} color="#158187" />
         </View>
         <View style={styles.trustCopy}>
           <Text style={styles.trustTitle}>전문 자격 서류를 확인한 센터만</Text>
@@ -587,7 +587,7 @@ export default function App() {
 
             {loading ? (
               <View style={styles.loadingOverlay} pointerEvents="none">
-                <ActivityIndicator size="large" color="#2f7d69" />
+                <ActivityIndicator size="large" color="#158187" />
                 <Text style={styles.loadingText}>{screen.title} 화면을 불러오는 중입니다</Text>
               </View>
             ) : null}
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     width: 21,
     height: 21,
     borderWidth: 2,
-    borderColor: "#78b6a7",
+    borderColor: "#50a1a5",
     borderRadius: 11,
   },
   homeBrandDot: {
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#78b6a7",
+    backgroundColor: "#50a1a5",
   },
   homeBrandName: {
     color: "#111111",
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     width: 170,
     height: 170,
     borderRadius: 85,
-    backgroundColor: "rgba(91,153,137,.28)",
+    backgroundColor: "rgba(21,129,135,.22)",
   },
   homeHeroGlowTwo: {
     position: "absolute",
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
   },
   homeHeroEyebrow: {
     marginBottom: 12,
-    color: "#8ac4b6",
+    color: "#50a1a5",
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1.5,
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
   },
   homeSectionEyebrow: {
     marginBottom: 5,
-    color: "#2f7d69",
+    color: "#158187",
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.4,
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   actionCardPrimary: {
-    borderColor: "#315f54",
-    backgroundColor: "#315f54",
+    borderColor: "#111111",
+    backgroundColor: "#111111",
   },
   actionIcon: {
     width: 43,
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "#edf3f0",
+    backgroundColor: "#f3f9f9",
   },
   actionIconPrimary: {
     backgroundColor: "rgba(255,255,255,.16)",
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
   },
   actionEyebrow: {
     marginBottom: 4,
-    color: "#698077",
+    color: "#666963",
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.2,
@@ -852,7 +852,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   actionDescriptionOnDark: {
-    color: "#d5e1dc",
+    color: "#d4d4cf",
   },
   actionArrow: {
     position: "absolute",
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "#d9dedb",
     borderRadius: 20,
-    backgroundColor: "#eef3f0",
+    backgroundColor: "#f3f9f9",
   },
   trustIcon: {
     width: 42,
@@ -892,13 +892,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   trustTitle: {
-    color: "#1b2b26",
+    color: "#111111",
     fontSize: 13,
     fontWeight: "900",
   },
   trustDescription: {
     marginTop: 5,
-    color: "#66716c",
+    color: "#666963",
     fontSize: 10,
     fontWeight: "600",
     lineHeight: 15,
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderWidth: 3,
-    borderColor: "#79b7a7",
+    borderColor: "#50a1a5",
     borderRadius: 5,
   },
   screenBackButton: {
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   loadingText: {
-    color: "#607069",
+    color: "#666963",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1006,13 +1006,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2eae8",
   },
   errorTitle: {
-    color: "#17211d",
+    color: "#111111",
     fontSize: 20,
     fontWeight: "900",
   },
   errorText: {
     marginTop: 8,
-    color: "#607069",
+    color: "#666963",
     fontSize: 14,
     textAlign: "center",
   },
@@ -1030,7 +1030,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "#315f54",
+    backgroundColor: "#111111",
   },
   retryButtonText: {
     color: "#ffffff",
@@ -1059,14 +1059,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tabIconWrapActive: {
-    backgroundColor: "#315f54",
+    backgroundColor: "#111111",
   },
   tabText: {
-    color: "#777d79",
+    color: "#72756f",
     fontSize: 10,
     fontWeight: "800",
   },
   tabTextActive: {
-    color: "#234e43",
+    color: "#111111",
   },
 });
