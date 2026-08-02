@@ -260,7 +260,7 @@ function formatBookingDateTime(startAt) {
 
 function publicOperatorText(value) {
   const text = String(value || "")
-    .replace(/\s*[·|/–-]?\s*물리치료사\s*출신\s*/g, " ")
+    .replace(/\s*[·|/–-]?\s*물리치료사(?:\s*면허\s*보유|\s*출신)?(?:\s*\d+\s*년)?\s*/g, " ")
     .replace(/\s{2,}/g, " ")
     .replace(/\s*[·|/–-]\s*$/g, "")
     .trim();

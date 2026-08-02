@@ -559,7 +559,7 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     lead: row.lead,
     tags: row.tags || [],
     categories: centerCategoriesFromRow(row),
-    physicalTherapistVerified: row.therapist_background === true,
+    physicalTherapistVerified: row.therapist_background === true || /물리치료사/.test(`${row.therapist || ""} ${row.manager_career || ""}`),
     therapist: String(row.therapist || "")
       .replace(/\s*[·|/–-]?\s*물리치료사\s*출신\s*/g, " ")
       .replace(/\s{2,}/g, " ")
