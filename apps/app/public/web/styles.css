@@ -1825,3 +1825,12 @@ footer{padding-top:48px}
 }
 
 @media(prefers-reduced-motion:reduce){.nav-submenu{transition:none}}
+
+@media(hover:none){
+  .feature-card:hover{
+    transform:none;
+    border-color:#dfdfdb;
+    box-shadow:none;
+  }
+  .feature-card:hover .feature-body>button{background:#111;color:#fff}
+}
