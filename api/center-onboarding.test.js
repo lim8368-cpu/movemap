@@ -125,7 +125,9 @@ async function testTherapistCenterApplicationUsesAuthenticatedSocialAccount() {
   assert.equal(registrationConsumed, true);
 }
 
-async function testGeneralCenterApplicationIsRejected() {
+async function testSportsScienceCenterApplicationUsesDegreeCertificateAndLegacyScheduleFallback() {
+  let insertedApplication;
+  let applicationPosts = 0;
   global.fetch = async function (url, init = {}) {
     const parsed = new URL(url);
     const method = init.method || "GET";
@@ -137,22 +139,50 @@ async function testGeneralCenterApplicationIsRejected() {
       return jsonResponse([{
         id: "registration-session-1",
         ip_hash: privacyHash("unknown", "registration-ip"),
-        upload_paths: [],
+        upload_paths: ["registration/registration-session-1/qualification/degree.pdf"],
         expires_at: new Date(Date.now() + 60_000).toISOString(),
         consumed_at: null,
       }]);
     }
+    if (table === "registration_sessions" && method === "PATCH") return jsonResponse(null, 204);
+    if (table === "center_applications" && method === "GET") return jsonResponse([]);
+    if (table === "center_applications" && method === "POST") {
+      applicationPosts += 1;
+      const body = JSON.parse(init.body);
+      if (applicationPosts === 1) {
+        assert.ok(body.opening_schedule);
+        return jsonResponse({ message: "Could not find the 'opening_hours' column of 'center_applications' in the schema cache" }, 400);
+      }
+      insertedApplication = body;
+      return jsonResponse([{ id: "application-sports-1" }], 201);
+    }
+    if (table === "audit_logs" && method === "POST") return jsonResponse([{ id: "audit-sports-1" }], 201);
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
   const req = applicationRequest();
+  req.headers["x-registration-token"] = "sports-registration-token";
+  req.body.qualificationType = "sports_science";
   req.body.therapistBackground = false;
-  delete req.body.licenseHolderName;
-  delete req.body.licenseNumber;
-  delete req.body.licenseImagePath;
+  req.body.qualificationHolderName = "김체육";
+  req.body.qualificationNumber = "석사 · 한국대학교 · 스포츠과학과";
+  req.body.qualificationImagePath = "registration/registration-session-1/qualification/degree.pdf";
+  req.body.degreeLevel = "석사";
+  req.body.degreeSchool = "한국대학교";
+  req.body.degreeMajor = "스포츠과학과";
+  req.body.licenseHolderName = "김체육";
+  req.body.licenseNumber = req.body.qualificationNumber;
+  req.body.licenseImagePath = req.body.qualificationImagePath;
   const res = responseRecorder();
   await centerApplications(req, res);
-  assert.equal(res.statusCode, 403);
-  assert.equal(res.body.code, "therapist_license_required");
+  assert.equal(res.statusCode, 202);
+  assert.equal(applicationPosts, 2);
+  assert.equal(insertedApplication.therapist_background, false);
+  assert.equal(insertedApplication.license_holder_name, "김체육");
+  assert.equal(insertedApplication.license_number, "석사 · 한국대학교 · 스포츠과학과");
+  assert.equal(insertedApplication.license_image_path, "registration/registration-session-1/qualification/degree.pdf");
+  assert.equal("opening_schedule" in insertedApplication, false);
+  assert.match(insertedApplication.memo, /\[DAIL 운영시간\]/);
+  assert.match(insertedApplication.memo, /\[DAIL 운영일정\]/);
 }
 
 async function testCenterApplicationRequiresAuthenticatedAccount() {
@@ -279,7 +309,7 @@ async function testSocialSessionCreatesOwnerDashboardSession() {
   try {
     await testRegistrationSessionIsRequired();
     await testCenterApplicationRequiresAuthenticatedAccount();
-    await testGeneralCenterApplicationIsRejected();
+    await testSportsScienceCenterApplicationUsesDegreeCertificateAndLegacyScheduleFallback();
     await testTherapistCenterApplicationUsesAuthenticatedSocialAccount();
     await testApprovalCreatesOwnerMembership();
     await testSocialSessionCreatesOwnerDashboardSession();

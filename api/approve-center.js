@@ -11,6 +11,25 @@ const {
 } = require("./_booking");
 const { normalizeCenterCategories } = require("./_center-categories");
 
+function applicationSchedule(item) {
+  if (item.opening_schedule && typeof item.opening_schedule === "object") {
+    return normalizeSchedule(item.opening_schedule);
+  }
+  const match = String(item.memo || "").match(/\[DAIL 운영일정\]\s*([^\n]+)/);
+  if (match) {
+    try {
+      return normalizeSchedule(JSON.parse(match[1]));
+    } catch {}
+  }
+  return normalizeSchedule({});
+}
+
+function applicationOpeningHours(item, schedule) {
+  if (item.opening_hours) return item.opening_hours;
+  const match = String(item.memo || "").match(/\[DAIL 운영시간\]\s*([^\n]+)/);
+  return match?.[1]?.trim() || scheduleSummary(schedule);
+}
+
 async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   if (typeof req.body === "string") return JSON.parse(req.body || "{}");
@@ -96,6 +115,7 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 200, { ok: true });
     }
 
+    const approvedSchedule = applicationSchedule(item);
     const centers = await supabaseRequest("centers", {
       method: "POST",
       body: {
@@ -116,8 +136,8 @@ module.exports = async function handler(req, res) {
         plan: "free",
         photo_path: item.photo_path,
         photo_paths: item.photo_paths || (item.photo_path ? [item.photo_path] : []),
-        opening_schedule: normalizeSchedule(item.opening_schedule),
-        opening_hours: item.opening_hours || scheduleSummary(item.opening_schedule),
+        opening_schedule: approvedSchedule,
+        opening_hours: applicationOpeningHours(item, approvedSchedule),
         status: "approved",
       },
     });

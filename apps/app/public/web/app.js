@@ -28,6 +28,7 @@ const sampleCenters = [
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
     categories: ["허리·골반", "수술 후 회복", "일상 기능 회복"],
+    physicalTherapistVerified: true,
     therapist: "김민재 센터장",
     managerCareer: "대학병원 재활의학과 근무\n근골격계 재활운동 지도 9년\n허리·수술 후 일상 복귀 프로그램 운영",
     price: "첫 평가 30,000원",
@@ -50,6 +51,7 @@ const sampleCenters = [
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
     categories: ["목·어깨", "자세·균형"],
+    physicalTherapistVerified: true,
     therapist: "박서연 대표",
     managerCareer: "재활병원 근무\n직장인 자세·목·어깨 운동 지도\n소그룹 자세 분석 프로그램 운영",
     price: "체험 수업 20,000원",
@@ -72,6 +74,7 @@ const sampleCenters = [
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
     categories: ["수술 후 회복", "시니어 보행"],
+    physicalTherapistVerified: true,
     therapist: "이도윤 원장",
     managerCareer: "종합병원 근무\n수술 후 및 시니어 운동 지도\n보행·근력 회복 프로그램 운영",
     price: "방문 상담 무료",
@@ -94,6 +97,7 @@ const sampleCenters = [
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
     categories: ["목·어깨", "스포츠 복귀"],
+    physicalTherapistVerified: true,
     therapist: "최하린 대표",
     managerCareer: "스포츠재활센터 근무\n골프·테니스 컨디셔닝 지도\n어깨 가동성 프로그램 운영",
     price: "스포츠 평가 40,000원",
@@ -280,6 +284,7 @@ function normalizeCenter(center) {
     lead: center.lead || "센터가 등록한 운동 프로그램 정보를 확인해보세요.",
     tags: Array.isArray(center.tags) && center.tags.length ? center.tags : ["운동 관리"],
     categories: normalizePublicCenterCategories(center.categories),
+    physicalTherapistVerified: center.physicalTherapistVerified === true || center.therapistBackground === true,
     therapist: publicOperatorText(center.therapist),
     managerCareer: publicCareerText(center.managerCareer || center.manager_career) || "센터장이 커리어 정보를 준비하고 있습니다.",
     price: center.price || "센터 문의",
@@ -519,6 +524,7 @@ function renderList() {
         <article class="center-card ${center.id === selectedId ? "active" : ""}" data-card-id="${center.id}" tabindex="0" aria-label="${escapeHtml(center.name)} 센터 상세 보기">
           <div class="card-top">
             <div>
+              ${center.physicalTherapistVerified ? `<span class="pt-verification-badge">${uiIcon("badge-check")}물리치료사 면허 확인</span>` : ""}
               <h3>${escapeHtml(center.name)}</h3>
               <p>${escapeHtml(center.lead)}</p>
             </div>
@@ -666,7 +672,7 @@ function centerPopupContent(center) {
     ${mapPopupPhotoMarkup(center)}
     <div class="map-popup-body">
       <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3>${center.distance ? `<span class="map-popup-distance">${escapeHtml(center.distance)}</span>` : ""}</div>
-      <p class="map-popup-category">DAIL 등록 운동센터</p>
+      <p class="map-popup-category">DAIL 등록 운동센터${center.physicalTherapistVerified ? `<b class="pt-inline-badge">${uiIcon("badge-check")} 물리치료사 면허 확인</b>` : ""}</p>
       <p class="map-popup-location">${escapeHtml(center.area)}</p>
       <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
       <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
@@ -965,6 +971,7 @@ function renderCenterExperienceDetail(center) {
     <div class="center-sheet-scroll">
       ${centerPhotoMarkup(center)}
       <section class="center-sheet-summary">
+        ${center.physicalTherapistVerified ? `<span class="pt-verification-badge center-sheet-verification">${uiIcon("badge-check")}물리치료사 면허 확인</span>` : ""}
         <h2>${escapeHtml(center.name)}</h2>
         <p class="center-sheet-rating">${center.rating === "신규"
           ? '<b class="center-sheet-new">신규 센터</b><span>아직 등록된 후기가 없어요</span>'

@@ -54,6 +54,30 @@ function requiredString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function normalizePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+  if (digits.startsWith("02")) {
+    if (digits.length === 9) return `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
+    if (digits.length === 10) return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return "";
+  }
+  if (digits.length === 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  return "";
+}
+
+function scheduleFallbackMemo(memo, openingHours, openingSchedule) {
+  return [
+    String(memo || "").trim(),
+    "[DAIL 운영시간] " + openingHours,
+    "[DAIL 운영일정] " + JSON.stringify(openingSchedule),
+  ].filter(Boolean).join("\n\n");
+}
+
+function missingApplicationScheduleColumns(error) {
+  return /opening_(?:schedule|hours).*column|column.*opening_(?:schedule|hours)/i.test(String(error?.message || ""));
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -96,21 +120,32 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const therapistBackground = body.therapistBackground === true;
-    if (!therapistBackground) {
+    const qualificationType = body.qualificationType || (body.therapistBackground === true ? "physical_therapist" : "");
+    if (!["physical_therapist", "sports_science"].includes(qualificationType)) {
       sendJson(res, 403, {
-        error: "DAIL은 물리치료사 면허 보유자만 센터를 등록할 수 있습니다.",
-        code: "therapist_license_required",
+        error: "물리치료사 면허 또는 체육학 학위 자격을 선택해 주세요.",
+        code: "professional_qualification_required",
       });
       return;
     }
-    const missingLicense = therapistBackground && [
-      "licenseHolderName",
-      "licenseNumber",
-      "licenseImagePath",
-    ].some((field) => !requiredString(body[field]));
-    if (missingLicense) {
-      sendJson(res, 400, { error: "물리치료사 면허 확인 정보를 모두 입력해 주세요." });
+    const therapistBackground = qualificationType === "physical_therapist";
+    const qualificationHolderName = String(body.qualificationHolderName || body.licenseHolderName || "").trim();
+    const qualificationNumber = String(body.qualificationNumber || body.licenseNumber || "").trim();
+    const qualificationImagePath = String(body.qualificationImagePath || body.licenseImagePath || "").trim();
+    const degreeLevel = String(body.degreeLevel || "").trim();
+    const degreeSchool = String(body.degreeSchool || "").trim();
+    const degreeMajor = String(body.degreeMajor || "").trim();
+    const missingCredential = !qualificationHolderName || !qualificationNumber || !qualificationImagePath || (
+      qualificationType === "sports_science" && (
+        !["학사", "석사", "박사"].includes(degreeLevel) || !degreeSchool || !degreeMajor
+      )
+    );
+    if (missingCredential) {
+      sendJson(res, 400, {
+        error: therapistBackground
+          ? "물리치료사 면허 확인 정보를 모두 입력해 주세요."
+          : "체육학 학위 정보와 인증서를 모두 입력해 주세요.",
+      });
       return;
     }
     if (!body.openingSchedule || typeof body.openingSchedule !== "object" || Array.isArray(body.openingSchedule)) {
@@ -134,6 +169,11 @@ module.exports = async function handler(req, res) {
       sendJson(res, 400, { error: "센터장 계정에 사용할 올바른 이메일을 입력해 주세요." });
       return;
     }
+    const phone = normalizePhone(body.phone);
+    if (!phone) {
+      sendJson(res, 400, { error: "전화번호를 010-0000-0000 형식으로 입력해 주세요." });
+      return;
+    }
 
     if (!hasSupabaseConfig()) {
       sendJson(res, 503, { error: "테스트 DB가 아직 연결되지 않았습니다." });
@@ -154,7 +194,7 @@ module.exports = async function handler(req, res) {
     const requestedPaths = [
       body.photoPath,
       ...(Array.isArray(body.photoPaths) ? body.photoPaths : []),
-      body.licenseImagePath,
+      qualificationImagePath,
     ].filter(Boolean);
     const allowedPaths = new Set(secureSession.upload_paths || []);
     const invalidUpload = requestedPaths.find((objectPath) =>
@@ -166,12 +206,10 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const rows = await supabaseRequest("center_applications", {
-      method: "POST",
-      body: {
+    const applicationBody = {
         center_name: body.centerName.trim(),
         owner_name: body.ownerName.trim(),
-        phone: body.phone.trim(),
+        phone,
         email,
         owner_password_scrypt: null,
         applicant_auth_user_id: auth.user.id,
@@ -186,17 +224,33 @@ module.exports = async function handler(req, res) {
         photo_path: body.photoPath || null,
         photo_paths: Array.isArray(body.photoPaths) ? body.photoPaths.slice(0, 5) : [],
         therapist_background: therapistBackground,
-        license_holder_name: therapistBackground ? body.licenseHolderName.trim() : "해당 없음",
-        license_number: therapistBackground ? body.licenseNumber.trim() : "해당 없음",
-        license_image_path: therapistBackground ? body.licenseImagePath : null,
+        license_holder_name: qualificationHolderName,
+        license_number: qualificationNumber,
+        license_image_path: qualificationImagePath,
         services: categories.join(", "),
         opening_schedule: openingSchedule,
         opening_hours: openingHours,
         memo: body.memo || null,
         consent: true,
         status: "pending",
-      },
-    });
+      };
+    let rows;
+    try {
+      rows = await supabaseRequest("center_applications", {
+        method: "POST",
+        body: applicationBody,
+      });
+    } catch (error) {
+      if (!missingApplicationScheduleColumns(error)) throw error;
+      const { opening_schedule, opening_hours, ...legacyBody } = applicationBody;
+      rows = await supabaseRequest("center_applications", {
+        method: "POST",
+        body: {
+          ...legacyBody,
+          memo: scheduleFallbackMemo(body.memo, openingHours, openingSchedule),
+        },
+      });
+    }
     await consumeRegistrationSession(secureSession.id);
     await recordAuditLog(req, {
       actorUserId: auth.user.id,
@@ -204,7 +258,7 @@ module.exports = async function handler(req, res) {
       action: "center_application.create",
       targetType: "center_application",
       targetId: rows[0].id,
-      metadata: { therapistBackground, uploadedFiles: requestedPaths.length },
+      metadata: { qualificationType, therapistBackground, uploadedFiles: requestedPaths.length },
     });
 
     sendJson(res, 202, {

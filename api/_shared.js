@@ -17,6 +17,7 @@ const sampleCenters = [
     lead: "허리 통증 이후 재발 방지 운동과 체형 평가를 함께 진행합니다.",
     tags: ["허리", "수술 후", "필라테스", "1:1 평가"],
     categories: ["허리·골반", "수술 후 회복", "일상 기능 회복"],
+    physicalTherapistVerified: true,
     therapist: "김민재 센터장",
     price: "첫 평가 30,000원",
     conversion: "전화 상담 가능",
@@ -38,6 +39,7 @@ const sampleCenters = [
     lead: "직장인 목, 어깨 불편감과 자세 습관을 운동 루틴으로 관리합니다.",
     tags: ["어깨", "거북목", "소그룹", "자세 분석"],
     categories: ["목·어깨", "자세·균형"],
+    physicalTherapistVerified: true,
     therapist: "박서연 대표",
     price: "체험 수업 20,000원",
     conversion: "예약 후 방문",
@@ -59,6 +61,7 @@ const sampleCenters = [
     lead: "수술 후 일상 복귀와 고령자 근력 회복 프로그램에 강점이 있습니다.",
     tags: ["수술 후", "고령자", "근력", "보행"],
     categories: ["수술 후 회복", "시니어 보행"],
+    physicalTherapistVerified: true,
     therapist: "이도윤 원장",
     price: "방문 상담 무료",
     conversion: "센터 문의",
@@ -80,6 +83,7 @@ const sampleCenters = [
     lead: "골프, 테니스 이용자를 위한 어깨 가동성 및 회전근개 운동을 제공합니다.",
     tags: ["어깨", "골프", "테니스", "가동성"],
     categories: ["목·어깨", "스포츠 복귀"],
+    physicalTherapistVerified: true,
     therapist: "최하린 대표",
     price: "스포츠 평가 40,000원",
     conversion: "운동 영상 피드백 제공",
@@ -555,6 +559,7 @@ function centerFromRow(row, photoUrl = "", photoUrls = []) {
     lead: row.lead,
     tags: row.tags || [],
     categories: centerCategoriesFromRow(row),
+    physicalTherapistVerified: row.therapist_background === true,
     therapist: String(row.therapist || "")
       .replace(/\s*[·|/–-]?\s*물리치료사\s*출신\s*/g, " ")
       .replace(/\s{2,}/g, " ")

@@ -433,9 +433,11 @@ function renderApplications() {
     const mapUrl = item.naverMapUrl || "https://map.naver.com/p/search/" + encodeURIComponent(item.address || "");
     const media = centerImages.map(function (src, index) {
       return imageMarkup(src, item.centerName + " 사진 " + (index + 1), "센터 사진");
-    }).join("") + (item.therapistBackground
-      ? imageMarkup(item.licenseImageUrl, item.centerName + " 면허 인증", "면허 인증")
-      : "");
+    }).join("") + imageMarkup(
+      item.licenseImageUrl,
+      item.centerName + " " + (item.qualificationLabel || "전문 자격") + " 인증",
+      item.qualificationLabel || "전문 자격 인증"
+    );
     const detailParts = [item.services, item.memo].filter(Boolean).map(function (value) {
       return "<p>" + escapeHtml(value) + "</p>";
     }).join("");
@@ -452,9 +454,8 @@ function renderApplications() {
       '<div class="application-meta"><span>신청자 ' + escapeHtml(item.ownerName) + "</span><span>" +
       escapeHtml(item.phone) + "</span><span>계정 이메일 " + escapeHtml(item.email || "미입력") +
       "</span><span>로그인 " + (item.ownerPasswordSet ? "설정 완료" : "관리자 발급 필요") +
-      "</span><span>" + (item.therapistBackground
-        ? "면허 " + escapeHtml(item.licenseHolderName) + " · " + escapeHtml(item.licenseNumber)
-        : "일반 운동센터") +
+      "</span><span>자격 " + escapeHtml(item.qualificationLabel || (item.therapistBackground ? "물리치료사 면허" : "체육학 학위")) +
+      " · " + escapeHtml(item.licenseHolderName) + " · " + escapeHtml(item.licenseNumber) +
       "</span><span>접수 " + formatDate(item.createdAt, true) + "</span></div>" +
       (media ? '<div class="application-media">' + media + "</div>" : "") + detailParts +
       (item.status === "rejected" && item.rejectionReason ? "<p>반려 사유: " + escapeHtml(item.rejectionReason) + "</p>" : "") +

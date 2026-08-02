@@ -26,6 +26,7 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, {
       mode: "turnstile",
       siteKey: process.env.TURNSTILE_SITE_KEY,
+      fallbackChallenge: createMathChallenge(),
     });
   }
   sendJson(res, 200, createMathChallenge());

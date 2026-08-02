@@ -18,16 +18,23 @@ module.exports = async function handler(req, res) {
       sendJson(res, 200, { centers: sampleCenters, source: "fallback" });
       return;
     }
-    const [rows, reviews] = await Promise.all([
+    const [rows, reviews, applications] = await Promise.all([
       supabaseRequest("centers", { query: "?select=*&status=eq.approved&order=created_at.desc" }),
       supabaseRequest("reviews", { query: "?select=center_id,rating&status=eq.approved" }),
+      supabaseRequest("center_applications", { query: "?select=id,therapist_background&status=eq.approved" }).catch(() => []),
     ]);
     const centers = await Promise.all(rows.map(async (row) => {
       const paths = row.photo_paths?.length ? row.photo_paths : (row.photo_path ? [row.photo_path] : []);
       const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path, 3600)));
       const ownReviews = reviews.filter((review) => review.center_id === row.id);
       const rating = ownReviews.length ? (ownReviews.reduce((sum, review) => sum + Number(review.rating), 0) / ownReviews.length).toFixed(1) : "신규";
-      return centerFromRow({ ...row, rating, reviews: String(ownReviews.length) }, photoUrls[0] || "", photoUrls);
+      const registration = applications.find((application) => application.id === row.application_id);
+      return centerFromRow({
+        ...row,
+        rating,
+        reviews: String(ownReviews.length),
+        therapist_background: registration?.therapist_background === true,
+      }, photoUrls[0] || "", photoUrls);
     }));
     sendJson(res, 200, { centers, source: "supabase" });
   } catch (error) {

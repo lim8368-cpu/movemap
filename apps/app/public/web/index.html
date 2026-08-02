@@ -28,8 +28,8 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260729-compact-header" />
-  <link rel="stylesheet" href="./mobile-containment.css?v=20260729-monochrome-rehab" />
+  <link rel="stylesheet" href="./styles.css?v=20260802-mobile-cards" />
+  <link rel="stylesheet" href="./mobile-containment.css?v=20260802-mobile-cards" />
   <link rel="stylesheet" href="./assets/ui-icons.css?v=20260721-icons" />
 </head>
 <body>
@@ -40,7 +40,7 @@
     </a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainNav">메뉴</button>
     <nav id="mainNav" class="main-nav" aria-label="주요 메뉴">
-      <a href="#search">지도 검색</a><a href="#centers">센터 목록</a><a href="/brand/">브랜드 이야기</a><a href="/register/">센터 등록</a><a href="#app" data-web-only>모바일 앱</a>
+      <a href="#search">지도 검색</a><a href="#centers">센터 목록</a><span class="nav-dropdown"><a href="/brand/" aria-haspopup="true">브랜드 이야기</a><span class="nav-submenu"><a href="/brand/">브랜드 이야기 보기</a><a href="/collaboration/">협업 제안</a></span></span><a href="/register/">센터 등록</a><a href="#app" data-web-only>모바일 앱</a>
     </nav>
     <div class="header-actions"><a id="centerDashboardLink" class="text-link center-login-link" href="/center-dashboard/" hidden>센터 대시보드</a><button id="userMenuButton" class="user-login-button" type="button">로그인</button><a id="headerAccountLink" class="header-account-link" href="/account/" hidden>마이페이지</a><button id="headerLogoutButton" class="header-logout-button" type="button" hidden>로그아웃</button><a class="button primary small" href="#search">센터 찾기</a></div>
   </header>
@@ -49,9 +49,9 @@
     <section class="hero">
       <div class="hero-inner">
         <div class="hero-copy">
-          <p class="pill"><i></i> 물리치료사 면허 보유자만 센터 등록 가능</p>
+          <p class="pill"><i></i> 전문 자격 서류를 확인한 센터만 등록</p>
           <h1><span>내 주변에서 만나는</span><strong>믿을 수 있는 운동센터</strong></h1>
-          <p class="hero-description"><span>DAIL은 물리치료사 면허 보유자가 운영하는 센터만 등록할 수 있습니다.</span><span>센터가 제공한 프로그램과 운영 정보를 한눈에 비교해보세요.</span></p>
+          <p class="hero-description"><span>DAIL은 물리치료사 면허 또는 체육학 학위를 확인한 전문가의 센터만 등록합니다.</span><span>센터가 제공한 프로그램과 운영 정보를 한눈에 비교해보세요.</span></p>
           <form id="heroSearchForm" class="hero-search" action="#search">
             <label class="hero-search-field">
               <span class="hero-search-icon" aria-hidden="true"><svg class="ui-icon"><use href="/assets/ui-icons.svg#search"></use></svg></span>
@@ -115,9 +115,9 @@
     <section class="section featured">
       <div class="section-row"><div><p class="kicker">추천 센터</p><h2>검증된 전문 센터</h2></div><a class="button outline icon-label" href="#search">전체 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a></div>
       <div class="feature-cards">
-        <article class="feature-card" data-feature-center="core" tabindex="0"><div class="photo photo-a"><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>코어핏 무브센터</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 강남구 · 1.2km</p><div><span>허리</span><span>수술 후</span><span>필라테스</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
-        <article class="feature-card" data-feature-center="reform" tabindex="0"><div class="photo photo-b"><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>리폼무브 스튜디오</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 마포구 · 3.8km</p><div><span>어깨</span><span>거북목</span><span>자세 분석</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
-        <article class="feature-card" data-feature-center="posture" tabindex="0"><div class="photo photo-c"><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>포스처랩 분당</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>경기 성남시 분당구 · 9.6km</p><div><span>수술 후</span><span>고령자</span><span>보행</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
+        <article class="feature-card" data-feature-center="core" tabindex="0"><div class="photo photo-a"><span class="pt-photo-badge"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 면허 확인</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>코어핏 무브센터</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 강남구 · 1.2km</p><div><span>허리</span><span>수술 후</span><span>필라테스</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
+        <article class="feature-card" data-feature-center="reform" tabindex="0"><div class="photo photo-b"><span class="pt-photo-badge"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 면허 확인</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>리폼무브 스튜디오</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>서울 마포구 · 3.8km</p><div><span>어깨</span><span>거북목</span><span>자세 분석</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
+        <article class="feature-card" data-feature-center="posture" tabindex="0"><div class="photo photo-c"><span class="pt-photo-badge"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg>물리치료사 면허 확인</span><i><b class="status-dot-mini"></b>영업중</i></div><div class="feature-body"><h3>포스처랩 분당</h3><p class="icon-label"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg>경기 성남시 분당구 · 9.6km</p><div><span>수술 후</span><span>고령자</span><span>보행</span></div><button class="icon-label" type="button">지도에서 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div></article>
       </div>
     </section>
 
@@ -135,7 +135,7 @@
 
     <section class="section how" id="about"><p class="kicker">이용 방법</p><h2>3단계로 시작하세요</h2><p class="section-lead">센터가 등록한 정보를 차근차근 확인하세요</p><div class="steps"><article><b>01</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg></i><h3>위치 기반으로 센터 탐색</h3><p>현재 위치 주변 센터를 지도에서 확인하거나 전문 분야로 필터링하세요.</p></article><article><b>02</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></i><h3>센터 정보 꼼꼼히 비교</h3><p>전문 분야, 프로그램, 시설과 운영시간을 한 페이지에서 확인하세요.</p></article><article><b>03</b><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></i><h3>센터와 바로 연결</h3><p>센터가 제공한 연락 방법을 확인하고 상담을 요청하세요.</p></article></div></section>
 
-    <section class="proof"><div class="proof-copy"><p class="kicker light">센터 정보를 더 투명하게</p><h2>필요한 정보를<br /><em>한 곳에서</em> 비교하세요</h2><p>DAIL은 센터가 직접 등록한 핵심 정보를 한눈에 볼 수 있도록 정리해, 지도 탐색부터 문의 전 확인까지 흐름이 끊기지 않도록 돕습니다.</p><a class="icon-label" href="#search">내 주변 센터 살펴보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a></div><div class="trust-features"><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg></i><div><h3>지도 중심 탐색</h3><p>현재 위치와 센터의 실제 거리를 한눈에 확인합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></i><div><h3>핵심 정보 한눈에</h3><p>전문 분야, 프로그램과 운영시간을 한 화면에서 확인합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg></i><div><h3>등록 자격 확인</h3><p>물리치료사 면허 보유자가 운영하는 센터만 등록 신청을 받습니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></i><div><h3>센터로 바로 연결</h3><p>정보를 확인한 뒤 센터가 제공한 방법으로 문의합니다.</p></div></article></div></section>
+    <section class="proof"><div class="proof-copy"><p class="kicker light">센터 정보를 더 투명하게</p><h2>필요한 정보를<br /><em>한 곳에서</em> 비교하세요</h2><p>DAIL은 센터가 직접 등록한 핵심 정보를 한눈에 볼 수 있도록 정리해, 지도 탐색부터 문의 전 확인까지 흐름이 끊기지 않도록 돕습니다.</p><a class="icon-label" href="#search">내 주변 센터 살펴보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></a></div><div class="trust-features"><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg></i><div><h3>지도 중심 탐색</h3><p>현재 위치와 센터의 실제 거리를 한눈에 확인합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></i><div><h3>핵심 정보 한눈에</h3><p>전문 분야, 프로그램과 운영시간을 한 화면에서 확인합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#badge-check"></use></svg></i><div><h3>전문 자격 확인</h3><p>물리치료사 면허 또는 체육학 학위 서류를 확인한 센터만 등록합니다.</p></div></article><article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></i><div><h3>센터로 바로 연결</h3><p>정보를 확인한 뒤 센터가 제공한 방법으로 문의합니다.</p></div></article></div></section>
 
     <section id="search" class="search-section">
       <div class="search-title"><p class="kicker">지도 검색</p><h2>내 주변 센터를 찾아보세요</h2><p>지역과 목적을 선택하면 실제 등록 센터를 지도에서 확인할 수 있습니다.</p></div>
@@ -215,7 +215,7 @@
       <div id="centerExperienceContent" class="center-experience-content" aria-live="polite"></div>
     </aside>
   </div>
-  <script src="./app.js?v=20260729-map-wheel-page-pass-through"></script>
+  <script src="./app.js?v=20260802-qualification"></script>
   <script>document.querySelector('.menu-toggle').addEventListener('click',function(){const open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));document.querySelector('.main-nav').classList.toggle('open',!open)});</script>
 </body>
 </html>

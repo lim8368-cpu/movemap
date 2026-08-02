@@ -15,11 +15,13 @@ const {
   registrationTokenFromRequest,
 } = require("./_registration-security");
 
-const MAX_FILE_BYTES = 3 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_CENTER_PHOTO_BYTES = 3 * 1024 * 1024;
 const ALLOWED_TYPES = {
   "image/jpeg": { extension: "jpg", signatures: [Buffer.from([0xff, 0xd8, 0xff])] },
   "image/png": { extension: "png", signatures: [Buffer.from([0x89, 0x50, 0x4e, 0x47])] },
   "image/webp": { extension: "webp", signatures: [Buffer.from("RIFF")] },
+  "application/pdf": { extension: "pdf", signatures: [Buffer.from("%PDF-")] },
 };
 
 function readRawBody(req) {
@@ -62,8 +64,9 @@ async function handler(req, res) {
   const type = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
   const fileType = ALLOWED_TYPES[type];
   const kind = req.query?.kind;
-  if (!fileType || !["center-photo", "license"].includes(kind)) {
-    return sendJson(res, 400, { error: "JPG, PNG, WEBP 이미지만 올릴 수 있습니다." });
+  const credentialUpload = ["license", "qualification"].includes(kind);
+  if (!fileType || (!["center-photo", "license", "qualification"].includes(kind)) || (kind === "center-photo" && type === "application/pdf")) {
+    return sendJson(res, 400, { error: credentialUpload ? "JPG, PNG, WEBP 또는 PDF 파일만 올릴 수 있습니다." : "JPG, PNG, WEBP 이미지만 올릴 수 있습니다." });
   }
 
   try {
@@ -78,8 +81,9 @@ async function handler(req, res) {
       return sendJson(res, 409, { error: "한 번의 등록 신청에는 최대 8개 파일만 올릴 수 있습니다." });
     }
     const body = await readRawBody(req);
-    if (!body.length || body.length > MAX_FILE_BYTES || !matchesFileSignature(type, body)) {
-      return sendJson(res, 400, { error: "이미지 파일 형식이나 크기를 확인해 주세요." });
+    const byteLimit = credentialUpload ? MAX_FILE_BYTES : MAX_CENTER_PHOTO_BYTES;
+    if (!body.length || body.length > byteLimit || !matchesFileSignature(type, body)) {
+      return sendJson(res, 400, { error: credentialUpload ? "자격 서류의 형식이나 크기를 확인해 주세요." : "이미지 파일 형식이나 크기를 확인해 주세요." });
     }
     const objectPath = `registration/${session.id}/${kind}/${crypto.randomUUID()}.${fileType.extension}`;
     await supabaseStorageRequest(
@@ -104,7 +108,7 @@ async function handler(req, res) {
     });
     sendJson(res, 201, { ok: true, path: objectPath });
   } catch (error) {
-    if (error.message === "too_large") return sendJson(res, 413, { error: "이미지는 3MB 이하로 올려주세요." });
+    if (error.message === "too_large") return sendJson(res, 413, { error: "자격 서류는 5MB, 센터 사진은 3MB 이하로 올려주세요." });
     console.error("private upload failed", error);
     await recordErrorLog(req, error, { errorCode: "registration_upload_failed", statusCode: 500 });
     sendJson(res, 500, { error: "비공개 파일 업로드에 실패했습니다." });

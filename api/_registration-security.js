@@ -82,6 +82,11 @@ async function verifyHumanChallenge(req, body = {}) {
   if (!startedAt || Date.now() - startedAt < 1500 || Date.now() - startedAt > 2 * 60 * 60 * 1000) {
     return false;
   }
+  if (body.challengeMode === "signed_math") {
+    const challenge = verifySignedPayload(body.challengeToken);
+    const answer = Number(String(body.challengeAnswer || "").trim());
+    return Boolean(challenge && Number.isInteger(answer) && answer === challenge.left + challenge.right);
+  }
   if (captchaMode() === "turnstile") {
     return verifyTurnstile(String(body.turnstileToken || ""), req);
   }

@@ -26,13 +26,16 @@ async function favoriteCards(userId) {
   const centerIds = favoriteRows.map((row) => row.center_id).filter(validCenterId);
   if (!centerIds.length) return [];
   const filter = inFilter(centerIds);
-  const [centerRows, reviewRows] = await Promise.all([
+  const [centerRows, reviewRows, applications] = await Promise.all([
     supabaseRequest("centers", {
       query: `?select=*&id=in.${filter}&status=eq.approved`,
     }),
     supabaseRequest("reviews", {
       query: `?select=center_id,rating&center_id=in.${filter}&status=eq.approved`,
     }),
+    supabaseRequest("center_applications", {
+      query: "?select=id,therapist_background&status=eq.approved",
+    }).catch(() => []),
   ]);
   const centerById = new Map(centerRows.map((center) => [center.id, center]));
 
@@ -47,11 +50,13 @@ async function favoriteCards(userId) {
     const rating = reviews.length
       ? (reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length).toFixed(1)
       : "신규";
+    const registration = applications.find((application) => application.id === row.application_id);
     return {
       center: centerFromRow({
         ...row,
         rating,
         reviews: String(reviews.length),
+        therapist_background: registration?.therapist_background === true,
       }, photoUrl, photoUrl ? [photoUrl] : []),
       savedAt: favorite.created_at,
     };

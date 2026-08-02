@@ -1699,3 +1699,129 @@ footer{padding-top:48px}
   .site-header,
   .main-nav a{transition:none}
 }
+
+/* 20260802: compact mobile center cards, verified credentials, and brand submenu. */
+.nav-dropdown{position:relative;display:flex;align-items:center}
+.nav-submenu{
+  min-width:164px;
+  padding:7px;
+  position:absolute;
+  top:calc(100% + 8px);
+  left:50%;
+  z-index:40;
+  display:grid;
+  gap:2px;
+  border:1px solid #e2e2de;
+  border-radius:14px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 16px 36px rgba(17,17,17,.12);
+  opacity:0;
+  visibility:hidden;
+  transform:translate(-50%,-5px);
+  transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
+}
+.nav-submenu a{min-height:38px!important;padding:0 12px!important;border-radius:9px!important;font-size:11px}
+.nav-dropdown:hover .nav-submenu,
+.nav-dropdown:focus-within .nav-submenu{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.pt-photo-badge,
+.pt-verification-badge,
+.pt-inline-badge{
+  display:inline-flex!important;
+  align-items:center;
+  gap:5px;
+  border:1px solid rgba(255,255,255,.68);
+  border-radius:999px!important;
+  background:rgba(255,255,255,.92)!important;
+  color:#20221f!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  line-height:1;
+  white-space:nowrap;
+  backdrop-filter:blur(8px);
+}
+.pt-photo-badge{position:relative;z-index:2;padding:7px 9px!important}
+.pt-photo-badge .ui-icon,.pt-verification-badge .ui-icon,.pt-inline-badge .ui-icon{font-size:12px}
+.pt-verification-badge{
+  width:max-content;
+  margin-bottom:7px;
+  padding:6px 8px;
+  border-color:#d8dfda;
+  background:#eef3f0!important;
+  color:#315b50!important;
+}
+.pt-inline-badge{margin-left:7px;padding:4px 6px;border-color:#d8dfda;background:#eef3f0!important;color:#315b50!important}
+.center-sheet-verification{margin-bottom:9px}
+.featured{margin-right:auto;margin-left:auto}
+.featured .feature-body>div{margin-bottom:18px}
+.featured .feature-body>button{margin-top:0}
+.center-program-tags span{-webkit-tap-highlight-color:transparent}
+
+@media(max-width:900px){
+  .main-nav .nav-dropdown{width:100%;display:grid}
+  .main-nav .nav-dropdown>a{width:100%}
+  .main-nav .nav-submenu{
+    min-width:0;
+    padding:2px 0 0 14px;
+    position:static;
+    display:grid;
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    opacity:1;
+    visibility:visible;
+    transform:none;
+  }
+  .main-nav .nav-submenu a{min-height:32px!important;color:#737670}
+}
+
+@media(max-width:640px){
+  .featured{
+    width:calc(100% - 32px);
+    margin-right:auto;
+    margin-left:auto;
+    padding:28px 14px;
+  }
+  .featured .section-row{width:100%;align-items:flex-start}
+  .featured .section-row .button{min-height:40px;padding:0 15px}
+  .featured .feature-cards{width:100%;gap:11px;margin-top:22px}
+  .featured .feature-card{
+    width:100%;
+    min-height:146px;
+    display:grid;
+    grid-template-columns:116px minmax(0,1fr);
+    border-radius:14px;
+  }
+  .featured .photo{
+    width:116px;
+    height:100%;
+    min-height:146px;
+    aspect-ratio:auto;
+    padding:9px;
+  }
+  .featured .photo i{right:auto;bottom:9px;left:9px;padding:5px 7px;font-size:9px}
+  .featured .pt-photo-badge{max-width:98px;padding:5px 7px!important;white-space:normal;line-height:1.3}
+  .featured .feature-body{padding:13px 12px}
+  .featured .feature-body h3{margin:0 0 6px;font-size:15px;line-height:1.35}
+  .featured .feature-body p{margin:0 0 9px;font-size:11px}
+  .featured .feature-body>div{flex-wrap:wrap;gap:4px;margin-bottom:11px}
+  .featured .feature-body div span{padding:4px 6px;font-size:9px}
+  .featured .feature-body>button{min-height:35px;padding:8px;font-size:10px}
+  .center-card{padding:13px;border-radius:12px}
+  .center-card h3{margin:2px 0 5px;font-size:15px}
+  .center-card p{margin:0;display:-webkit-box;overflow:hidden;font-size:11px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+  .center-card .favorite{width:32px;height:32px}
+  .center-card .meta-row{gap:7px;margin-top:9px;font-size:10px}
+  .center-card .card-tags{margin-top:8px;overflow:hidden;white-space:nowrap}
+  .center-card .card-tags span{padding:5px 7px;font-size:9px}
+  .center-card .card-cta{margin-top:10px;font-size:10px}
+  .pt-verification-badge{margin-bottom:5px;padding:5px 7px;font-size:8px!important}
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select,
+  .hero-search-copy input,
+  .route-place-form input,
+  .booking-form-grid input,
+  .booking-form-grid textarea{font-size:16px!important}
+}
+
+@media(prefers-reduced-motion:reduce){.nav-submenu{transition:none}}

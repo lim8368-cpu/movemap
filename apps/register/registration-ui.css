@@ -1199,3 +1199,237 @@ textarea { min-height: 150px; padding: 16px; border-radius: 10px; font-size: 14p
 .owner-signup-heading > span .ui-icon { font-size: 21px; }
 .success-symbol .ui-icon { font-size: 27px; }
 .faq-note > span .ui-icon { font-size: 20px; }
+
+/* 20260802: align registration with the calm monochrome DAIL home system. */
+:root {
+  --navy: #111111;
+  --teal: #356f73;
+  --accent: #5f8f92;
+  --bg: #f7f7f5;
+  --soft: #f1f1ee;
+  --line: #dfdfdb;
+  --muted: #666963;
+  --ink: #171817;
+}
+
+body { background: var(--bg); color: var(--ink); word-break: keep-all; }
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-color: #e8e8e4;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(14px);
+}
+.brand-mark { background: #111; }
+.brand-mark i { border-color: #87a9ab; }
+.site-header nav .active { color: #111; }
+.find { background: #111; }
+.hero {
+  padding-top: 72px;
+  padding-bottom: 72px;
+  border-bottom: 1px solid #e8e8e4;
+  background: #fff;
+  color: #111;
+}
+.hero > span {
+  border: 1px solid #dfdfdb;
+  background: #f4f4f1;
+  color: #484a46;
+}
+.hero p { color: #666963; }
+.benefits {
+  max-width: 1040px;
+  gap: 12px;
+  padding: 28px 20px;
+  background: transparent;
+}
+.benefits div {
+  min-height: 126px;
+  padding: 20px 12px;
+  border: 1px solid #e3e3df;
+  border-radius: 16px;
+  background: #fff;
+}
+.benefits b { color: #111; }
+.form-step,
+.registration-auth-gate,
+.registration-identity,
+.application-status-card,
+.registration-success,
+.faq-list {
+  border-color: #dfdfdb;
+  box-shadow: 0 14px 36px rgba(17, 17, 17, .055);
+}
+.form-step { border-radius: 22px; }
+.form-step h2,
+.faq-heading h2,
+.owner-signup-heading h3,
+.registration-success h2 { color: #111; }
+input,
+textarea,
+select {
+  border-color: #d8d8d4;
+  background: #fff;
+  color: #171817;
+}
+select {
+  width: 100%;
+  height: 52px;
+  padding: 0 40px 0 16px;
+  border: 1px solid #d8d8d4;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #111;
+  outline: 3px solid rgba(17, 17, 17, .08);
+}
+.choice span,
+.chips span { border-color: #d8d8d4; background: #fff; }
+.choice input:checked + span,
+.chips input:checked + span {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+.qualification-choice span {
+  min-height: 72px;
+  align-content: center;
+  gap: 5px;
+}
+.qualification-choice strong,
+.qualification-choice small { display: block; }
+.qualification-choice strong { font-size: 14px; }
+.qualification-choice small { font-size: 10px; font-weight: 600; opacity: .72; }
+.eligibility-notice {
+  border-color: #deded9;
+  background: #f5f5f2;
+  color: #30322f;
+}
+.eligibility-notice > span { background: #fff; color: #356f73; }
+.eligibility-notice p { color: #666963; }
+.license-box.credential-box {
+  padding: 22px;
+  gap: 17px;
+  border: 1px solid #deded9;
+  border-radius: 16px;
+  background: #f7f7f5;
+}
+.credential-heading { display: flex; align-items: flex-start; gap: 12px; }
+.credential-heading > span {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #111;
+  color: #fff;
+}
+.credential-heading > span .ui-icon { font-size: 19px; }
+.credential-heading h3 { margin: 0; color: #111; font-size: 16px; }
+.credential-heading p { margin-top: 5px; color: #666963; line-height: 1.55; }
+.file-field { gap: 9px; }
+.credential-file-input {
+  height: auto;
+  min-height: 58px;
+  padding: 7px;
+  border: 1px dashed #bfc1bc;
+  border-radius: 12px;
+  background: #fff;
+  color: #62645f;
+  font-size: 12px;
+}
+.credential-file-input::file-selector-button {
+  min-height: 42px;
+  margin-right: 12px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #111;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.file-field > small { color: #7a7d77; font-size: 10px; font-weight: 600; }
+.next,
+#submitButton { background: #111; }
+.next:hover,
+#submitButton:hover { background: #2b2b2b; }
+.back { border-color: #d8d8d4; color: #4f514d; }
+.owner-signup-guide {
+  border-color: #deded9;
+  background: #f7f7f5;
+}
+.owner-signup-heading > span { background: #111; color: #fff; }
+.owner-signup-heading small { color: #356f73; }
+.owner-signup-guide li { border-color: #deded9; background: #fff; }
+.owner-signup-guide li > b { background: #ecece8; color: #111; }
+.owner-signup-note { border-color: #deded9; color: #5f625d; }
+.review-summary {
+  grid-template-columns: 150px minmax(0, 1fr);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #deded9;
+  border-radius: 16px;
+  background: #fff;
+}
+.review-summary dt,
+.review-summary dd {
+  min-height: 50px;
+  padding: 15px 18px;
+  border-bottom: 1px solid #ecece8;
+  line-height: 1.55;
+}
+.review-summary dt { background: #f5f5f2; color: #555852; font-weight: 750; }
+.review-summary dd { color: #171817; font-weight: 700; }
+.review-summary dt:nth-last-of-type(1),
+.review-summary dd:last-child { border-bottom: 0; }
+.human-check {
+  border-color: #d7dfd9;
+  background: #f5f8f5;
+}
+.human-check > div:first-child > span { background: #e7eee9; color: #356f73; }
+.human-check h3 { color: #22342c; }
+.schedule-summary { background: #eef3f0; color: #365b50; }
+.faq-list summary:hover,
+.faq-list details[open] summary { color: #111; background: #f7f7f5; }
+.faq-list details[open] summary i { background: #e9e9e5; }
+.faq-list details[open] summary i::before,
+.faq-list details[open] summary i::after { background: #111; }
+.faq-note { background: #eeefeb; }
+
+@media (max-width: 700px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select { font-size: 16px !important; }
+  .hero { padding: 54px 20px; }
+  .benefits { grid-template-columns: 1fr 1fr; padding: 16px; }
+  .benefits div { min-height: 110px; }
+  .form-step { padding: 22px; border-radius: 18px; }
+  .qualification-choice { grid-template-columns: 1fr 1fr; }
+  .qualification-choice span { min-height: 76px; padding: 10px 7px; }
+  .license-box.credential-box { padding: 18px; }
+  .chips label,
+  .choice label {
+    width: auto;
+    display: inline-flex;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice label { display: flex; }
+  .choice label > span { width: 100%; }
+  .chips span { -webkit-tap-highlight-color: transparent; }
+  .review-summary { grid-template-columns: 1fr; }
+  .review-summary dt,
+  .review-summary dd { min-height: auto; }
+  .review-summary dt { padding-bottom: 5px; border-bottom: 0; }
+  .review-summary dd { padding-top: 6px; }
+  .human-check > label { grid-template-columns: 1fr; }
+  .credential-file-input::file-selector-button { display: block; margin: 0 0 7px; }
+}

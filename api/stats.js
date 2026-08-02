@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       const legacyOwnerAccount = ownerAccounts.find((account) => account.center_id === row.id);
       const registration = applications.find((application) => application.id === row.application_id);
       return ({
-        ...centerFromRow(row, photoUrls[0] || "", photoUrls),
+        ...centerFromRow({ ...row, therapist_background: registration?.therapist_background === true }, photoUrls[0] || "", photoUrls),
         status: row.status || "approved",
         phone: row.phone || "",
         website: row.website || "",
@@ -72,6 +72,8 @@ module.exports = async function handler(req, res) {
       email: item.email || "",
       ownerPasswordSet: Boolean(item.applicant_auth_user_id || item.owner_password_scrypt),
       therapistBackground: Boolean(item.therapist_background),
+      qualificationType: item.therapist_background ? "physical_therapist" : "sports_science",
+      qualificationLabel: item.therapist_background ? "물리치료사 면허" : "체육학 학위",
       area: item.area,
       address: item.address,
       naverMapUrl: item.naver_map_url,

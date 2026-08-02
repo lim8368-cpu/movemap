@@ -4,7 +4,9 @@ const message = document.querySelector("#formMessage");
 const submitButton = document.querySelector("#submitButton");
 const licenseFields = document.querySelector("#licenseFields");
 const licenseFileInput = document.querySelector("#licenseFileInput");
-const licenseImagePathInput = document.querySelector("#licenseImagePathInput");
+const degreeFields = document.querySelector("#degreeFields");
+const degreeFileInput = document.querySelector("#degreeFileInput");
+const qualificationImagePathInput = document.querySelector("#qualificationImagePathInput");
 const photoFileInput = document.querySelector("#photoFileInput");
 const photoPathInput = document.querySelector("#photoPathInput");
 const photoPathsInput = document.querySelector("#photoPathsInput");
@@ -90,6 +92,20 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatPhoneNumber(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.startsWith("02")) {
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return digits.slice(0, 2) + "-" + digits.slice(2);
+    if (digits.length <= 9) return digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5);
+    return digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6);
+  }
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return digits.slice(0, 3) + "-" + digits.slice(3);
+  return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7);
 }
 
 function timeOptions(selected) {
@@ -192,18 +208,28 @@ function showStep(step) {
   window.scrollTo({ top: 360, behavior: "smooth" });
 }
 
+function qualificationType() {
+  return String(new FormData(form).get("qualificationType") || "");
+}
+
 function isTherapistBackground() {
-  return new FormData(form).get("therapistBackground") === "yes";
+  return qualificationType() === "physical_therapist";
 }
 
 function syncBackground() {
-  const yes = isTherapistBackground();
-  const selected = new FormData(form).get("therapistBackground");
-  licenseFields.hidden = !yes;
-  eligibilityNotice.hidden = selected !== "no";
+  const selected = qualificationType();
+  const isTherapist = selected === "physical_therapist";
+  const isSportsScience = selected === "sports_science";
+  licenseFields.hidden = !isTherapist;
+  degreeFields.hidden = !isSportsScience;
+  eligibilityNotice.hidden = Boolean(selected);
   licenseFields.querySelectorAll("input").forEach(function (input) {
-    input.required = yes;
-    if (!yes) input.value = "";
+    if (input.type !== "file") input.required = isTherapist;
+    if (!isTherapist) input.value = "";
+  });
+  degreeFields.querySelectorAll("input,select").forEach(function (input) {
+    if (input.type !== "file") input.required = isSportsScience;
+    if (!isSportsScience) input.value = "";
   });
 }
 
@@ -420,11 +446,6 @@ async function loadNaverGeocoder() {
 
 function validateStep(step) {
   const panel = document.querySelector('[data-step="' + step + '"]');
-  if (step === 1 && new FormData(form).get("therapistBackground") === "no") {
-    eligibilityNotice.hidden = false;
-    eligibilityNotice.scrollIntoView({ behavior: "smooth", block: "center" });
-    return false;
-  }
   if (step === 2 && !document.querySelector('[name="specialties"]:checked')) {
     window.alert("주요 회복 분야를 하나 이상 선택해주세요.");
     return false;
@@ -435,7 +456,17 @@ function validateStep(step) {
     registrationWeeklySchedule.querySelector("select:not(:disabled),input")?.focus();
     return false;
   }
-  const invalid = Array.from(panel.querySelectorAll("input,textarea")).find(function (element) {
+  if (step === 2) {
+    const credentialFile = isTherapistBackground() ? licenseFileInput.files[0] : degreeFileInput.files[0];
+    try {
+      validateUploadFile(credentialFile, true, true);
+    } catch (error) {
+      window.alert(error.message);
+      (isTherapistBackground() ? licenseFileInput : degreeFileInput).focus();
+      return false;
+    }
+  }
+  const invalid = Array.from(panel.querySelectorAll("input,textarea,select")).find(function (element) {
     return !element.checkValidity();
   });
   if (invalid) {
@@ -478,12 +509,15 @@ function renderSummary() {
   const rows = [
     ["센터명", data.get("centerName")],
     ["대표자", data.get("ownerName")],
-    ["전화번호", data.get("phone")],
+    ["전화번호", formatPhoneNumber(data.get("phone"))],
     ["센터 운영 계정", (authProfile?.profile?.nickname || authProfile?.user?.email || "현재 로그인 계정") + "에 권한 연결"],
     ["심사 연락 이메일", data.get("email")],
     ["주소", fullAddress()],
     ["지도 위치", latInput.value && lngInput.value ? "네이버 지도 확인 완료" : "운영팀 확인 예정"],
-    ["대표자 물리치료사 면허", isTherapistBackground() ? "확인 대상" : "해당 없음"],
+    ["전문 자격", isTherapistBackground()
+      ? "물리치료사 면허 · " + data.get("licenseHolderName")
+      : "체육학 " + data.get("degreeLevel") + " · " + data.get("degreeSchool")],
+    ["제출 서류", isTherapistBackground() ? "물리치료사 면허 확인 서류" : "체육학 학위 인증서"],
     ["주요 회복 분야", specialties],
     ["운영 시간", data.get("hours") || "미입력"],
   ];
@@ -523,7 +557,20 @@ async function loadTurnstile(siteKey) {
       challengeStatus.textContent = "보안 확인 시간이 만료되었습니다. 다시 확인해 주세요.";
       challengeStatus.className = "error";
     },
+    "error-callback": function () {
+      if (captchaConfig?.fallbackChallenge) activateSignedMathFallback(captchaConfig.fallbackChallenge);
+    },
   });
+}
+
+function activateSignedMathFallback(fallbackChallenge) {
+  captchaConfig = fallbackChallenge;
+  turnstileChallenge.hidden = true;
+  challengePrompt.textContent = fallbackChallenge.prompt;
+  challengeAnswer.value = "";
+  mathChallenge.hidden = false;
+  challengeStatus.textContent = "보안 위젯 대신 간단한 계산 확인을 진행합니다.";
+  challengeStatus.className = "";
 }
 
 async function loadRegistrationChallenge() {
@@ -546,8 +593,13 @@ async function loadRegistrationChallenge() {
     if (!response.ok) throw new Error(config.error || "보안 확인을 불러오지 못했습니다.");
     captchaConfig = config;
     if (config.mode === "turnstile") {
-      await loadTurnstile(config.siteKey);
-      challengeStatus.textContent = "아래 보안 확인을 완료해 주세요.";
+      try {
+        await loadTurnstile(config.siteKey);
+        challengeStatus.textContent = "아래 보안 확인을 완료해 주세요.";
+      } catch {
+        if (!config.fallbackChallenge) throw new Error("보안 확인을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        activateSignedMathFallback(config.fallbackChallenge);
+      }
     } else {
       challengePrompt.textContent = config.prompt;
       challengeAnswer.value = "";
@@ -581,6 +633,7 @@ async function ensureRegistrationSession() {
       challengeToken: captchaConfig.challengeToken || "",
       challengeAnswer: challengeAnswer.value,
       turnstileToken,
+      challengeMode: captchaConfig.mode,
     }),
   });
   const data = await response.json().catch(function () { return {}; });
@@ -595,13 +648,17 @@ async function ensureRegistrationSession() {
   return registrationToken;
 }
 
-function validateImage(file, required) {
+function validateUploadFile(file, required, credential = false) {
   if (!file && !required) return;
   if (!file) throw new Error("확인 서류를 선택해주세요.");
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    throw new Error("JPG, PNG, WEBP 이미지만 올릴 수 있습니다.");
+  const allowed = credential
+    ? ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+    : ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) {
+    throw new Error(credential ? "JPG, PNG, WEBP 또는 PDF 파일만 올릴 수 있습니다." : "JPG, PNG, WEBP 이미지만 올릴 수 있습니다.");
   }
-  if (file.size > 3 * 1024 * 1024) throw new Error("이미지는 3MB 이하로 올려주세요.");
+  const limit = credential ? 5 : 3;
+  if (file.size > limit * 1024 * 1024) throw new Error("파일은 " + limit + "MB 이하로 올려주세요.");
 }
 
 async function upload(file, kind) {
@@ -799,13 +856,18 @@ registrationLogout.addEventListener("click", async function () {
   showLoginGate("다른 DAIL 계정으로 로그인해주세요.");
 });
 
-document.querySelectorAll('[name="therapistBackground"]').forEach(function (element) {
+document.querySelectorAll('[name="qualificationType"]').forEach(function (element) {
   element.addEventListener("change", function () {
     syncBackground();
-    if (element.value === "yes" && currentStep === 1 && validateStep(1)) {
+    if (currentStep === 1 && validateStep(1)) {
       showStep(2);
     }
   });
+});
+
+form.elements.phone.addEventListener("input", function (event) {
+  const formatted = formatPhoneNumber(event.target.value);
+  if (event.target.value !== formatted) event.target.value = formatted;
 });
 
 registrationWeeklySchedule.addEventListener("change", function (event) {
@@ -888,16 +950,16 @@ form.addEventListener("submit", async function (event) {
     if (photoFileInput.files.length > 5) {
       throw new Error("센터 사진은 최대 5장까지 올릴 수 있습니다.");
     }
-    photoFiles.forEach(function (file) { validateImage(file, false); });
-    const licenseFile = licenseFileInput.files[0];
-    validateImage(licenseFile, isTherapistBackground());
+    photoFiles.forEach(function (file) { validateUploadFile(file, false); });
+    const credentialFile = isTherapistBackground() ? licenseFileInput.files[0] : degreeFileInput.files[0];
+    validateUploadFile(credentialFile, true, true);
     const photoPaths = [];
     for (const file of photoFiles) {
       photoPaths.push(await upload(file, "center-photo"));
     }
     photoPathInput.value = photoPaths[0] || "";
     photoPathsInput.value = JSON.stringify(photoPaths);
-    licenseImagePathInput.value = await upload(licenseFile, "license");
+    qualificationImagePathInput.value = await upload(credentialFile, "qualification");
     const data = new FormData(form);
     const signupEmail = String(data.get("email") || "").trim().toLowerCase();
     const address = fullAddress();
@@ -905,7 +967,7 @@ form.addEventListener("submit", async function (event) {
     const payload = {
       centerName: data.get("centerName"),
       ownerName: data.get("ownerName"),
-      phone: data.get("phone"),
+      phone: formatPhoneNumber(data.get("phone")),
       email: signupEmail,
       area: areaInput.value || baseAddress.split(" ").slice(0, 2).join(" "),
       address: address,
@@ -916,9 +978,20 @@ form.addEventListener("submit", async function (event) {
       photoUrl: "",
       photoPath: photoPathInput.value,
       photoPaths: photoPaths,
-      licenseHolderName: isTherapistBackground() ? data.get("licenseHolderName") : "해당 없음",
-      licenseNumber: isTherapistBackground() ? data.get("licenseNumber") : "해당 없음",
-      licenseImagePath: isTherapistBackground() ? licenseImagePathInput.value : "not-applicable",
+      qualificationType: qualificationType(),
+      qualificationHolderName: isTherapistBackground() ? data.get("licenseHolderName") : data.get("degreeHolderName"),
+      qualificationNumber: isTherapistBackground()
+        ? data.get("licenseNumber")
+        : [data.get("degreeLevel"), data.get("degreeSchool"), data.get("degreeMajor")].filter(Boolean).join(" · "),
+      qualificationImagePath: qualificationImagePathInput.value,
+      licenseHolderName: isTherapistBackground() ? data.get("licenseHolderName") : data.get("degreeHolderName"),
+      licenseNumber: isTherapistBackground()
+        ? data.get("licenseNumber")
+        : [data.get("degreeLevel"), data.get("degreeSchool"), data.get("degreeMajor")].filter(Boolean).join(" · "),
+      licenseImagePath: qualificationImagePathInput.value,
+      degreeLevel: isTherapistBackground() ? "" : data.get("degreeLevel"),
+      degreeSchool: isTherapistBackground() ? "" : data.get("degreeSchool"),
+      degreeMajor: isTherapistBackground() ? "" : data.get("degreeMajor"),
       services: Array.from(document.querySelectorAll('[name="specialties"]:checked'))
         .map(function (element) { return element.value; })
         .join(", "),
