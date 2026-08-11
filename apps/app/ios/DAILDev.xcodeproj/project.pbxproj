@@ -13,6 +13,7 @@
 		48E32CEF58E7E3A9DDA9F655 /* libPods-DAILDev.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A0DD8213EB4401FED6A981C /* libPods-DAILDev.a */; };
 		658E542F7A8B2FC2CE4E1DCF /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B9AB01CEC59681536B3F7C /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		D411A1012F3033A100D411A1 /* DAILLiquidGlassViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D411A1002F3033A100D411A1 /* DAILLiquidGlassViewManager.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -25,6 +26,7 @@
 		A28B30957CD9B03311DFCBDA /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = DAILDev/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = DAILDev/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		D411A1002F3033A100D411A1 /* DAILLiquidGlassViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DAILLiquidGlassViewManager.m; path = DAILDev/DAILLiquidGlassViewManager.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DAILDev/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* DAILDev-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DAILDev-Bridging-Header.h"; path = "DAILDev/DAILDev-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -48,6 +50,7 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				D411A1002F3033A100D411A1 /* DAILLiquidGlassViewManager.m */,
 				F11748442D0722820044C1D9 /* DAILDev-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -323,6 +326,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				D411A1012F3033A100D411A1 /* DAILLiquidGlassViewManager.m in Sources */,
 				658E542F7A8B2FC2CE4E1DCF /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

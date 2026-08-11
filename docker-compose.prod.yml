@@ -107,10 +107,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=movemap-preview-edge"
-      - "traefik.http.routers.dail-production.rule=Host(`${PRODUCTION_HOST:-dail.157-90-26-205.sslip.io}`)"
+      - "traefik.http.routers.dail-production.rule=Host(`${PRODUCTION_HOST:-dail.life}`) || Host(`${PRODUCTION_WWW_HOST:-www.dail.life}`)"
       - "traefik.http.routers.dail-production.entrypoints=websecure"
       - "traefik.http.routers.dail-production.tls=true"
       - "traefik.http.routers.dail-production.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dail-production-legacy.rule=Host(`${PRODUCTION_LEGACY_HOST:-dail.157-90-26-205.sslip.io}`)"
+      - "traefik.http.routers.dail-production-legacy.entrypoints=websecure"
+      - "traefik.http.routers.dail-production-legacy.tls=true"
+      - "traefik.http.routers.dail-production-legacy.tls.certresolver=letsencrypt"
       - "traefik.http.services.dail-production.loadbalancer.server.port=80"
 
   backup:

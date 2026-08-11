@@ -13,11 +13,16 @@ import {
   Text,
   TouchableOpacity,
   View,
+  requireNativeComponent,
 } from "react-native";
 import { WebView } from "react-native-webview";
 
+const NativeLiquidGlassView = Platform.OS === "ios"
+  ? requireNativeComponent("DAILLiquidGlassView")
+  : null;
+
 const API_BASE = String(
-  process.env.EXPO_PUBLIC_API_BASE_URL || "https://dail.157-90-26-205.sslip.io"
+  process.env.EXPO_PUBLIC_API_BASE_URL || "https://dail.life"
 ).replace(/\/$/, "");
 
 const NATIVE_PRESENTATION_SCRIPT = `
@@ -48,7 +53,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
         style.id = "dail-native-presentation";
         style.textContent = \`
           html.dail-native-app, html.dail-native-app body { overscroll-behavior: none; }
-          html.dail-native-app:not(.dail-app-view-map) body { padding-bottom: 104px !important; }
+          html.dail-native-app:not(.dail-app-view-map) body { padding-bottom: 126px !important; }
           html.dail-native-app body > header,
           html.dail-native-app body > footer { display: none !important; }
           html.dail-native-app [data-web-only] { display: none !important; }
@@ -139,7 +144,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
           }
           html.dail-app-view-map #search .map-toolbar { top: 126px !important; right: 12px !important; }
           html.dail-app-view-map #search .map-status { top: 128px !important; max-width: calc(100% - 130px); }
-          html.dail-app-view-map #search .detail-panel { bottom: 98px !important; }
+          html.dail-app-view-map #search .detail-panel { bottom: 116px !important; }
 
           html.dail-app-view-saved .account-hero,
           html.dail-app-view-saved .account-grid { display: none !important; }
@@ -162,7 +167,7 @@ const NATIVE_PRESENTATION_SCRIPT = `
           html.dail-app-view-login main#top,
           html.dail-app-view-login body > footer { display: none !important; }
           html.dail-app-view-login body { min-height: 100dvh; background: #f7f7f5 !important; }
-          html.dail-app-view-login .auth-overlay { padding: 14px 14px 104px !important; background: #f7f7f5 !important; }
+          html.dail-app-view-login .auth-overlay { padding: 14px 14px 126px !important; background: #f7f7f5 !important; }
           html.dail-app-view-login .auth-modal { max-height: calc(100dvh - 28px) !important; border-radius: 22px !important; }
         \`;
         (document.head || root).appendChild(style);
@@ -525,6 +530,7 @@ export default function App() {
 
   const screen = APP_SCREENS[activeScreen] || APP_SCREENS.home;
   const showingHome = activeScreen === "home";
+  const activeTabIndex = TAB_SCREENS.findIndex((item) => item.id === activeScreen);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -622,40 +628,48 @@ export default function App() {
 
       <View style={styles.tabDock} pointerEvents="box-none">
         <View style={styles.tabGlassShadow}>
-          <BlurView
-            intensity={Platform.OS === "ios" ? 78 : 36}
-            tint={Platform.OS === "ios" ? "systemChromeMaterialLight" : "light"}
-            experimentalBlurMethod={Platform.OS === "android" ? "none" : undefined}
-            style={styles.tabGlass}
-          >
-            <View style={styles.tabGlassHighlight} pointerEvents="none" />
-            <View style={styles.tabBar} accessibilityRole="tablist">
-              {TAB_SCREENS.map((tabScreen) => {
-                const active = activeScreen === tabScreen.id;
-                return (
-                  <TouchableOpacity
-                    key={tabScreen.id}
-                    style={[styles.tab, active && styles.tabActive]}
-                    onPress={() => openScreen(tabScreen)}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: active }}
-                    activeOpacity={0.72}
-                  >
-                    <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
-                      <Ionicons
-                        name={active ? tabScreen.activeIcon : tabScreen.icon}
-                        size={21}
-                        color={active ? "#111111" : "#686d69"}
-                        accessibilityElementsHidden
-                        importantForAccessibility="no-hide-descendants"
-                      />
-                    </View>
-                    <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabScreen.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </BlurView>
+          {NativeLiquidGlassView ? (
+            <NativeLiquidGlassView
+              pointerEvents="none"
+              itemCount={TAB_SCREENS.length}
+              selectedIndex={activeTabIndex}
+              style={styles.tabNativeGlass}
+            />
+          ) : (
+            <BlurView
+              intensity={36}
+              tint="light"
+              experimentalBlurMethod={Platform.OS === "android" ? "none" : undefined}
+              pointerEvents="none"
+              style={styles.tabFallbackGlass}
+            />
+          )}
+          <View style={styles.tabBar} accessibilityRole="tablist">
+            {TAB_SCREENS.map((tabScreen) => {
+              const active = activeScreen === tabScreen.id;
+              return (
+                <TouchableOpacity
+                  key={tabScreen.id}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => openScreen(tabScreen)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  activeOpacity={0.72}
+                >
+                  <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
+                    <Ionicons
+                      name={active ? tabScreen.activeIcon : tabScreen.icon}
+                      size={21}
+                      color={active ? "#111111" : "#686d69"}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants"
+                    />
+                  </View>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabScreen.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -674,7 +688,7 @@ const styles = StyleSheet.create({
   homeContent: {
     paddingHorizontal: 18,
     paddingTop: 12,
-    paddingBottom: 116,
+    paddingBottom: 132,
   },
   homeHeader: {
     minHeight: 58,
@@ -1055,35 +1069,33 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: Platform.OS === "ios" ? 8 : 10,
+    bottom: Platform.OS === "ios" ? 16 : 12,
     zIndex: 50,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
   },
   tabGlassShadow: {
+    width: "100%",
+    maxWidth: 520,
     minHeight: 72,
     borderRadius: 31,
-    backgroundColor: "rgba(248,248,246,.58)",
+    backgroundColor: Platform.OS === "ios" ? "transparent" : "rgba(248,248,246,.74)",
     shadowColor: "#0b1720",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: Platform.OS === "ios" ? 0.2 : 0.12,
-    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 9 },
+    shadowOpacity: Platform.OS === "ios" ? 0.16 : 0.12,
+    shadowRadius: 20,
     elevation: 16,
   },
-  tabGlass: {
-    minHeight: 72,
+  tabNativeGlass: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  tabFallbackGlass: {
+    ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,.88)",
     borderRadius: 31,
     backgroundColor: "rgba(249,249,247,.46)",
-  },
-  tabGlassHighlight: {
-    position: "absolute",
-    top: 1,
-    left: 24,
-    right: 24,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,.96)",
   },
   tabBar: {
     minHeight: 70,
@@ -1091,6 +1103,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     flexDirection: "row",
     backgroundColor: "transparent",
+    zIndex: 1,
   },
   tab: {
     flex: 1,
@@ -1102,13 +1115,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   tabActive: {
-    borderColor: "rgba(255,255,255,.86)",
-    backgroundColor: "rgba(255,255,255,.58)",
+    borderColor: Platform.OS === "ios" ? "transparent" : "rgba(255,255,255,.86)",
+    backgroundColor: Platform.OS === "ios" ? "transparent" : "rgba(255,255,255,.58)",
     shadowColor: "#111111",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: Platform.OS === "ios" ? 0 : 0.1,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: Platform.OS === "ios" ? 0 : 3,
   },
   tabIconWrap: {
     width: 36,
@@ -1118,7 +1131,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tabIconWrapActive: {
-    backgroundColor: "rgba(255,255,255,.42)",
+    backgroundColor: Platform.OS === "ios" ? "transparent" : "rgba(255,255,255,.42)",
   },
   tabText: {
     color: "#72756f",

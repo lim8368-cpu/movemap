@@ -19,6 +19,10 @@ server {
   listen [::]:80;
   server_name ${MOVEMAP_DOMAIN};
 
+  if ($host = www.dail.life) {
+    return 308 https://dail.life$request_uri;
+  }
+
   client_max_body_size 4m;
   server_tokens off;
 
