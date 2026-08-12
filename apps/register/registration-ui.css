@@ -1221,8 +1221,17 @@ body { background: var(--bg); color: var(--ink); word-break: keep-all; }
   background: rgba(255, 255, 255, .96);
   backdrop-filter: blur(14px);
 }
-.brand-mark { background: #111; }
-.brand-mark i { border-color: #87a9ab; }
+.brand-mark {
+  overflow: hidden;
+  border: 1px solid rgba(15, 28, 46, .08);
+  border-radius: 50%;
+  background: #fff url("/assets/dail-logo-primary.png") center / cover no-repeat;
+  box-shadow: 0 2px 8px rgba(15, 28, 46, .1);
+}
+.brand-mark::before,
+.brand-mark::after,
+.brand-mark > span,
+.brand-mark i { display: none !important; }
 .site-header nav .active { color: #111; }
 .find { background: #111; }
 .hero {

@@ -4,6 +4,7 @@ import { BlurView } from "expo-blur";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
   Platform,
   SafeAreaView,
@@ -348,10 +349,11 @@ function HomeScreen({ onOpen }) {
     >
       <View style={styles.homeHeader}>
         <View style={styles.homeBrand}>
-          <View style={styles.homeBrandMark}>
-            <View style={styles.homeBrandRing} />
-            <View style={styles.homeBrandDot} />
-          </View>
+          <Image
+            source={require("./public/web/assets/dail-logo-primary.png")}
+            style={styles.homeBrandMark}
+            accessibilityLabel="DAIL 로고"
+          />
           <View>
             <Text style={styles.homeBrandName}>DAIL</Text>
             <Text style={styles.homeBrandTagline}>다시 일상으로</Text>
@@ -705,24 +707,7 @@ const styles = StyleSheet.create({
   homeBrandMark: {
     width: 40,
     height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 13,
-    backgroundColor: "#111111",
-  },
-  homeBrandRing: {
-    width: 21,
-    height: 21,
-    borderWidth: 2,
-    borderColor: "#50a1a5",
-    borderRadius: 11,
-  },
-  homeBrandDot: {
-    position: "absolute",
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#50a1a5",
+    borderRadius: 20,
   },
   homeBrandName: {
     color: "#111111",

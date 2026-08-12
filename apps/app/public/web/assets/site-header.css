@@ -55,27 +55,22 @@ html{scroll-padding-top:82px}
 .site-header .brand-mark{
   width:36px;
   height:36px;
-  display:grid;
-  place-items:center;
+  display:block;
   position:relative;
   flex:0 0 auto;
-  border-radius:11px;
-  background:var(--site-header-navy);
+  overflow:hidden;
+  border:1px solid rgba(15,28,46,.08);
+  border-radius:50%;
+  background:#fff url("/assets/dail-logo-primary.png") center/cover no-repeat;
+  box-shadow:0 2px 8px rgba(15,28,46,.1);
   transition:transform .24s ease;
 }
 
 .site-header .brand-mark::before,
 .site-header .brand-mark::after,
 .site-header .brand-mark>span{
-  content:"";
-  position:absolute;
-  border:2px solid #69aeb1;
-  border-radius:50%;
+  display:none;
 }
-
-.site-header .brand-mark::before{width:17px;height:17px}
-.site-header .brand-mark::after{width:5px;height:5px;background:#69aeb1}
-.site-header .brand-mark>span{width:25px;height:10px;border-right-color:transparent;border-left-color:transparent}
 
 .site-header .brand-name{
   display:block;
@@ -322,7 +317,7 @@ html{scroll-padding-top:82px}
     padding:0 16px;
     gap:9px;
   }
-  .site-header .brand-mark{width:34px;height:34px;border-radius:10px}
+  .site-header .brand-mark{width:34px;height:34px;border-radius:50%}
   .site-header .brand-name{font-size:18px}
   .site-header .brand-name small{margin-top:4px;font-size:8px}
   .site-header .menu-toggle{display:inline-flex;order:3;flex:0 0 auto}

@@ -32,31 +32,10 @@
   font-size: 1.15em;
 }
 
-.brand-symbol > span {
-  width: 16px;
-  height: 16px;
-  position: relative;
-  display: block;
-}
-
-.brand-symbol > span::before,
-.brand-symbol > span::after {
-  content: "";
-  position: absolute;
-  inset: 50% auto auto 50%;
-  border: 1.8px solid currentColor;
+.brand-symbol {
+  overflow: hidden;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  background: #fff url("/assets/dail-logo-primary.png") center / cover no-repeat;
 }
 
-.brand-symbol > span::before {
-  width: 14px;
-  height: 14px;
-}
-
-.brand-symbol > span::after {
-  width: 5px;
-  height: 5px;
-  background: currentColor;
-  box-shadow: 0 0 0 3px currentColor inset;
-}
+.brand-symbol > span { display: none; }

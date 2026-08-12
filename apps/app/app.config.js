@@ -32,13 +32,13 @@ module.exports = () => {
       version: "0.1.0",
       orientation: "portrait",
       userInterfaceStyle: "light",
-      icon: "./public/web/assets/dail-kakao-app-icon.png",
+      icon: "./public/web/assets/dail-logo-primary.png",
       assetBundlePatterns: ["**/*"],
       extra: { appEnv },
       ios: {
         supportsTablet: true,
         bundleIdentifier: profile.identifier,
-        icon: "./public/web/assets/dail-kakao-app-icon.png",
+        icon: "./public/web/assets/dail-logo-primary.png",
         infoPlist: {
           NSCameraUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 촬영할 때 사용합니다.",
           NSPhotoLibraryUsageDescription: "센터 등록에 필요한 센터 및 면허 증빙 사진을 선택할 때 사용합니다.",
@@ -52,7 +52,10 @@ module.exports = () => {
       android: {
         package: profile.identifier,
         permissions: ["CAMERA"],
-        adaptiveIcon: { backgroundColor: "#0e2a3d" },
+        adaptiveIcon: {
+          foregroundImage: "./public/web/assets/dail-logo-primary.png",
+          backgroundColor: "#ffffff",
+        },
       },
     },
   };
