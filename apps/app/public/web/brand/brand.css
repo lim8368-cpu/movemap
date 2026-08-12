@@ -437,61 +437,74 @@
 .brand-symbol-section{
   padding:150px max(24px,calc((100% - 1120px)/2));
   display:grid;
-  grid-template-columns:.72fr 1.28fr;
-  align-items:center;
-  gap:82px;
+  grid-template-columns:minmax(280px,.76fr) minmax(430px,1.24fr);
+  align-items:stretch;
+  gap:clamp(62px,8vw,112px);
+  background:#fff;
 }
-.symbol-intro>p{
-  max-width:450px;
-  margin:34px 0 0;
+.symbol-editorial-copy{
+  align-self:center;
+  max-width:440px;
+}
+.symbol-story{
+  margin:42px 0 0;
   color:#62645f;
   font-size:17px;
-  line-height:1.8;
+  line-height:1.9;
 }
-.symbol-showcase{
-  padding:38px;
-  display:grid;
-  grid-template-columns:minmax(230px,.86fr) 1.14fr;
-  align-items:center;
-  gap:38px;
-  border:1px solid #e2e3de;
-  border-radius:28px;
-  background:var(--brand-paper);
+.symbol-signature{
+  margin:45px 0 0;
+  padding-top:23px;
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-top:1px solid #d9dbd6;
+  color:var(--brand-navy);
 }
-.symbol-visual{
+.symbol-signature strong{
+  font-size:17px;
+  letter-spacing:.08em;
+}
+.symbol-signature span{
+  color:#858982;
+  font-size:12px;
+  font-weight:700;
+}
+.symbol-editorial-visual{
+  min-height:580px;
   margin:0;
-  padding:24px;
-  border-radius:24px;
-  background:#fff;
-  box-shadow:0 18px 45px rgba(17,17,17,.08);
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,#f5f6f2 0%,#ebece7 100%);
 }
-.symbol-visual img{
-  width:100%;
+.symbol-editorial-visual:before{
+  content:"";
+  width:min(74%,430px);
+  aspect-ratio:1;
+  position:absolute;
+  border-radius:50%;
+  background:rgba(255,255,255,.72);
+}
+.symbol-editorial-visual img{
+  width:min(390px,68%);
   display:block;
+  position:relative;
+  z-index:1;
   aspect-ratio:1;
   border-radius:50%;
   object-fit:cover;
 }
-.symbol-visual figcaption{
-  margin-top:18px;
-  color:#8b8e88;
+.symbol-editorial-visual figcaption{
+  position:absolute;
+  right:28px;
+  bottom:25px;
+  color:#7a7e76;
   font-size:9px;
   font-weight:800;
-  letter-spacing:.16em;
-  text-align:center;
+  letter-spacing:.18em;
 }
-.symbol-meanings{display:grid}
-.symbol-meanings article{
-  padding:22px 0;
-  display:grid;
-  grid-template-columns:34px 1fr;
-  gap:14px;
-  border-top:1px solid #dfe0dc;
-}
-.symbol-meanings article:last-child{border-bottom:1px solid #dfe0dc}
-.symbol-meanings span{padding-top:2px;color:var(--brand-mint);font-size:10px;font-weight:850}
-.symbol-meanings h3{margin:0 0 7px;font-size:16px}
-.symbol-meanings p{margin:0;color:#70736d;font-size:12px;line-height:1.65}
 
 .brand-colors{
   padding:140px max(24px,calc((100% - 1120px)/2));
@@ -567,9 +580,8 @@
   .brand-role-intro{gap:54px}
   .brand-platform-position{grid-template-columns:.58fr 1.2fr 1fr;gap:28px}
   .brand-collaboration{grid-template-columns:.44fr 1.4fr 48px;gap:28px}
-  .brand-symbol-section{grid-template-columns:1fr;gap:60px}
-  .symbol-intro>p{max-width:700px}
-  .symbol-showcase{width:min(760px,100%);margin:auto}
+  .brand-symbol-section{grid-template-columns:minmax(260px,.8fr) minmax(360px,1.2fr);gap:54px}
+  .symbol-editorial-visual{min-height:500px}
   .brand-standard{gap:60px}
 }
 
@@ -642,9 +654,13 @@
   .journey-flow h3{margin-top:24px}
   .journey-statement{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;font-size:24px}
   .journey-statement b{margin:0 4px}
-  .symbol-showcase{padding:22px;grid-template-columns:1fr;gap:12px;border-radius:24px}
-  .symbol-visual{width:min(330px,100%);margin:auto;padding:20px;border-radius:20px}
-  .symbol-meanings article{padding:20px 4px}
+  .brand-symbol-section{grid-template-columns:1fr;gap:52px}
+  .symbol-editorial-copy{max-width:none}
+  .symbol-editorial-copy .brand-section-heading h2{font-size:clamp(38px,11vw,48px);line-height:1.12}
+  .symbol-story{margin-top:32px;font-size:16px}
+  .symbol-signature{margin-top:34px}
+  .symbol-editorial-visual{min-height:0;aspect-ratio:1/.94}
+  .symbol-editorial-visual img{width:min(330px,68%)}
   .color-cards{margin-top:52px;grid-template-columns:1fr}
   .color-card{min-height:360px;padding:28px}
   .brand-standard{grid-template-columns:1fr;gap:50px}
@@ -662,8 +678,9 @@
   .brand-manifesto h2 br,
   .brand-section-heading h2 br,
   .brand-standard h2 br{display:none}
+  .symbol-editorial-copy .brand-section-heading h2 br{display:block}
   .daily-moment{height:390px}
-  .symbol-showcase{padding:16px}
+  .symbol-editorial-visual figcaption{right:18px;bottom:17px}
 }
 
 @media(prefers-reduced-motion:reduce){
