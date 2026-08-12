@@ -1,0 +1,55 @@
+.brand-preview-site .site-header .main-nav,
+.brand-preview-site .site-header .header-actions,
+.brand-preview-site .site-header .menu-toggle,
+.brand-preview-site .brand-collaboration-link,
+.brand-preview-site .brand-final-cta > div,
+.brand-preview-site footer > div:not(.footer-brand){display:none!important}
+
+.brand-preview-site .site-header{
+  grid-template-columns:auto 1fr;
+}
+
+.brand-preview-site .site-header::after{
+  content:"브랜드 선공개";
+  margin-left:auto;
+  color:#727670;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.16em;
+}
+
+.brand-preview-site .brand-collaboration{
+  grid-template-columns:.44fr 1.55fr;
+}
+
+.brand-preview-site .brand-final-cta::after{
+  content:"전체 서비스는 준비 중입니다";
+  min-height:44px;
+  margin:40px auto 0;
+  padding:0 22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #9bc3c5;
+  border-radius:999px;
+  color:#106165;
+  background:rgba(255,255,255,.52);
+  font-size:13px;
+  font-weight:800;
+}
+
+.brand-preview-site footer{
+  grid-template-columns:minmax(0,1fr) auto;
+}
+
+.brand-preview-site footer .copyright{
+  align-self:end;
+  text-align:right;
+}
+
+@media(max-width:760px){
+  .brand-preview-site .site-header::after{font-size:8px;letter-spacing:.12em}
+  .brand-preview-site .brand-collaboration{grid-template-columns:1fr}
+  .brand-preview-site footer{grid-template-columns:1fr}
+  .brand-preview-site footer .copyright{text-align:left}
+}

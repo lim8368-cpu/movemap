@@ -1,0 +1,41 @@
+services:
+  brand:
+    build:
+      context: .
+      dockerfile: Dockerfile.brand
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=16m,noexec,nosuid
+      - /var/run:size=4m,noexec,nosuid
+      - /tmp:size=8m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=movemap-preview-edge
+      - traefik.http.routers.dail-brand.rule=Host(`${BRAND_HOST:-brand.dail.life}`) || Host(`${BRAND_LEGACY_HOST:-brand-dail.157-90-26-205.sslip.io}`)
+      - traefik.http.routers.dail-brand.entrypoints=websecure
+      - traefik.http.routers.dail-brand.tls=true
+      - traefik.http.routers.dail-brand.tls.certresolver=letsencrypt
+      - traefik.http.services.dail-brand.loadbalancer.server.port=8080
+    networks:
+      - preview-edge
+
+networks:
+  preview-edge:
+    external: true
+    name: movemap-preview-edge
