@@ -35,7 +35,7 @@
 .brand-symbol {
   overflow: hidden;
   border-radius: 50%;
-  background: #fff url("/assets/dail-logo-primary.png") center / cover no-repeat;
+  background: #fff url("/assets/dail-logo-primary.png?v=20260812-logo-alpha") center / cover no-repeat;
 }
 
 .brand-symbol > span { display: none; }

@@ -1838,10 +1838,10 @@ footer{padding-top:48px}
 /* Primary DAIL logo */
 .brand-mark{
   overflow:hidden;
-  border:1px solid rgba(255,255,255,.18);
+  border:0;
   border-radius:50%;
-  background:#fff url("/assets/dail-logo-primary.png") center/cover no-repeat;
-  box-shadow:0 2px 8px rgba(15,28,46,.12);
+  background:#fff url("/assets/dail-logo-primary.png?v=20260812-logo-alpha") center/cover no-repeat;
+  box-shadow:none;
 }
 .brand-mark:before,
 .brand-mark:after,
@@ -1851,10 +1851,10 @@ footer{padding-top:48px}
   display:inline-block;
   flex:0 0 auto;
   overflow:hidden;
-  border:1px solid rgba(15,28,46,.08);
+  border:0;
   border-radius:50%;
-  background:#fff url("/assets/dail-logo-primary.png") center/cover no-repeat;
-  box-shadow:0 2px 8px rgba(15,28,46,.12);
+  background:#fff url("/assets/dail-logo-primary.png?v=20260812-logo-alpha") center/cover no-repeat;
+  box-shadow:none;
 }
 .auth-logo i{width:28px;height:28px}
 .phone-logo i{width:34px;height:34px;margin-right:7px;vertical-align:-9px}

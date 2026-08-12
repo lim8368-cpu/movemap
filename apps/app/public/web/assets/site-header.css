@@ -59,10 +59,10 @@ html{scroll-padding-top:82px}
   position:relative;
   flex:0 0 auto;
   overflow:hidden;
-  border:1px solid rgba(15,28,46,.08);
+  border:0;
   border-radius:50%;
-  background:#fff url("/assets/dail-logo-primary.png") center/cover no-repeat;
-  box-shadow:0 2px 8px rgba(15,28,46,.1);
+  background:#fff url("/assets/dail-logo-primary.png?v=20260812-logo-alpha") center/cover no-repeat;
+  box-shadow:none;
   transition:transform .24s ease;
 }
 
