@@ -35,7 +35,18 @@ html = html
   .replace('class="brand-story-page"', 'class="brand-story-page brand-preview-site"')
   .replace(/<script defer src="\.\.\/assets\/site-header\.js[^>]*><\/script>\s*/g, "")
   .replace('<a class="brand" href="/" aria-label="DAIL 홈">', '<a class="brand" href="/" aria-label="DAIL 브랜드 이야기 홈">')
-  .replace('<a class="brand" href="/">', '<a class="brand" href="/" aria-label="DAIL 브랜드 이야기 홈">');
+  .replace('<a class="brand" href="/">', '<a class="brand" href="/" aria-label="DAIL 브랜드 이야기 홈">')
+  .replace(
+    /\s*<button class="menu-toggle"[\s\S]*?<\/button>\s*<nav id="brandMainNav"[\s\S]*?<\/nav>\s*<div class="header-actions">[\s\S]*?<\/div>/,
+    '\n    <p class="header-release-status">브랜드 선공개</p>'
+  )
+  .replace(/\s*<a class="brand-collaboration-link"[\s\S]*?<\/a>/, "")
+  .replace(
+    /\s*<div>\s*<a class="button primary" href="\/#search">내 주변 센터 찾기<\/a>\s*<a class="button outline" href="\/register\/">센터 등록 신청<\/a>\s*<\/div>/,
+    '\n      <p class="brand-preview-notice">전체 서비스는 준비 중입니다</p>'
+  )
+  .replace(/\s*<div><b>서비스<\/b>[\s\S]*?센터 파트너 신청<\/a><\/div>/, "")
+  .replace(/\s*<div><b>안내<\/b>[\s\S]*?개인정보처리방침<\/a><\/div>/, "");
 
 fs.writeFileSync(path.join(target, "index.html"), html);
 console.log(`Brand-only static assets copied to ${target}`);
