@@ -1,0 +1,82 @@
+name: movemap-analytics
+
+services:
+  analytics:
+    image: ghcr.io/umami-software/umami:3.2.0
+    init: true
+    restart: unless-stopped
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?required}@analytics-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?required}
+      CLIENT_IP_HEADER: X-Forwarded-For
+      COLLECT_API_ENDPOINT: /dail-event
+      DISABLE_TELEMETRY: "1"
+      DISABLE_UPDATES: "1"
+    mem_limit: 640m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=movemap-preview-edge
+      - traefik.http.routers.dail-analytics.rule=Host(`${ANALYTICS_HOST:-stats.dail.life}`)
+      - traefik.http.routers.dail-analytics.entrypoints=websecure
+      - traefik.http.routers.dail-analytics.tls=true
+      - traefik.http.routers.dail-analytics.tls.certresolver=letsencrypt
+      - traefik.http.routers.dail-analytics.middlewares=dail-analytics-security
+      - traefik.http.routers.dail-analytics.service=dail-analytics
+      - traefik.http.routers.dail-analytics-legacy.rule=Host(`${ANALYTICS_LEGACY_HOST:-stats-dail.157-90-26-205.sslip.io}`)
+      - traefik.http.routers.dail-analytics-legacy.entrypoints=websecure
+      - traefik.http.routers.dail-analytics-legacy.tls=true
+      - traefik.http.routers.dail-analytics-legacy.tls.certresolver=letsencrypt
+      - traefik.http.routers.dail-analytics-legacy.middlewares=dail-analytics-security
+      - traefik.http.routers.dail-analytics-legacy.service=dail-analytics
+      - traefik.http.middlewares.dail-analytics-security.headers.contenttypenosniff=true
+      - traefik.http.middlewares.dail-analytics-security.headers.referrerpolicy=same-origin
+      - traefik.http.middlewares.dail-analytics-security.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow, noarchive
+      - traefik.http.services.dail-analytics.loadbalancer.server.port=3000
+    networks:
+      - analytics-internal
+      - preview-edge
+
+  analytics-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:?required}
+    volumes:
+      - analytics-db-data:/var/lib/postgresql/data
+    mem_limit: 320m
+    cpus: 0.5
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - analytics-internal
+
+networks:
+  analytics-internal:
+    internal: true
+  preview-edge:
+    external: true
+    name: movemap-preview-edge
+
+volumes:
+  analytics-db-data:

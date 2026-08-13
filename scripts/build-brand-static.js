@@ -5,6 +5,9 @@ const root = path.resolve(__dirname, "..");
 const webRoot = path.join(root, "apps", "app", "public", "web");
 const brandRoot = path.join(webRoot, "brand");
 const target = path.join(root, "dist-brand");
+const analyticsWebsiteId = "e6f5d5ec-49df-4bde-ae0c-93f8560148e7";
+const analyticsOrigin =
+  process.env.BRAND_ANALYTICS_ORIGIN || "https://stats-dail.157-90-26-205.sslip.io";
 
 function copyDirectory(from, to) {
   fs.mkdirSync(to, { recursive: true });
@@ -47,6 +50,18 @@ html = html
   )
   .replace(/\s*<div><b>서비스<\/b>[\s\S]*?센터 파트너 신청<\/a><\/div>/, "")
   .replace(/\s*<div><b>안내<\/b>[\s\S]*?개인정보처리방침<\/a><\/div>/, "");
+
+const analyticsScript = [
+  "  <!-- DAIL 브랜드 선공개 방문 통계: Main/Dev와 분리된 자체 호스팅 분석 -->",
+  `  <script defer src="${analyticsOrigin}/script.js"`,
+  `    data-website-id="${analyticsWebsiteId}"`,
+  `    data-host-url="${analyticsOrigin}"`,
+  '    data-domains="brand.dail.life"',
+  '    data-do-not-track="true"',
+  '    data-exclude-search="true"></script>',
+].join("\n");
+
+html = html.replace("</head>", `${analyticsScript}\n</head>`);
 
 fs.writeFileSync(path.join(target, "index.html"), html);
 console.log(`Brand-only static assets copied to ${target}`);
