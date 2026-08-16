@@ -13,8 +13,9 @@ module.exports = async function handler(req, res) {
   const admin = await requireAdminRole(req, res, ["super_admin", "admin", "support", "analyst"]);
   if (!admin) return;
   try {
-    const [applications, centerRows, events, ownerAccounts, ownerMemberships, reviews] = await Promise.all([
+    const [applications, partnerApplications, centerRows, events, ownerAccounts, ownerMemberships, reviews] = await Promise.all([
       supabaseRequest("center_applications", { query: "?select=*&order=created_at.desc" }),
+      supabaseRequest("partner_applications", { query: "?select=*&order=created_at.desc&limit=500" }).catch(() => []),
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=1000" }),
       supabaseRequest("center_owner_accounts", {
@@ -104,6 +105,8 @@ module.exports = async function handler(req, res) {
       totals: {
         centers: centers.length,
         pendingCenters: applications.filter((item) => item.status === "pending").length,
+        partnerApplications: partnerApplications.length,
+        newPartnerApplications: partnerApplications.filter((item) => item.status === "received").length,
         views: events.filter((item) => item.event_type === "view").length,
         contactClicks: events.filter((item) => item.event_type === "contact").length,
         events: events.length,
@@ -113,6 +116,25 @@ module.exports = async function handler(req, res) {
         pendingReviews: reviews.filter((item) => item.status === "pending").length,
       },
       centerApplications: admin.role === "analyst" ? [] : applicationItems,
+      partnerApplications: admin.role === "analyst" ? [] : partnerApplications.map((item) => ({
+        id: item.id,
+        applicantName: item.applicant_name,
+        centerName: item.center_name || "센터명 미정",
+        centerStage: item.center_stage,
+        qualificationType: item.qualification_type,
+        region: item.region,
+        contactEmail: item.contact_email,
+        contactPhone: item.contact_phone,
+        websiteUrl: item.website_url || "",
+        interests: item.interests || [],
+        message: item.message || "",
+        status: item.status,
+        adminNote: item.admin_note || "",
+        source: item.source,
+        lastContactedAt: item.last_contacted_at,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+      })),
       centers: admin.role === "analyst"
         ? centers.map(({ ownerAccount, registrationEmail, ...center }) => center)
         : centers,

@@ -95,6 +95,10 @@
       "destination": "/api/center-applications"
     },
     {
+      "source": "/api/partner-applications",
+      "destination": "/api/partner-applications"
+    },
+    {
       "source": "/api/centers/:id/location",
       "destination": "/api/centers/:id/location"
     },
@@ -109,6 +113,18 @@
     {
       "source": "/register/:path*",
       "destination": "/register/:path*"
+    },
+    {
+      "source": "/partner-apply",
+      "destination": "/partner-apply/index.html"
+    },
+    {
+      "source": "/partner-apply/",
+      "destination": "/partner-apply/index.html"
+    },
+    {
+      "source": "/partner-apply/:path*",
+      "destination": "/partner-apply/:path*"
     },
     {
       "source": "/admin/:path*",

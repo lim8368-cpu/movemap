@@ -66,6 +66,7 @@ const apiRoutes = new Map([
   ["/api/owner-login", require("../api/owner-login")],
   ["/api/owner-logout", require("../api/owner-logout")],
   ["/api/owner-uploads", require("../api/owner-uploads")],
+  ["/api/partner-applications", require("../api/partner-applications")],
   ["/api/operations", require("../api/operations")],
   ["/api/place-search", require("../api/place-search")],
   ["/api/platform-users", require("../api/platform-users")],
@@ -188,6 +189,7 @@ function staticPathFor(pathname) {
   if (requested === "/admin/") requested = "/admin/index.html";
   if (requested === "/brand/") requested = "/brand/index.html";
   if (requested === "/collaboration/") requested = "/collaboration/index.html";
+  if (requested === "/partner-apply/") requested = "/partner-apply/index.html";
   if (requested === "/register/") requested = "/register/index.html";
   if (requested === "/center-dashboard/") requested = "/center-dashboard/index.html";
   if (requested === "/account/") requested = "/account/index.html";
@@ -205,6 +207,7 @@ function serveStatic(req, res, url) {
     url.pathname === "/admin" ||
     url.pathname === "/brand" ||
     url.pathname === "/collaboration" ||
+    url.pathname === "/partner-apply" ||
     url.pathname === "/register" ||
     url.pathname === "/center-dashboard" ||
     url.pathname === "/account" ||

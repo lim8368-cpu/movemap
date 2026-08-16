@@ -1,0 +1,70 @@
+.partner-apply-page{
+  --partner-teal:#158187;
+  --partner-navy:#0f1c2e;
+  --partner-paper:#f3f5f2;
+}
+.partner-apply-page .main-nav .is-current{color:#111;font-weight:800}
+.partner-hero{background:linear-gradient(135deg,#0b1728 0%,#101c2d 70%,#102e35 100%)}
+.partner-hero h1 em{color:#7fb9b8}
+.partner-hero-copy>p{max-width:480px;margin:0;color:#c0c7ca;font-size:17px;line-height:1.82;letter-spacing:-.02em}
+.partner-hero-copy ul{margin:26px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px;list-style:none}
+.partner-hero-copy li{padding:8px 13px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:#e5ebec;font-size:11px;font-weight:750}
+.partner-content{background:var(--partner-paper)}
+.partner-guide h2{margin-bottom:34px}
+.partner-steps{margin:0;padding:0;display:grid;gap:0;list-style:none;counter-reset:none}
+.partner-steps li{position:relative;padding:0 0 29px 57px;display:block}
+.partner-steps li:not(:last-child)::after{content:"";width:1px;position:absolute;left:20px;top:40px;bottom:0;background:#d3d9d6}
+.partner-steps li>b{width:40px;height:40px;position:absolute;left:0;top:0;display:grid;place-items:center;border-radius:50%;background:#fff;color:var(--partner-teal);box-shadow:0 0 0 1px #dce2df;font-size:10px;letter-spacing:.04em}
+.partner-steps strong,.partner-steps span{display:block}
+.partner-steps strong{padding-top:2px;font-size:15px}
+.partner-steps span{margin-top:7px;color:#707873;font-size:12px;line-height:1.65}
+.partner-principle{margin-top:5px}
+.formal-registration-link{margin-top:16px;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #dfe3e0;border-radius:14px;background:#fff;color:#37403c;font-size:11px;font-weight:750;line-height:1.5}
+.formal-registration-link .ui-icon{width:16px;height:16px;flex:0 0 auto;color:var(--partner-teal)}
+.partner-form-card .form-heading p{line-height:1.6}
+.choice-cards{display:grid;gap:10px}
+.stage-options{grid-template-columns:repeat(3,1fr)}
+.interest-options{grid-template-columns:1fr 1fr}
+.choice-cards label{min-width:0;position:relative;cursor:pointer}
+.choice-cards input{width:1px;height:1px;position:absolute;opacity:0}
+.choice-cards label>span{height:100%;min-height:100px;padding:18px;display:flex;flex-direction:column;justify-content:center;border:1px solid #d8dad5;border-radius:15px;background:#fbfbf9;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease}
+.interest-options label>span{min-height:92px}
+.choice-cards b,.choice-cards small{display:block}
+.choice-cards b{color:#292e2b;font-size:13px}
+.choice-cards small{margin-top:8px;color:#7d837f;font-size:10px;line-height:1.55}
+.choice-cards input:checked+span{border-color:var(--partner-navy);background:#f1f5f4;box-shadow:inset 0 0 0 1px var(--partner-navy)}
+.choice-cards input:checked+span::after{content:"✓";width:22px;height:22px;position:absolute;right:12px;top:12px;display:grid;place-items:center;border-radius:50%;background:var(--partner-navy);color:#fff;font-size:11px;font-weight:900}
+.choice-cards input:focus-visible+span{outline:3px solid rgba(21,129,135,.18);outline-offset:2px}
+.partner-message-field{margin-top:24px}
+.partner-message-field textarea{min-height:130px}
+.partner-human-check{margin-top:32px;padding:22px;border:1px solid #dbe7e3;border-radius:16px;background:#f3f8f6}
+.human-check-heading{display:flex;align-items:center;gap:13px}
+.human-check-heading>i{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border-radius:11px;background:#fff;color:var(--partner-teal);font-style:normal;box-shadow:0 0 0 1px #dce7e3}
+.human-check-heading .ui-icon{width:18px;height:18px}
+.human-check-heading h3{margin:0;font-size:14px}
+.human-check-heading p{margin:5px 0 0;color:#72807a;font-size:10px}
+.partner-human-check>label:not(.honeypot){margin-top:16px;padding:13px 14px;display:grid;grid-template-columns:1fr 130px;align-items:center;gap:14px;border-radius:12px;background:#fff;color:#30413a;font-size:12px;font-weight:750}
+.partner-human-check>label input{height:44px;text-align:center}
+#turnstileChallenge{margin-top:16px}
+#challengeStatus{margin:12px 0 0;color:#68766f;font-size:10px;line-height:1.5}
+#challengeStatus.success{color:#18744f;font-weight:750}
+#challengeStatus.error{color:#a73a33;font-weight:750}
+.partner-form-card .success-panel{min-height:720px}
+
+@media(max-width:760px){
+  .partner-hero-copy>p{font-size:15px}
+  .stage-options,.interest-options{grid-template-columns:1fr}
+  .choice-cards label>span,.interest-options label>span{min-height:84px}
+  .partner-human-check>label:not(.honeypot){grid-template-columns:1fr}
+  .partner-form-card input,.partner-form-card select,.partner-form-card textarea{font-size:16px}
+}
+
+@media(max-width:420px){
+  .partner-hero-copy ul{gap:6px}
+  .partner-hero-copy li{padding:7px 10px}
+  .partner-human-check{padding:17px 15px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .choice-cards label>span{transition:none}
+}

@@ -25,6 +25,7 @@ let operationsData = null;
 let platformRolesData = { roles: [] };
 let currentAdminRole = "";
 let applicationFilter = "pending";
+let partnerApplicationFilter = "new";
 let activeLogTab = "events";
 let toastTimer = 0;
 let pendingMfaAccessToken = "";
@@ -119,6 +120,13 @@ function statusLabel(status) {
     rejected: "반려",
     active: "활성",
     disabled: "비활성",
+    received: "신규 접수",
+    reviewing: "검토 중",
+    contacted: "연락 완료",
+    qualified: "정식 등록 후보",
+    invited: "등록 초대 완료",
+    converted: "정식 등록 전환",
+    closed: "종료",
   };
   return labels[status] || String(status || "-");
 }
@@ -329,10 +337,15 @@ function renderDashboard() {
 
   document.querySelector("#totalCenters").textContent = formatNumber(totals.centers);
   document.querySelector("#totalPending").textContent = formatNumber(totals.pendingCenters);
+  document.querySelector("#totalNewPartners").textContent = formatNumber(totals.newPartnerApplications);
+  document.querySelector("#partnerMetricCopy").textContent = totals.partnerApplications
+    ? "누적 사전 신청 " + formatNumber(totals.partnerApplications) + "건"
+    : "연락 전 사전 신청";
   document.querySelector("#totalViews").textContent = formatNumber(views);
   document.querySelector("#totalContacts").textContent = formatNumber(contacts);
   document.querySelector("#contactRate").textContent = rate + "%";
   document.querySelector("#navPendingCount").textContent = formatNumber(totals.pendingCenters);
+  document.querySelector("#navPartnerCount").textContent = formatNumber(totals.newPartnerApplications);
   document.querySelector("#navPendingReviewCount").textContent = formatNumber(totals.pendingReviews);
   document.querySelector("#pendingReviewLabel").textContent =
     "승인 대기 " + formatNumber(totals.pendingReviews) + "건";
@@ -343,8 +356,9 @@ function renderDashboard() {
   document.querySelector("#totalAccessLogsLabel").textContent =
     "접속 기록 " + formatNumber(accessData.totals && accessData.totals.accessLogs) + "건";
 
-  renderActionChecklist(totals.pendingCenters || 0, incomplete, missingAccounts);
+  renderActionChecklist(totals.pendingCenters || 0, totals.newPartnerApplications || 0, incomplete, missingAccounts);
   renderOverviewEvents();
+  renderPartnerApplications();
   renderApplications();
   renderReviewModeration();
   renderDirectory();
@@ -364,6 +378,8 @@ function applyAdminRoleView() {
   document.querySelector(".operations-card:last-child").hidden = !superAdmin;
   document.querySelector("#applicationsSection").hidden = analyst;
   document.querySelector('a[href="#applicationsSection"]').hidden = analyst;
+  document.querySelector("#partnerApplicationsSection").hidden = analyst;
+  document.querySelector('a[href="#partnerApplicationsSection"]').hidden = analyst;
   document.querySelector("#reviewsAdminSection").hidden = analyst;
   document.querySelector('a[href="#reviewsAdminSection"]').hidden = analyst;
   document.querySelectorAll('[data-log-tab="access"], [data-log-tab="audit"], [data-log-tab="errors"]').forEach(function (button) {
@@ -371,8 +387,16 @@ function applyAdminRoleView() {
   });
 }
 
-function renderActionChecklist(pending, incomplete, missingAccounts) {
+function renderActionChecklist(pending, newPartners, incomplete, missingAccounts) {
   const items = [
+    {
+      href: "#partnerApplicationsSection",
+      icon: "user-cog",
+      warning: newPartners > 0,
+      title: "신규 파트너 사전 신청",
+      copy: newPartners ? "신청 정보를 확인하고 첫 연락 상태를 기록하세요." : "새로 확인할 사전 신청이 없습니다.",
+      value: formatNumber(newPartners) + "건",
+    },
     {
       href: "#applicationsSection",
       icon: "circle-alert",
@@ -403,6 +427,110 @@ function renderActionChecklist(pending, incomplete, missingAccounts) {
       "<span>" + uiIcon(item.icon) + "</span><div><strong>" + item.title + "</strong><small>" + item.copy +
       "</small></div><b>" + item.value + "</b></a>";
   }).join("");
+}
+
+function partnerStageLabel(stage) {
+  return ({
+    operating: "센터 운영 중",
+    preparing: "오픈 준비 중",
+    planning: "창업 검토 중",
+  })[stage] || stage || "-";
+}
+
+function partnerQualificationLabel(type) {
+  return ({
+    physical_therapist: "물리치료사 면허",
+    sports_science: "체육학 관련 학위",
+    other: "그 외 전문 배경",
+  })[type] || type || "-";
+}
+
+function partnerInterestLabel(value) {
+  return ({
+    "early-partner": "출시 전 파트너",
+    "launch-news": "출시 소식",
+    "product-feedback": "센터장 의견 전달",
+    "promotion-consulting": "센터 소개 상담",
+  })[value] || value;
+}
+
+function partnerMatchesFilter(item) {
+  if (partnerApplicationFilter === "new") return item.status === "received";
+  if (partnerApplicationFilter === "active") {
+    return ["reviewing", "contacted", "qualified", "invited"].includes(item.status);
+  }
+  return true;
+}
+
+function renderPartnerApplications() {
+  const search = document.querySelector("#partnerApplicationSearch").value.trim().toLowerCase();
+  const applications = (dashboardData.partnerApplications || []).filter(function (item) {
+    if (!partnerMatchesFilter(item)) return false;
+    if (!search) return true;
+    return [item.applicantName, item.centerName, item.region, item.contactEmail, item.contactPhone]
+      .some(function (value) { return String(value || "").toLowerCase().includes(search); });
+  });
+  document.querySelector("#partnerApplicationResultCount").textContent = formatNumber(applications.length) + "건";
+  const container = document.querySelector("#partnerApplications");
+  if (!applications.length) {
+    container.innerHTML = emptyState(
+      partnerApplicationFilter === "new" ? "새로 확인할 사전 신청이 없습니다." : "조건에 맞는 사전 신청이 없습니다.",
+      partnerApplicationFilter === "new" ? "신청이 접수되면 이곳에 바로 표시됩니다." : "검색어 또는 상태 필터를 바꿔보세요."
+    );
+    return;
+  }
+
+  container.innerHTML = applications.map(function (item) {
+    const interestBadges = (item.interests || []).map(function (interest) {
+      return '<span>' + escapeHtml(partnerInterestLabel(interest)) + "</span>";
+    }).join("");
+    const website = item.websiteUrl
+      ? '<a class="icon-label" href="' + escapeHtml(item.websiteUrl) + '" target="_blank" rel="noreferrer">웹·SNS ' + uiIcon("external-link") + "</a>"
+      : "";
+    const statusOptions = ["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"].map(function (status) {
+      return '<option value="' + status + '"' + (item.status === status ? " selected" : "") + ">" + escapeHtml(statusLabel(status)) + "</option>";
+    }).join("");
+    return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
+      escapeHtml(partnerStageLabel(item.centerStage)) + '</p><h3>' + escapeHtml(item.centerName) +
+      '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
+      '</span></header><div class="partner-person"><strong>' + escapeHtml(item.applicantName) +
+      '</strong><span>' + escapeHtml(partnerQualificationLabel(item.qualificationType)) + " · " + escapeHtml(item.region) +
+      '</span></div><div class="partner-contact"><a href="tel:' + escapeHtml(item.contactPhone.replace(/-/g, "")) + '">' +
+      uiIcon("phone-call") + escapeHtml(item.contactPhone) + '</a><a href="mailto:' + escapeHtml(item.contactEmail) + '">' +
+      uiIcon("message-circle") + escapeHtml(item.contactEmail) + "</a>" + website +
+      '</div><div class="partner-interests">' + interestBadges + "</div>" +
+      (item.message ? '<blockquote>' + escapeHtml(item.message) + "</blockquote>" : "") +
+      '<footer><span>접수 ' + formatDate(item.createdAt, true) + '</span><span>' + escapeHtml(sourceLabel(item.source)) +
+      (item.lastContactedAt ? " · 최근 연락 " + formatDate(item.lastContactedAt, true) : "") +
+      '</span></footer></div><div class="partner-application-actions"><label>처리 상태<select data-partner-status="' +
+      escapeHtml(item.id) + '">' + statusOptions + '</select></label><label>운영 메모<textarea data-partner-note="' +
+      escapeHtml(item.id) + '" rows="4" maxlength="2000" placeholder="통화 내용, 다음 연락 일정 등">' +
+      escapeHtml(item.adminNote || "") + '</textarea></label><button type="button" data-save-partner="' +
+      escapeHtml(item.id) + '">상태와 메모 저장</button></div></article>';
+  }).join("");
+}
+
+async function updatePartnerApplication(id) {
+  const status = document.querySelector('[data-partner-status="' + CSS.escape(id) + '"]').value;
+  const adminNote = document.querySelector('[data-partner-note="' + CSS.escape(id) + '"]').value.trim();
+  const button = document.querySelector('[data-save-partner="' + CSS.escape(id) + '"]');
+  button.disabled = true;
+  button.textContent = "저장 중";
+  try {
+    const response = await fetch(API_BASE + "/api/partner-applications", {
+      method: "PATCH",
+      headers: adminHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ id: id, status: status, adminNote: adminNote }),
+    });
+    const result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || "사전 신청 상태를 저장하지 못했습니다.");
+    await loadStats(false);
+    showToast("파트너 신청 상태와 메모를 저장했습니다.");
+  } catch (error) {
+    showToast(error.message, true);
+    button.disabled = false;
+    button.textContent = "상태와 메모 저장";
+  }
 }
 
 function renderOverviewEvents() {
@@ -917,6 +1045,23 @@ document.querySelector("#applicationFilters").addEventListener("click", function
     item.classList.toggle("active", item === button);
   });
   renderApplications();
+});
+
+document.querySelector("#partnerApplicationFilters").addEventListener("click", function (event) {
+  const button = event.target.closest("[data-partner-filter]");
+  if (!button) return;
+  partnerApplicationFilter = button.dataset.partnerFilter;
+  document.querySelectorAll("[data-partner-filter]").forEach(function (item) {
+    item.classList.toggle("active", item === button);
+  });
+  renderPartnerApplications();
+});
+
+document.querySelector("#partnerApplicationSearch").addEventListener("input", renderPartnerApplications);
+
+document.querySelector("#partnerApplications").addEventListener("click", function (event) {
+  const button = event.target.closest("[data-save-partner]");
+  if (button) updatePartnerApplication(button.dataset.savePartner);
 });
 
 document.querySelector("#centerApplications").addEventListener("click", function (event) {

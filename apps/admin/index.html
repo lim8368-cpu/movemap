@@ -98,6 +98,7 @@
 
         <nav class="section-nav" aria-label="최고 관리자 메뉴">
           <a href="#overview" class="active">운영 요약</a>
+          <a href="#partnerApplicationsSection">파트너 사전 신청 <span id="navPartnerCount" class="nav-count">0</span></a>
           <a href="#applicationsSection">승인함 <span id="navPendingCount" class="nav-count">0</span></a>
           <a href="#reviewsAdminSection">후기 심사 <span id="navPendingReviewCount" class="nav-count">0</span></a>
           <a href="#centersSection">센터 관리</a>
@@ -114,6 +115,10 @@
             <article class="attention-card">
               <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#circle-alert"></use></svg></span>
               <div><small>승인 대기</small><strong id="totalPending">0</strong><p>처리가 필요한 센터 신청</p></div>
+            </article>
+            <article class="partner-metric-card">
+              <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span>
+              <div><small>신규 파트너 신청</small><strong id="totalNewPartners">0</strong><p id="partnerMetricCopy">연락 전 사전 신청</p></div>
             </article>
             <article>
               <span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#mouse-pointer-click"></use></svg></span>
@@ -145,6 +150,22 @@
               <div id="overviewEvents" class="compact-events"></div>
             </section>
           </div>
+        </section>
+
+        <section id="partnerApplicationsSection" class="workspace">
+          <div class="section-heading workspace-heading">
+            <div><p class="eyebrow">EARLY CENTER PARTNERS</p><h2>센터 파트너 사전 신청</h2><p>로그인 없이 접수한 신청자를 확인하고 정식 센터 등록까지 연락 상태를 관리하세요.</p></div>
+            <div class="segmented-control" id="partnerApplicationFilters" aria-label="파트너 신청 상태 필터">
+              <button class="active" type="button" data-partner-filter="new">신규</button>
+              <button type="button" data-partner-filter="active">진행 중</button>
+              <button type="button" data-partner-filter="all">전체</button>
+            </div>
+          </div>
+          <div class="partner-application-tools">
+            <label class="search-field"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg></span><input id="partnerApplicationSearch" type="search" placeholder="신청자, 센터명, 지역, 이메일, 전화번호 검색" /></label>
+            <span id="partnerApplicationResultCount" class="period">0건</span>
+          </div>
+          <div id="partnerApplications" class="partner-application-list"></div>
         </section>
 
         <section id="applicationsSection" class="workspace">
