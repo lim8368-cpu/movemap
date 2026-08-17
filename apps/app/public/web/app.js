@@ -163,7 +163,7 @@ const centerDataNotice = document.querySelector("#centerDataNotice");
 
 let selectedRegion = "all";
 let selectedCategory = "";
-let centers = sampleCenters.map(normalizeCenter);
+let centers = sampleCenters;
 let selectedId = "";
 let naverMap = null;
 let naverMarkers = [];
