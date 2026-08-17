@@ -467,7 +467,7 @@ function renderPartnerApplications() {
   const applications = (dashboardData.partnerApplications || []).filter(function (item) {
     if (!partnerMatchesFilter(item)) return false;
     if (!search) return true;
-    return [item.applicantName, item.centerName, item.region, item.contactEmail, item.contactPhone]
+    return [item.applicantName, item.centerName, item.region, item.address, item.contactEmail, item.contactPhone]
       .some(function (value) { return String(value || "").toLowerCase().includes(search); });
   });
   document.querySelector("#partnerApplicationResultCount").textContent = formatNumber(applications.length) + "건";
@@ -481,24 +481,27 @@ function renderPartnerApplications() {
   }
 
   container.innerHTML = applications.map(function (item) {
-    const interestBadges = (item.interests || []).map(function (interest) {
-      return '<span>' + escapeHtml(partnerInterestLabel(interest)) + "</span>";
-    }).join("");
     const website = item.websiteUrl
       ? '<a class="icon-label" href="' + escapeHtml(item.websiteUrl) + '" target="_blank" rel="noreferrer">웹·SNS ' + uiIcon("external-link") + "</a>"
       : "";
+    const mapLink = item.naverMapUrl
+      ? '<a class="partner-location" href="' + escapeHtml(item.naverMapUrl) + '" target="_blank" rel="noreferrer">' +
+        uiIcon("map-pin") + '<span><strong>' + escapeHtml(item.address || item.region) +
+        '</strong><small>네이버 지도에서 위치 보기</small></span>' + uiIcon("external-link") + "</a>"
+      : '<div class="partner-location">' + uiIcon("map-pin") + '<span><strong>' +
+        escapeHtml(item.address || item.region) + "</strong><small>저장된 센터 주소</small></span></div>";
     const statusOptions = ["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"].map(function (status) {
       return '<option value="' + status + '"' + (item.status === status ? " selected" : "") + ">" + escapeHtml(statusLabel(status)) + "</option>";
     }).join("");
     return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
-      escapeHtml(partnerStageLabel(item.centerStage)) + '</p><h3>' + escapeHtml(item.centerName) +
+      '운영 센터</p><h3>' + escapeHtml(item.centerName) +
       '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
       '</span></header><div class="partner-person"><strong>' + escapeHtml(item.applicantName) +
-      '</strong><span>' + escapeHtml(partnerQualificationLabel(item.qualificationType)) + " · " + escapeHtml(item.region) +
-      '</span></div><div class="partner-contact"><a href="tel:' + escapeHtml(item.contactPhone.replace(/-/g, "")) + '">' +
+      '</strong><span>' + escapeHtml(partnerQualificationLabel(item.qualificationType)) +
+      '</span></div>' + mapLink + '<div class="partner-contact"><a href="tel:' + escapeHtml(item.contactPhone.replace(/-/g, "")) + '">' +
       uiIcon("phone-call") + escapeHtml(item.contactPhone) + '</a><a href="mailto:' + escapeHtml(item.contactEmail) + '">' +
       uiIcon("message-circle") + escapeHtml(item.contactEmail) + "</a>" + website +
-      '</div><div class="partner-interests">' + interestBadges + "</div>" +
+      "</div>" +
       (item.message ? '<blockquote>' + escapeHtml(item.message) + "</blockquote>" : "") +
       '<footer><span>접수 ' + formatDate(item.createdAt, true) + '</span><span>' + escapeHtml(sourceLabel(item.source)) +
       (item.lastContactedAt ? " · 최근 연락 " + formatDate(item.lastContactedAt, true) : "") +

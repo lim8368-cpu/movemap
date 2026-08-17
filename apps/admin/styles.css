@@ -182,6 +182,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--teal); box-shado
 .partner-contact { margin-top: 11px; display: flex; flex-wrap: wrap; gap: 7px 14px; }
 .partner-contact a { display: inline-flex; align-items: center; gap: 5px; color: var(--teal-dark); text-decoration: none; font-size: 10px; font-weight: 750; }
 .partner-contact .ui-icon { width: 13px; height: 13px; }
+.partner-location { margin-top: 12px; padding: 11px 12px; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 9px; border: 1px solid #dce7e4; border-radius: 10px; background: #f3f8f6; color: #284a43; text-decoration: none; }
+.partner-location > .ui-icon { width: 16px; height: 16px; }
+.partner-location span,.partner-location strong,.partner-location small { display: block; min-width: 0; }
+.partner-location strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.partner-location small { margin-top: 3px; color: #70817b; font-size: 8px; }
 .partner-interests { margin-top: 13px; display: flex; flex-wrap: wrap; gap: 6px; }
 .partner-interests span { padding: 6px 9px; border-radius: 999px; background: #edf3f2; color: #3f5c58; font-size: 9px; font-weight: 750; }
 .partner-application-summary blockquote { margin: 14px 0 0; padding: 12px 14px; border-left: 3px solid #c8d9d6; border-radius: 0 8px 8px 0; background: #fff; color: #475467; font-size: 11px; line-height: 1.65; white-space: pre-wrap; }

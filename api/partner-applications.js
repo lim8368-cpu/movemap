@@ -14,7 +14,6 @@ const {
   registrationSession,
 } = require("./_registration-security");
 
-const CENTER_STAGES = new Set(["operating", "preparing", "planning"]);
 const QUALIFICATION_TYPES = new Set(["physical_therapist", "sports_science", "other"]);
 const INTERESTS = new Set(["early-partner", "launch-news", "product-feedback", "promotion-consulting"]);
 const STATUSES = new Set(["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"]);
@@ -54,6 +53,24 @@ function normalizedWebsite(value) {
   }
 }
 
+function normalizedCoordinate(value, min, max) {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) && coordinate >= min && coordinate <= max ? coordinate : null;
+}
+
+function normalizedNaverMapUrl(value, centerName) {
+  const mapUrl = text(value, 500);
+  if (mapUrl) {
+    try {
+      const parsed = new URL(mapUrl);
+      if (parsed.protocol === "https:" && parsed.hostname === "map.naver.com") return parsed.toString();
+    } catch {
+      // Use the safe search URL below.
+    }
+  }
+  return `https://map.naver.com/p/search/${encodeURIComponent(centerName)}`;
+}
+
 async function submitApplication(req, res) {
   if (!enforceRateLimit(req, res, {
     bucket: "partner-application",
@@ -63,7 +80,7 @@ async function submitApplication(req, res) {
 
   const body = bodyFromRequest(req);
   if (text(body.companyWebsite, 120)) {
-    return sendJson(res, 201, { ok: true, message: "센터 파트너 사전 신청이 접수되었습니다." });
+    return sendJson(res, 201, { ok: true, message: "파트너 센터 신청이 접수되었습니다." });
   }
 
   const secureSession = await registrationSession(req, body);
@@ -75,10 +92,17 @@ async function submitApplication(req, res) {
   }
 
   const applicantName = text(body.applicantName, 60);
-  const centerName = text(body.centerName, 120) || null;
-  const centerStage = text(body.centerStage, 30);
+  const centerName = text(body.centerName, 120);
+  const centerStage = "operating";
   const qualificationType = text(body.qualificationType, 40);
-  const region = text(body.region, 80);
+  const address = text(body.address, 200);
+  const roadAddress = text(body.roadAddress, 200) || null;
+  const jibunAddress = text(body.jibunAddress, 200) || null;
+  const lat = normalizedCoordinate(body.lat, 31.43, 44.35);
+  const lng = normalizedCoordinate(body.lng, 122.37, 132);
+  const naverPlaceId = text(body.naverPlaceId, 80) || null;
+  const naverMapUrl = normalizedNaverMapUrl(body.naverMapUrl, centerName);
+  const region = text(body.region, 80) || address.split(/\s+/).slice(0, 2).join(" ");
   const contactEmail = text(body.contactEmail, 254).toLowerCase();
   const contactPhone = normalizedPhone(body.contactPhone);
   const websiteValue = text(body.websiteUrl, 500);
@@ -86,22 +110,22 @@ async function submitApplication(req, res) {
   const message = text(body.message, 1_000) || null;
   const interests = Array.isArray(body.interests)
     ? [...new Set(body.interests.map((value) => text(value, 40)).filter((value) => INTERESTS.has(value)))]
-    : [];
+    : ["early-partner"];
 
   if (applicantName.length < 2) {
     return sendJson(res, 400, { error: "신청자 이름을 입력해 주세요.", field: "applicantName" });
   }
-  if (!CENTER_STAGES.has(centerStage)) {
-    return sendJson(res, 400, { error: "센터 운영 준비 상태를 선택해 주세요.", field: "centerStage" });
-  }
-  if (centerStage !== "planning" && (!centerName || centerName.length < 2)) {
-    return sendJson(res, 400, { error: "운영 중이거나 준비 중인 센터명을 입력해 주세요.", field: "centerName" });
+  if (centerName.length < 2) {
+    return sendJson(res, 400, { error: "운영 중인 센터명을 입력해 주세요.", field: "centerName" });
   }
   if (!QUALIFICATION_TYPES.has(qualificationType)) {
     return sendJson(res, 400, { error: "보유 자격 또는 전공을 선택해 주세요.", field: "qualificationType" });
   }
+  if (address.length < 5 || lat === null || lng === null) {
+    return sendJson(res, 400, { error: "네이버 검색 결과에서 센터의 정확한 위치를 선택해 주세요.", field: "addressQuery" });
+  }
   if (region.length < 2) {
-    return sendJson(res, 400, { error: "센터 운영 또는 예정 지역을 입력해 주세요.", field: "region" });
+    return sendJson(res, 400, { error: "센터 운영 지역을 확인해 주세요.", field: "addressQuery" });
   }
   if (!isValidEmail(contactEmail)) {
     return sendJson(res, 400, { error: "연락받을 이메일을 확인해 주세요.", field: "contactEmail" });
@@ -111,9 +135,6 @@ async function submitApplication(req, res) {
   }
   if (websiteValue && !websiteUrl) {
     return sendJson(res, 400, { error: "웹사이트 또는 SNS 주소는 https:// 또는 http://로 입력해 주세요.", field: "websiteUrl" });
-  }
-  if (!interests.length) {
-    return sendJson(res, 400, { error: "관심 있는 안내를 하나 이상 선택해 주세요.", field: "interests" });
   }
   if (body.privacyConsent !== true) {
     return sendJson(res, 400, { error: "개인정보 수집 및 이용에 동의해 주세요.", field: "privacyConsent" });
@@ -147,6 +168,13 @@ async function submitApplication(req, res) {
       center_stage: centerStage,
       qualification_type: qualificationType,
       region,
+      address,
+      road_address: roadAddress,
+      jibun_address: jibunAddress,
+      lat,
+      lng,
+      naver_place_id: naverPlaceId,
+      naver_map_url: naverMapUrl,
       contact_email: contactEmail,
       contact_phone: contactPhone,
       website_url: websiteUrl,
@@ -173,7 +201,7 @@ async function submitApplication(req, res) {
   return sendJson(res, 201, {
     ok: true,
     id: applicationId,
-    message: "센터 파트너 사전 신청이 접수되었습니다.",
+    message: "파트너 센터 신청이 접수되었습니다.",
   });
 }
 
@@ -227,7 +255,7 @@ module.exports = async function handler(req, res) {
     return sendJson(res, statusCode, {
       error: statusCode === 413
         ? "입력한 내용이 너무 깁니다."
-        : "센터 파트너 사전 신청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        : "파트너 센터 신청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     });
   }
 };

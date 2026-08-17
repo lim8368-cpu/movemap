@@ -39,13 +39,18 @@ function validRequest(ip = "203.0.113.30") {
     body: {
       applicantName: "홍길동",
       centerName: "DAIL 움직임센터",
-      centerStage: "operating",
       qualificationType: "physical_therapist",
       region: "서울 강남구",
+      address: "서울특별시 강남구 테헤란로 212",
+      roadAddress: "서울특별시 강남구 테헤란로 212",
+      jibunAddress: "서울특별시 강남구 역삼동 718-5",
+      lat: 37.5012,
+      lng: 127.0396,
+      naverPlaceId: "1234567890",
+      naverMapUrl: "https://map.naver.com/p/entry/place/1234567890",
       contactEmail: "PARTNER@example.com",
       contactPhone: "01012345678",
       websiteUrl: "https://example.com",
-      interests: ["early-partner", "launch-news"],
       message: "출시 전 파트너 안내를 받고 싶습니다.",
       privacyConsent: true,
       companyWebsite: "",
@@ -98,7 +103,11 @@ async function testValidApplicationIsStored() {
   assert.equal(inserted.contact_email, "partner@example.com");
   assert.equal(inserted.contact_phone, "010-1234-5678");
   assert.equal(inserted.center_stage, "operating");
-  assert.deepEqual(inserted.interests, ["early-partner", "launch-news"]);
+  assert.equal(inserted.address, "서울특별시 강남구 테헤란로 212");
+  assert.equal(inserted.lat, 37.5012);
+  assert.equal(inserted.lng, 127.0396);
+  assert.equal(inserted.naver_place_id, "1234567890");
+  assert.deepEqual(inserted.interests, ["early-partner"]);
   assert.ok(inserted.ip_hash);
 }
 
@@ -136,10 +145,32 @@ async function testHoneypotIsAcceptedWithoutStorage() {
   assert.equal(res.body.ok, true);
 }
 
+async function testUnverifiedLocationIsRejected() {
+  const ip = "203.0.113.33";
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const table = parsed.pathname.split("/").pop();
+    if (table === "registration_sessions" && (init.method || "GET") === "GET") {
+      return jsonResponse([registrationSession(ip)]);
+    }
+    throw new Error("Invalid location must not reach storage");
+  };
+  const req = validRequest(ip);
+  req.body.lat = "";
+  req.body.lng = "";
+  const res = responseRecorder();
+
+  await partnerApplications(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.field, "addressQuery");
+}
+
 (async () => {
   await testValidApplicationIsStored();
   await testInvalidApplicationIsRejected();
   await testHoneypotIsAcceptedWithoutStorage();
+  await testUnverifiedLocationIsRejected();
   console.log("partner application tests passed");
 })().catch((error) => {
   console.error(error);
