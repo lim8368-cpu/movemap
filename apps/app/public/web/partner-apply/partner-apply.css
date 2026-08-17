@@ -34,11 +34,11 @@
 }
 .partner-steps li{
   min-height:0;
-  padding:22px 26px;
+  padding:15px 20px;
   display:grid;
-  grid-template-columns:28px minmax(0,1fr);
+  grid-template-columns:24px minmax(0,1fr);
   align-items:start;
-  gap:12px;
+  gap:8px;
   border:0;
   border-right:1px solid #d9dad6;
   border-radius:0;
@@ -63,10 +63,10 @@
 .partner-steps span{margin-top:5px;color:#747772;font-size:11px;line-height:1.45;word-break:keep-all}
 .partner-principle{
   margin:0;
-  padding:18px 0;
+  padding:16px 0;
   display:grid;
   grid-template-columns:96px minmax(0,1fr);
-  align-items:start;
+  align-items:center;
   gap:18px;
   border-bottom:1px solid #d9dad6;
   border-radius:0;
@@ -94,7 +94,7 @@
 .partner-section-heading h3{margin:0;color:var(--partner-black);font-size:18px;line-height:1.35;letter-spacing:-.025em}
 .partner-section-heading p{margin:7px 0 0;color:#747772;font-size:11px;line-height:1.55}
 .partner-form-card .form-grid{gap:24px 18px}
-.partner-form-card .form-field-wide{margin-top:0}
+.partner-form-card .form-field-wide{grid-column:1/-1;margin-top:0}
 .partner-form-card .form-field input,.partner-form-card .form-field select,.partner-form-card .form-field textarea{border-radius:8px;background:#fff}
 .partner-message-field{margin-top:0}
 .partner-message-field textarea{min-height:132px;overflow-y:hidden;resize:none}
@@ -151,12 +151,12 @@
   .partner-hero-copy>p{font-size:15px}
   .partner-content{padding-top:52px}
   .partner-guide h2{margin-bottom:20px;font-size:25px}
-  .partner-steps li{padding:17px 12px;grid-template-columns:1fr;gap:5px}
+  .partner-steps li{padding:13px 10px;grid-template-columns:1fr;gap:4px}
   .partner-steps li:first-child{padding-left:0}
   .partner-steps li:last-child{padding-right:0}
   .partner-steps strong{font-size:12px}
   .partner-steps span{font-size:9px;line-height:1.4}
-  .partner-principle{grid-template-columns:1fr;gap:7px;padding:15px 0}
+  .partner-principle{grid-template-columns:1fr;gap:6px;padding:14px 0}
   .partner-form-card{margin-top:36px}
   .partner-form-card .form-heading{padding:30px 24px 26px}
   .partner-form-card form{padding:0 24px 30px}
