@@ -39,6 +39,10 @@ module.exports = async function handler(req, res) {
     sendJson(res, 200, { centers, source: "supabase" });
   } catch (error) {
     console.error("centers api failed", error);
-    sendJson(res, 500, { error: "센터 목록을 불러오지 못했습니다." });
+    sendJson(res, 200, {
+      centers: sampleCenters,
+      source: "fallback",
+      warning: "센터 데이터 연결이 지연되어 예시 센터를 보여드립니다.",
+    });
   }
 };
