@@ -6,8 +6,6 @@
   const newProposalButton = document.getElementById("newProposalButton");
   const message = document.getElementById("message");
   const messageCount = document.getElementById("messageCount");
-  const menuToggle = document.querySelector(".menu-toggle");
-  const navigation = document.getElementById("collaborationMainNav");
 
   function updateMessageCount() {
     messageCount.value = String(message.value.length);
@@ -107,14 +105,4 @@
     document.getElementById("organizationType").focus({ preventScroll: true });
   });
 
-  if (menuToggle && navigation) {
-    menuToggle.addEventListener("click", () => {
-      const open = navigation.classList.toggle("open");
-      menuToggle.setAttribute("aria-expanded", String(open));
-    });
-    navigation.addEventListener("click", () => {
-      navigation.classList.remove("open");
-      menuToggle.setAttribute("aria-expanded", "false");
-    });
-  }
 })();

@@ -21,8 +21,6 @@
   const challengeStatus = document.getElementById("challengeStatus");
   const turnstileChallenge = document.getElementById("turnstileChallenge");
   const companyWebsite = document.getElementById("companyWebsite");
-  const menuToggle = document.querySelector(".menu-toggle");
-  const navigation = document.getElementById("partnerMainNav");
 
   let captchaConfig = null;
   let turnstileWidgetId = null;
@@ -441,17 +439,6 @@
     form.scrollIntoView({ behavior: "smooth", block: "start" });
     centerName.focus({ preventScroll: true });
   });
-
-  if (menuToggle && navigation) {
-    menuToggle.addEventListener("click", () => {
-      const open = navigation.classList.toggle("open");
-      menuToggle.setAttribute("aria-expanded", String(open));
-    });
-    navigation.addEventListener("click", () => {
-      navigation.classList.remove("open");
-      menuToggle.setAttribute("aria-expanded", "false");
-    });
-  }
 
   updateMessageCount();
   loadRegistrationChallenge();
