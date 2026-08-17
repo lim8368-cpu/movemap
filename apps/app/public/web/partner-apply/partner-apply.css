@@ -14,14 +14,9 @@
   background:#fff;
   color:var(--partner-black);
 }
-.partner-hero .collaboration-back{
-  border-color:#e2e2de;
-  background:#f5f5f2;
-  color:#4a4c48;
-}
-.partner-hero .collaboration-back:hover,.partner-hero .collaboration-back:focus-visible{color:var(--partner-black)}
 .partner-hero .collaboration-eyebrow{color:var(--partner-teal-dark)}
 .partner-hero h1 em{color:var(--partner-black)}
+.partner-hero .collaboration-hero-grid{margin-top:66px}
 .partner-hero-copy>p{max-width:470px;margin:0;color:#62645f;font-size:17px;line-height:1.75;letter-spacing:-.02em}
 
 .partner-content{display:block;padding-top:72px;background:var(--partner-paper)}
@@ -81,13 +76,29 @@
 .partner-principle span{color:var(--partner-black);font-size:11px;font-weight:800;letter-spacing:0}
 .partner-principle p{margin:0;color:#6f726d;font-size:11px;line-height:1.65}
 
-.partner-form-card{width:min(840px,100%);margin:54px auto 0}
-.partner-form-card .form-heading{padding-bottom:38px}
-.partner-form-card .form-heading h2{margin-top:0}
-.partner-form-card .form-heading p{line-height:1.6}
+.partner-form-card{
+  width:min(900px,100%);
+  margin:54px auto 0;
+  padding:0;
+  overflow:hidden;
+  border:1px solid #dedfdb;
+  border-radius:12px;
+  box-shadow:none;
+}
+.partner-form-card .form-heading{padding:36px 42px 32px;border-bottom:1px solid #e5e5e1;text-align:left}
+.partner-form-card .form-heading h2{margin:0;font-size:30px}
+.partner-form-card .form-heading p{margin-top:8px;font-size:12px;line-height:1.6}
+.partner-form-card form{padding:0 42px 42px}
+.partner-form-card .partner-form-section{margin:0;padding:38px 0;border-bottom:1px solid #e5e5e1}
+.partner-section-heading{margin-bottom:25px}
+.partner-section-heading h3{margin:0;color:var(--partner-black);font-size:18px;line-height:1.35;letter-spacing:-.025em}
+.partner-section-heading p{margin:7px 0 0;color:#747772;font-size:11px;line-height:1.55}
+.partner-form-card .form-grid{gap:24px 18px}
+.partner-form-card .form-field-wide{margin-top:0}
+.partner-form-card .form-field input,.partner-form-card .form-field select,.partner-form-card .form-field textarea{border-radius:8px;background:#fff}
 .partner-message-field{margin-top:0}
-.partner-message-field textarea{min-height:130px}
-.partner-address-field{padding:18px;border:1px solid #dedfdb;border-radius:14px;background:#fafaf8}
+.partner-message-field textarea{min-height:132px;overflow-y:hidden;resize:none}
+.partner-address-field{padding:0;border:0;border-radius:0;background:transparent}
 .partner-address-field>label{display:block;color:#242622;font-size:12px;font-weight:800}
 .partner-address-field>p{margin:7px 0 0;color:#747772;font-size:10px;line-height:1.55}
 .partner-address-search{margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) 152px;gap:10px}
@@ -125,6 +136,13 @@
 .partner-selected-address>a{display:flex;align-items:center;gap:5px;color:#2c3430;font-size:10px;font-weight:800;white-space:nowrap}
 .partner-selected-address>a .ui-icon{width:14px;height:14px}
 .partner-security-challenge{min-height:0}
+.partner-form-card .consent-box{margin-top:26px;padding:18px 0;border:0;border-bottom:1px solid #e5e5e1;border-radius:0;background:transparent}
+.partner-form-card .consent-check{border-radius:4px}
+.partner-form-card .form-status{border-radius:6px}
+.partner-form-card .form-submit{margin-top:28px}
+.partner-form-card .form-submit button{height:54px;border-radius:8px;box-shadow:none}
+.partner-form-card .form-submit button:not(:disabled){box-shadow:none}
+.partner-form-card .form-submit button:not(:disabled):hover,.partner-form-card .form-submit button:not(:disabled):focus-visible{background:#2b2b2b;transform:none}
 .partner-apply-page .visually-hidden{width:1px!important;height:1px!important;position:absolute!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}
 .partner-form-card .success-panel{min-height:620px}
 
@@ -140,6 +158,10 @@
   .partner-steps span{font-size:9px;line-height:1.4}
   .partner-principle{grid-template-columns:1fr;gap:7px;padding:15px 0}
   .partner-form-card{margin-top:36px}
+  .partner-form-card .form-heading{padding:30px 24px 26px}
+  .partner-form-card form{padding:0 24px 30px}
+  .partner-form-card .partner-form-section{margin:0;padding:32px 0}
+  .partner-section-heading{margin-bottom:22px}
   .partner-address-search{grid-template-columns:1fr}
   .partner-address-search button{width:100%}
   .partner-selected-address{grid-template-columns:28px minmax(0,1fr)}
@@ -148,7 +170,11 @@
 }
 
 @media(max-width:420px){
-  .partner-address-field{padding:15px}
+  .partner-hero .collaboration-hero-grid{margin-top:48px}
+  .partner-form-card{border-radius:10px}
+  .partner-form-card .form-heading{padding-right:20px;padding-left:20px}
+  .partner-form-card form{padding-right:20px;padding-left:20px}
+  .partner-address-field{padding:0}
   .partner-steps li{padding-right:9px;padding-left:9px}
   .partner-steps strong{font-size:11px}
   .partner-steps span{font-size:8.5px}

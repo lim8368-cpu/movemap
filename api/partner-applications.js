@@ -14,7 +14,7 @@ const {
   registrationSession,
 } = require("./_registration-security");
 
-const QUALIFICATION_TYPES = new Set(["physical_therapist", "sports_science", "other"]);
+const QUALIFICATION_TYPES = new Set(["physical_therapist", "sports_science"]);
 const INTERESTS = new Set(["early-partner", "launch-news", "product-feedback", "promotion-consulting"]);
 const STATUSES = new Set(["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"]);
 

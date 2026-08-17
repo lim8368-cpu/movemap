@@ -40,6 +40,8 @@
   function updateMessageCount() {
     messageCount.value = String(message.value.length);
     messageCount.textContent = String(message.value.length);
+    message.style.height = "auto";
+    message.style.height = `${Math.max(132, message.scrollHeight)}px`;
   }
 
   function setStatus(text, field) {

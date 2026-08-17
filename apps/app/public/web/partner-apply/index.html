@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="../mobile-containment.css?v=20260729-monochrome-rehab" />
   <link rel="stylesheet" href="../assets/ui-icons.css?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="../collaboration/collaboration.css?v=20260730-collaboration-soft3" />
-  <link rel="stylesheet" href="./partner-apply.css?v=20260817-partner-center-v3" />
+  <link rel="stylesheet" href="./partner-apply.css?v=20260817-partner-center-v4" />
   <link rel="stylesheet" href="../assets/site-header.css?v=20260812-logo-alpha" />
   <script defer src="../assets/site-header.js?v=20260802-shared-header2"></script>
 </head>
@@ -38,10 +38,6 @@
 
   <main>
     <section class="collaboration-hero partner-hero" aria-labelledby="partnerTitle">
-      <a class="collaboration-back" href="/">
-        <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg>
-        DAIL 홈
-      </a>
       <div class="collaboration-hero-grid">
         <div>
           <p class="collaboration-eyebrow">DAIL 파트너 센터</p>
@@ -77,8 +73,11 @@
         </div>
 
         <form id="partnerApplicationForm" novalidate>
-          <fieldset>
-            <legend>센터와 신청자 정보</legend>
+          <section class="partner-form-section" aria-labelledby="centerInfoTitle">
+            <div class="partner-section-heading">
+              <h3 id="centerInfoTitle">센터 정보</h3>
+              <p>현재 운영 중인 센터를 기준으로 입력해 주세요.</p>
+            </div>
             <div class="form-grid">
               <label class="form-field">
                 <span>센터명</span>
@@ -91,7 +90,6 @@
                     <option value="">선택해 주세요</option>
                     <option value="physical_therapist">물리치료사 면허</option>
                     <option value="sports_science">체육학 관련 학사·석사·박사</option>
-                    <option value="other">그 외 전문 배경</option>
                   </select>
                   <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#chevron-down"></use></svg>
                 </span>
@@ -111,6 +109,15 @@
                   <a id="selectedNaverMapLink" href="https://map.naver.com/" target="_blank" rel="noopener">지도에서 보기 <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section class="partner-form-section" aria-labelledby="applicantInfoTitle">
+            <div class="partner-section-heading">
+              <h3 id="applicantInfoTitle">신청자 정보</h3>
+              <p>등록 안내를 받을 담당자 연락처를 입력해 주세요.</p>
+            </div>
+            <div class="form-grid">
               <label class="form-field">
                 <span>신청자 이름</span>
                 <input id="applicantName" name="applicantName" type="text" maxlength="60" autocomplete="name" placeholder="이름을 입력해 주세요" required />
@@ -133,7 +140,7 @@
                 <small class="character-count"><output id="messageCount">0</output> / 1,000자</small>
               </label>
             </div>
-          </fieldset>
+          </section>
 
           <div id="humanCheck" class="partner-security-challenge">
             <div id="turnstileChallenge" hidden></div>
@@ -184,6 +191,6 @@
     <p class="copyright">© 2026 DAIL. All rights reserved.</p>
   </footer>
 
-  <script src="./app.js?v=20260817-partner-center-v3"></script>
+  <script src="./app.js?v=20260817-partner-center-v4"></script>
 </body>
 </html>

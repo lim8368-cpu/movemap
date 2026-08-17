@@ -166,11 +166,32 @@ async function testUnverifiedLocationIsRejected() {
   assert.equal(res.body.field, "addressQuery");
 }
 
+async function testUnsupportedQualificationIsRejected() {
+  const ip = "203.0.113.34";
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const table = parsed.pathname.split("/").pop();
+    if (table === "registration_sessions" && (init.method || "GET") === "GET") {
+      return jsonResponse([registrationSession(ip)]);
+    }
+    throw new Error("Unsupported qualification must not reach storage");
+  };
+  const req = validRequest(ip);
+  req.body.qualificationType = "other";
+  const res = responseRecorder();
+
+  await partnerApplications(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.field, "qualificationType");
+}
+
 (async () => {
   await testValidApplicationIsStored();
   await testInvalidApplicationIsRejected();
   await testHoneypotIsAcceptedWithoutStorage();
   await testUnverifiedLocationIsRejected();
+  await testUnsupportedQualificationIsRejected();
   console.log("partner application tests passed");
 })().catch((error) => {
   console.error(error);
