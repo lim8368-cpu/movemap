@@ -95,14 +95,16 @@ async function submitApplication(req, res) {
   const centerName = text(body.centerName, 120);
   const centerStage = "operating";
   const qualificationType = text(body.qualificationType, 40);
-  const address = text(body.address, 200);
+  const baseAddress = text(body.address, 200);
+  const addressDetail = text(body.addressDetail, 120);
+  const address = [baseAddress, addressDetail].filter(Boolean).join(" ").slice(0, 320);
   const roadAddress = text(body.roadAddress, 200) || null;
   const jibunAddress = text(body.jibunAddress, 200) || null;
   const lat = normalizedCoordinate(body.lat, 31.43, 44.35);
   const lng = normalizedCoordinate(body.lng, 122.37, 132);
   const naverPlaceId = text(body.naverPlaceId, 80) || null;
   const naverMapUrl = normalizedNaverMapUrl(body.naverMapUrl, centerName);
-  const region = text(body.region, 80) || address.split(/\s+/).slice(0, 2).join(" ");
+  const region = text(body.region, 80) || baseAddress.split(/\s+/).slice(0, 2).join(" ");
   const contactEmail = text(body.contactEmail, 254).toLowerCase();
   const contactPhone = normalizedPhone(body.contactPhone);
   const websiteValue = text(body.websiteUrl, 500);
@@ -121,7 +123,7 @@ async function submitApplication(req, res) {
   if (!QUALIFICATION_TYPES.has(qualificationType)) {
     return sendJson(res, 400, { error: "보유 자격 또는 전공을 선택해 주세요.", field: "qualificationType" });
   }
-  if (address.length < 5 || lat === null || lng === null) {
+  if (baseAddress.length < 5 || lat === null || lng === null) {
     return sendJson(res, 400, { error: "네이버 검색 결과에서 센터의 정확한 위치를 선택해 주세요.", field: "addressQuery" });
   }
   if (region.length < 2) {

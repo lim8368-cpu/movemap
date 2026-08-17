@@ -13,7 +13,8 @@
   const addressSearchButtonLabel = addressSearchButton.querySelector("span");
   const addressSearchStatus = document.getElementById("addressSearchStatus");
   const addressResults = document.getElementById("addressResults");
-  const selectedAddress = document.getElementById("selectedAddress");
+  const addressConfirmation = document.getElementById("addressConfirmation");
+  const addressDetail = document.getElementById("addressDetail");
   const selectedPlaceName = document.getElementById("selectedPlaceName");
   const selectedRoadAddress = document.getElementById("selectedRoadAddress");
   const selectedNaverMapLink = document.getElementById("selectedNaverMapLink");
@@ -74,7 +75,8 @@
 
   function clearSelectedLocation() {
     selectedLocation = null;
-    selectedAddress.hidden = true;
+    addressConfirmation.hidden = true;
+    addressDetail.value = "";
     selectedPlaceName.textContent = "";
     selectedRoadAddress.textContent = "";
     selectedNaverMapLink.href = "https://map.naver.com/";
@@ -91,7 +93,7 @@
     selectedPlaceName.textContent = place.addressOnly ? "센터 주소" : place.name;
     selectedRoadAddress.textContent = primaryAddress;
     selectedNaverMapLink.href = place.naverMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(place.name)}`;
-    selectedAddress.hidden = false;
+    addressConfirmation.hidden = false;
     if (!centerName.value.trim() && !place.addressOnly) centerName.value = place.name;
     setAddressStatus("센터 위치를 확인했습니다.", "success");
     setStatus("");
@@ -349,6 +351,7 @@
       qualificationType: formData.get("qualificationType"),
       region: regionFromAddress(selectedLocation.primaryAddress),
       address: selectedLocation.primaryAddress,
+      addressDetail: addressDetail.value,
       roadAddress: selectedLocation.roadAddress || "",
       jibunAddress: selectedLocation.address || "",
       lat: selectedLocation.lat,

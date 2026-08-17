@@ -42,6 +42,7 @@ function validRequest(ip = "203.0.113.30") {
       qualificationType: "physical_therapist",
       region: "서울 강남구",
       address: "서울특별시 강남구 테헤란로 212",
+      addressDetail: "3층 301호",
       roadAddress: "서울특별시 강남구 테헤란로 212",
       jibunAddress: "서울특별시 강남구 역삼동 718-5",
       lat: 37.5012,
@@ -103,7 +104,7 @@ async function testValidApplicationIsStored() {
   assert.equal(inserted.contact_email, "partner@example.com");
   assert.equal(inserted.contact_phone, "010-1234-5678");
   assert.equal(inserted.center_stage, "operating");
-  assert.equal(inserted.address, "서울특별시 강남구 테헤란로 212");
+  assert.equal(inserted.address, "서울특별시 강남구 테헤란로 212 3층 301호");
   assert.equal(inserted.lat, 37.5012);
   assert.equal(inserted.lng, 127.0396);
   assert.equal(inserted.naver_place_id, "1234567890");

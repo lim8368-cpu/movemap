@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="../mobile-containment.css?v=20260729-monochrome-rehab" />
   <link rel="stylesheet" href="../assets/ui-icons.css?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="../collaboration/collaboration.css?v=20260730-collaboration-soft3" />
-  <link rel="stylesheet" href="./partner-apply.css?v=20260817-partner-center-v5" />
+  <link rel="stylesheet" href="./partner-apply.css?v=20260817-partner-center-v6" />
   <link rel="stylesheet" href="../assets/site-header.css?v=20260812-logo-alpha" />
   <script defer src="../assets/site-header.js?v=20260802-shared-header2"></script>
 </head>
@@ -103,10 +103,16 @@
                 </div>
                 <p id="addressSearchStatus" class="partner-address-status" role="status">검색 결과에서 센터의 정확한 위치를 선택해 주세요.</p>
                 <div id="addressResults" class="partner-address-results" role="listbox" aria-label="네이버 장소 검색 결과" hidden></div>
-                <div id="selectedAddress" class="partner-selected-address" hidden>
-                  <i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#circle-check"></use></svg></i>
-                  <div><small>네이버 지도 위치 확인</small><strong id="selectedPlaceName"></strong><span id="selectedRoadAddress"></span></div>
-                  <a id="selectedNaverMapLink" href="https://map.naver.com/" target="_blank" rel="noopener">지도에서 보기 <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a>
+                <div id="addressConfirmation" class="partner-address-confirmation" hidden>
+                  <div id="selectedAddress" class="partner-selected-address">
+                    <i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#circle-check"></use></svg></i>
+                    <div><small>네이버 지도 위치 확인</small><strong id="selectedPlaceName"></strong><span id="selectedRoadAddress"></span></div>
+                    <a id="selectedNaverMapLink" href="https://map.naver.com/" target="_blank" rel="noopener">지도에서 보기 <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a>
+                  </div>
+                  <label class="partner-address-detail" for="addressDetail">
+                    <span>상세주소 <small>선택</small></span>
+                    <input id="addressDetail" name="addressDetail" type="text" maxlength="120" autocomplete="address-line2" placeholder="예: 3층 301호" />
+                  </label>
                 </div>
               </div>
             </div>
@@ -191,6 +197,6 @@
     <p class="copyright">© 2026 DAIL. All rights reserved.</p>
   </footer>
 
-  <script src="./app.js?v=20260817-partner-center-v6"></script>
+  <script src="./app.js?v=20260817-partner-center-v7"></script>
 </body>
 </html>
