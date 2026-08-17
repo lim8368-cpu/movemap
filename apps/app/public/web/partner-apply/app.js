@@ -28,6 +28,7 @@
   let registrationToken = "";
   let formStartedAt = Date.now();
   let selectedLocation = null;
+  let naverGeocoderPromise = null;
 
   function formatPhone(value) {
     const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
@@ -87,11 +88,11 @@
     addressQuery.removeAttribute("aria-invalid");
     addressResults.hidden = true;
     addressResults.innerHTML = "";
-    selectedPlaceName.textContent = place.name;
+    selectedPlaceName.textContent = place.addressOnly ? "센터 주소" : place.name;
     selectedRoadAddress.textContent = primaryAddress;
     selectedNaverMapLink.href = place.naverMapUrl || `https://map.naver.com/p/search/${encodeURIComponent(place.name)}`;
     selectedAddress.hidden = false;
-    if (!centerName.value.trim()) centerName.value = place.name;
+    if (!centerName.value.trim() && !place.addressOnly) centerName.value = place.name;
     setAddressStatus("센터 위치를 확인했습니다.", "success");
     setStatus("");
   }
@@ -120,6 +121,80 @@
     addressQuery.setAttribute("aria-expanded", "true");
   }
 
+  async function loadNaverGeocoder() {
+    if (window.naver?.maps?.Service?.geocode) return;
+    if (naverGeocoderPromise) return naverGeocoderPromise;
+
+    naverGeocoderPromise = (async () => {
+      const configResponse = await fetch("/api/config", {
+        headers: { "X-DAIL-Source": "web" },
+      });
+      const config = await configResponse.json().catch(() => ({}));
+      const key = String(config.naverMapNcpKeyId || "").trim();
+      if (!configResponse.ok || !key) throw new Error("네이버 주소 검색을 준비하지 못했습니다.");
+
+      await new Promise((resolve, reject) => {
+        const existing = document.querySelector("script[data-dail-naver-geocoder]");
+        const finish = () => {
+          if (window.naver?.maps?.Service?.geocode) resolve();
+          else reject(new Error("네이버 주소 검색을 불러오지 못했습니다."));
+        };
+        if (existing) {
+          if (window.naver?.maps?.Service?.geocode) return resolve();
+          existing.addEventListener("load", finish, { once: true });
+          existing.addEventListener("error", reject, { once: true });
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&submodules=geocoder`;
+        script.async = true;
+        script.dataset.dailNaverGeocoder = "true";
+        script.addEventListener("load", finish, { once: true });
+        script.addEventListener("error", () => reject(new Error("네이버 주소 검색을 불러오지 못했습니다.")), { once: true });
+        document.head.appendChild(script);
+      });
+    })();
+
+    try {
+      await naverGeocoderPromise;
+    } catch (error) {
+      naverGeocoderPromise = null;
+      throw error;
+    }
+  }
+
+  async function geocodeAddress(query) {
+    await loadNaverGeocoder();
+    return new Promise((resolve, reject) => {
+      window.naver.maps.Service.geocode({ query }, (status, response) => {
+        if (status !== window.naver.maps.Service.Status.OK) {
+          reject(new Error("네이버 주소 검색에 연결하지 못했습니다."));
+          return;
+        }
+
+        const addresses = Array.isArray(response?.v2?.addresses) ? response.v2.addresses : [];
+        resolve(addresses.slice(0, 5).map((item, index) => {
+          const roadAddress = String(item.roadAddress || "").trim();
+          const jibunAddress = String(item.jibunAddress || "").trim();
+          const primaryAddress = roadAddress || jibunAddress;
+          return {
+            id: `address-${item.x}-${item.y}-${index}`,
+            name: primaryAddress || query,
+            category: "도로명 주소",
+            address: jibunAddress,
+            roadAddress,
+            lat: Number(item.y),
+            lng: Number(item.x),
+            naverPlaceId: "",
+            naverMapUrl: `https://map.naver.com/p/search/${encodeURIComponent(primaryAddress || query)}`,
+            addressOnly: true,
+          };
+        }).filter((place) => place.roadAddress || place.address));
+      });
+    });
+  }
+
   async function searchAddress() {
     const query = addressQuery.value.replace(/\s+/g, " ").trim();
     if (query.length < 2) {
@@ -134,12 +209,26 @@
     addressQuery.setAttribute("aria-expanded", "false");
     setAddressStatus("네이버 지도에서 센터 위치를 찾고 있습니다.", "loading");
     try {
-      const response = await fetch(`/api/place-search?q=${encodeURIComponent(query)}`, {
-        headers: { "X-DAIL-Source": "web" },
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || "센터 위치를 검색하지 못했습니다.");
-      const places = Array.isArray(result.places) ? result.places : [];
+      let places = [];
+      let placeSearchError = null;
+      try {
+        const response = await fetch(`/api/place-search?q=${encodeURIComponent(query)}`, {
+          headers: { "X-DAIL-Source": "web" },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "센터 위치를 검색하지 못했습니다.");
+        places = Array.isArray(result.places) ? result.places : [];
+      } catch (error) {
+        placeSearchError = error;
+      }
+
+      if (!places.length) {
+        try {
+          places = await geocodeAddress(query);
+        } catch (error) {
+          if (placeSearchError) throw placeSearchError;
+        }
+      }
       if (!places.length) throw new Error("검색 결과가 없습니다. 센터명이나 도로명 주소를 다시 확인해 주세요.");
       clearSelectedLocation();
       renderAddressResults(places);
