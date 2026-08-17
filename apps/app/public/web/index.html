@@ -29,7 +29,7 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260812-logo-alpha" />
+  <link rel="stylesheet" href="./styles.css?v=20260817-app-promo" />
   <link rel="stylesheet" href="./mobile-containment.css?v=20260802-mobile-cards" />
   <link rel="stylesheet" href="./assets/ui-icons.css?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="./assets/site-header.css?v=20260812-logo-alpha" />
@@ -155,17 +155,47 @@
         <p>관심 센터 저장부터 상담 신청까지, DAIL 앱에서 더 편리하게 만나보세요.</p>
         <div class="store-buttons" aria-label="DAIL 앱 다운로드">
           <a id="iosStoreLink" class="store-button" href="#app" data-store-platform="ios" aria-disabled="true">
-            <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#apple"></use></svg>
-            <span><small>Download on the</small><strong>App Store</strong></span>
+            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store에서 다운로드" width="180" height="60" />
           </a>
           <a id="androidStoreLink" class="store-button" href="#app" data-store-platform="android" aria-disabled="true">
-            <svg class="play-store-icon" viewBox="0 0 32 36" aria-hidden="true"><path fill="#00d6ff" d="M1 2.5 18.7 18 1 33.5Z"/><path fill="#00ef8b" d="m1 2.5 22.8 13-5.1 2.5Z"/><path fill="#ffcf3f" d="m18.7 18 5.1 2.5L1 33.5Z"/><path fill="#ff496f" d="m23.8 15.5 5.4 3.1c1 .6 1 2.2 0 2.8l-5.4 3.1-5.1-6.5Z"/></svg>
-            <span><small>GET IT ON</small><strong>Google Play</strong></span>
+            <img src="https://play.google.com/intl/ko/badges/static/images/badges/ko_badge_web_generic.png" alt="Google Play에서 다운로드" width="180" height="70" />
           </a>
         </div>
         <p id="appDownloadMessage" class="app-download-message" aria-live="polite"></p>
       </div>
-      <div class="phone"><span>9:41</span><div class="phone-logo"><i></i> DAIL</div><b>다시, 일상으로</b><p>내 주변의 전문 운동센터를<br />지도에서 찾아보세요.</p><button type="button">시작하기</button></div>
+      <div class="phone iphone-17" aria-label="DAIL iPhone 앱 화면 예시">
+        <span class="iphone-side-button iphone-action" aria-hidden="true"></span>
+        <span class="iphone-side-button iphone-volume-up" aria-hidden="true"></span>
+        <span class="iphone-side-button iphone-volume-down" aria-hidden="true"></span>
+        <div class="phone-screen">
+          <div class="dynamic-island" aria-hidden="true"></div>
+          <div class="phone-status" aria-hidden="true"><b>9:41</b><span>●●●</span></div>
+          <div class="phone-app-home">
+            <div class="phone-logo">
+              <img src="/assets/dail-logo-primary.png?v=20260812-logo-alpha" alt="" />
+              <strong>DAIL</strong>
+            </div>
+            <p class="phone-kicker">다시, 일상으로</p>
+            <h3>내 주변의 전문 운동센터</h3>
+            <p class="phone-copy">필요한 정보를 비교하고<br />나에게 맞는 센터를 찾아보세요.</p>
+            <div class="phone-search">
+              <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg>
+              <span>지역, 센터명으로 검색</span>
+            </div>
+            <div class="phone-quick-cards">
+              <article><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg><b>지도에서 찾기</b><small>내 주변 센터</small></article>
+              <article><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart"></use></svg><b>저장한 센터</b><small>관심 목록</small></article>
+            </div>
+          </div>
+          <nav class="phone-tab-bar" aria-label="앱 화면 예시 메뉴">
+            <span class="active"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg><small>홈</small></span>
+            <span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#map-pin"></use></svg><small>센터 찾기</small></span>
+            <span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#heart"></use></svg><small>저장</small></span>
+            <span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg><small>마이</small></span>
+          </nav>
+          <div class="iphone-home-indicator" aria-hidden="true"></div>
+        </div>
+      </div>
     </section>
 
     <section class="partner"><div><h2>센터를 운영하고 계신가요?</h2><p>로그인 없이 파트너 센터 신청을 남기면 DAIL 운영팀이 확인 후 등록 절차를 안내합니다.</p></div><div><a class="button primary" href="/partner-apply/">파트너 센터 신청</a><a class="button outline" href="/register/">정식 등록 신청</a></div></section>
