@@ -18,9 +18,6 @@
   const selectedRoadAddress = document.getElementById("selectedRoadAddress");
   const selectedNaverMapLink = document.getElementById("selectedNaverMapLink");
   const challengeStatus = document.getElementById("challengeStatus");
-  const mathChallenge = document.getElementById("mathChallenge");
-  const challengePrompt = document.getElementById("challengePrompt");
-  const challengeAnswer = document.getElementById("challengeAnswer");
   const turnstileChallenge = document.getElementById("turnstileChallenge");
   const companyWebsite = document.getElementById("companyWebsite");
   const menuToggle = document.querySelector(".menu-toggle");
@@ -187,19 +184,9 @@
         turnstileChallenge.hidden = false;
       },
       "error-callback": () => {
-        if (captchaConfig?.fallbackChallenge) activateMathFallback(captchaConfig.fallbackChallenge);
+        challengeStatus.textContent = "요청 확인을 준비하지 못했습니다. 페이지를 새로고침해 주세요.";
       },
     });
-  }
-
-  function activateMathFallback(fallbackChallenge) {
-    captchaConfig = fallbackChallenge;
-    turnstileChallenge.hidden = true;
-    challengePrompt.textContent = fallbackChallenge.prompt;
-    challengeAnswer.value = "";
-    mathChallenge.hidden = false;
-    challengeStatus.textContent = "아래 계산 문제의 정답을 입력해 주세요.";
-    challengeStatus.className = "partner-security-note";
   }
 
   async function loadRegistrationChallenge() {
@@ -207,7 +194,6 @@
     formStartedAt = Date.now();
     challengeStatus.textContent = "요청 확인을 준비하고 있습니다.";
     challengeStatus.className = "visually-hidden";
-    mathChallenge.hidden = true;
     if (window.turnstile && turnstileWidgetId !== null) {
       window.turnstile.remove(turnstileWidgetId);
       turnstileWidgetId = null;
@@ -221,16 +207,8 @@
       const config = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(config.error || "요청 확인을 준비하지 못했습니다.");
       captchaConfig = config;
-      if (config.mode === "turnstile") {
-        try {
-          await loadTurnstile(config.siteKey);
-        } catch {
-          if (!config.fallbackChallenge) throw new Error("요청 확인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-          activateMathFallback(config.fallbackChallenge);
-        }
-      } else {
-        activateMathFallback(config);
-      }
+      if (config.mode !== "turnstile") throw new Error("요청 확인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      await loadTurnstile(config.siteKey);
     } catch (error) {
       captchaConfig = null;
       setStatus(error.message || "요청 확인을 준비하지 못했습니다.");
@@ -250,7 +228,6 @@
         formStartedAt,
         companyWebsite: companyWebsite.value,
         challengeToken: captchaConfig.challengeToken || "",
-        challengeAnswer: challengeAnswer.value,
         turnstileToken,
         challengeMode: captchaConfig.mode,
       }),
