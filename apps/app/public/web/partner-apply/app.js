@@ -123,6 +123,24 @@
     addressQuery.setAttribute("aria-expanded", "true");
   }
 
+  function waitForNaverGeocoder(timeoutMs = 5000) {
+    return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const check = () => {
+        if (window.naver?.maps?.Service?.geocode) {
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt >= timeoutMs) {
+          reject(new Error("네이버 주소 검색을 불러오지 못했습니다."));
+          return;
+        }
+        window.setTimeout(check, 50);
+      };
+      check();
+    });
+  }
+
   async function loadNaverGeocoder() {
     if (window.naver?.maps?.Service?.geocode) return;
     if (naverGeocoderPromise) return naverGeocoderPromise;
@@ -135,27 +153,22 @@
       const key = String(config.naverMapNcpKeyId || "").trim();
       if (!configResponse.ok || !key) throw new Error("네이버 주소 검색을 준비하지 못했습니다.");
 
-      await new Promise((resolve, reject) => {
-        const existing = document.querySelector("script[data-dail-naver-geocoder]");
-        const finish = () => {
-          if (window.naver?.maps?.Service?.geocode) resolve();
-          else reject(new Error("네이버 주소 검색을 불러오지 못했습니다."));
-        };
-        if (existing) {
-          if (window.naver?.maps?.Service?.geocode) return resolve();
-          existing.addEventListener("load", finish, { once: true });
-          existing.addEventListener("error", reject, { once: true });
-          return;
-        }
-
+      const existing = document.querySelector("script[data-dail-naver-geocoder]");
+      if (!existing) {
         const script = document.createElement("script");
         script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&submodules=geocoder`;
         script.async = true;
         script.dataset.dailNaverGeocoder = "true";
-        script.addEventListener("load", finish, { once: true });
-        script.addEventListener("error", () => reject(new Error("네이버 주소 검색을 불러오지 못했습니다.")), { once: true });
-        document.head.appendChild(script);
-      });
+        await new Promise((resolve, reject) => {
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", () => reject(new Error("네이버 주소 검색을 불러오지 못했습니다.")), { once: true });
+          document.head.appendChild(script);
+        });
+      }
+
+      // The base Maps script finishes before its geocoder submodule is ready.
+      // Wait for the submodule instead of treating the base script load as completion.
+      await waitForNaverGeocoder();
     })();
 
     try {
@@ -229,6 +242,7 @@
           places = await geocodeAddress(query);
         } catch (error) {
           if (placeSearchError) throw placeSearchError;
+          throw error;
         }
       }
       if (!places.length) throw new Error("검색 결과가 없습니다. 센터명이나 도로명 주소를 다시 확인해 주세요.");
