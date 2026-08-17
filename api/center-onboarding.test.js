@@ -7,6 +7,7 @@ process.env.AUTH_SUPABASE_URL = "https://supabase.test";
 process.env.AUTH_SUPABASE_ANON_KEY = "test-anon";
 process.env.AUTH_SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
 process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret";
+process.env.PARTNER_INVITE_ENFORCEMENT = "disabled";
 
 const centerApplications = require("./center-applications");
 const approveCenter = require("./approve-center");

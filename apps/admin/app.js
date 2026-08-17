@@ -493,6 +493,7 @@ function renderPartnerApplications() {
     const statusOptions = ["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"].map(function (status) {
       return '<option value="' + status + '"' + (item.status === status ? " selected" : "") + ">" + escapeHtml(statusLabel(status)) + "</option>";
     }).join("");
+    const canInvite = ["qualified", "invited"].includes(item.status);
     return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
       '운영 센터</p><h3>' + escapeHtml(item.centerName) +
       '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
@@ -509,7 +510,9 @@ function renderPartnerApplications() {
       escapeHtml(item.id) + '">' + statusOptions + '</select></label><label>운영 메모<textarea data-partner-note="' +
       escapeHtml(item.id) + '" rows="4" maxlength="2000" placeholder="통화 내용, 다음 연락 일정 등">' +
       escapeHtml(item.adminNote || "") + '</textarea></label><button type="button" data-save-partner="' +
-      escapeHtml(item.id) + '">상태와 메모 저장</button></div></article>';
+      escapeHtml(item.id) + '">상태와 메모 저장</button><div class="partner-invite-action"><p>서류 검토가 끝난 센터에만 정식 등록 링크를 발급하세요. 링크는 14일 동안 유효합니다.</p><button type="button" data-create-partner-invite="' +
+      escapeHtml(item.id) + '"' + (canInvite ? "" : ' disabled title="처리 상태를 정식 등록 후보로 저장한 뒤 발급할 수 있습니다."') + '>정식 등록 초대 링크 발급</button><div data-partner-invite-result="' +
+      escapeHtml(item.id) + '" hidden></div></div></div></article>';
   }).join("");
 }
 
@@ -533,6 +536,50 @@ async function updatePartnerApplication(id) {
     showToast(error.message, true);
     button.disabled = false;
     button.textContent = "상태와 메모 저장";
+  }
+}
+
+async function copyInviteLink(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    const field = document.createElement("textarea");
+    field.value = value;
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand("copy");
+    field.remove();
+    return copied;
+  }
+}
+
+async function createPartnerInvite(id) {
+  const button = document.querySelector('[data-create-partner-invite="' + CSS.escape(id) + '"]');
+  const resultBox = document.querySelector('[data-partner-invite-result="' + CSS.escape(id) + '"]');
+  button.disabled = true;
+  button.textContent = "링크 발급 중";
+  try {
+    const response = await fetch(API_BASE + "/api/partner-registration-invites", {
+      method: "POST",
+      headers: adminHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ id: id }),
+    });
+    const result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || "초대 링크를 발급하지 못했습니다.");
+    resultBox.hidden = false;
+    resultBox.innerHTML = '<label>정식 등록 링크<input readonly value="' + escapeHtml(result.inviteUrl) + '" /></label><small>' +
+      escapeHtml(formatDate(result.expiresAt, true)) + '까지 유효</small>';
+    resultBox.querySelector("input").addEventListener("click", function (event) { event.currentTarget.select(); });
+    const copied = await copyInviteLink(result.inviteUrl);
+    button.textContent = copied ? "링크 복사 완료" : "링크가 발급되었습니다";
+    showToast(copied ? "정식 등록 초대 링크를 복사했습니다." : "정식 등록 초대 링크를 발급했습니다.");
+  } catch (error) {
+    showToast(error.message, true);
+    button.disabled = false;
+    button.textContent = "정식 등록 초대 링크 발급";
   }
 }
 
@@ -1063,8 +1110,10 @@ document.querySelector("#partnerApplicationFilters").addEventListener("click", f
 document.querySelector("#partnerApplicationSearch").addEventListener("input", renderPartnerApplications);
 
 document.querySelector("#partnerApplications").addEventListener("click", function (event) {
-  const button = event.target.closest("[data-save-partner]");
-  if (button) updatePartnerApplication(button.dataset.savePartner);
+  const saveButton = event.target.closest("[data-save-partner]");
+  const inviteButton = event.target.closest("[data-create-partner-invite]");
+  if (saveButton) updatePartnerApplication(saveButton.dataset.savePartner);
+  if (inviteButton) createPartnerInvite(inviteButton.dataset.createPartnerInvite);
 });
 
 document.querySelector("#centerApplications").addEventListener("click", function (event) {

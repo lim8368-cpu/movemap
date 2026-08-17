@@ -67,6 +67,7 @@ const apiRoutes = new Map([
   ["/api/owner-logout", require("../api/owner-logout")],
   ["/api/owner-uploads", require("../api/owner-uploads")],
   ["/api/partner-applications", require("../api/partner-applications")],
+  ["/api/partner-registration-invites", require("../api/partner-registration-invites")],
   ["/api/operations", require("../api/operations")],
   ["/api/place-search", require("../api/place-search")],
   ["/api/platform-users", require("../api/platform-users")],
@@ -203,6 +204,12 @@ function staticPathFor(pathname) {
 }
 
 function serveStatic(req, res, url) {
+  if (url.pathname === "/register/" && !url.searchParams.get("invite")) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/partner-apply/?registration=invite-required");
+    res.end();
+    return;
+  }
   if (
     url.pathname === "/admin" ||
     url.pathname === "/brand" ||

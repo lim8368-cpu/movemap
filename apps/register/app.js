@@ -66,6 +66,8 @@ let registrationModulesStarted = false;
 let registrationSchedule = {};
 const AUTH_STORAGE_KEY = "dail_auth_session";
 const AUTH_RETURN_KEY = "dail_auth_return_to";
+const partnerInviteToken = new URLSearchParams(window.location.search).get("invite") || "";
+let partnerInvite = null;
 const DAY_ROWS = [
   ["monday", "월요일"],
   ["tuesday", "화요일"],
@@ -777,6 +779,12 @@ function revealRegistration(profileData) {
   if (!emailInput.value && profileData.user?.email && !profileData.user.email.endsWith(".invalid")) {
     emailInput.value = profileData.user.email;
   }
+  if (partnerInvite?.application) {
+    if (!form.elements.centerName.value) form.elements.centerName.value = partnerInvite.application.centerName || "";
+    if (!form.elements.ownerName.value) form.elements.ownerName.value = partnerInvite.application.applicantName || "";
+    emailInput.value = partnerInvite.application.contactEmail || emailInput.value;
+    emailInput.readOnly = true;
+  }
   const pending = showApplicationStatus(profileData.centerAccess?.latestApplication);
   if (!pending) {
     registrationSteps.hidden = false;
@@ -797,7 +805,39 @@ function showLoginGate(messageText) {
   registrationAuthActions.hidden = false;
 }
 
+function showInviteError(messageText) {
+  authSession = null;
+  authProfile = null;
+  registrationAuthGate.hidden = false;
+  registrationIdentity.hidden = true;
+  existingApplicationStatus.hidden = true;
+  registrationSteps.hidden = true;
+  form.hidden = true;
+  registrationAuthGate.querySelector("h2").textContent = "센터 등록 초대 링크를 확인해주세요";
+  registrationAuthGate.querySelector(":scope > p:not(.registration-auth-eyebrow)").textContent = "정식 센터 등록은 파트너 신청과 서류 검토가 완료된 센터에만 안내됩니다.";
+  registrationAuthLoading.innerHTML = escapeHtml(messageText || "유효한 초대 링크가 아닙니다.") + '<br /><a href="/partner-apply/">파트너 센터 신청하기</a>';
+  registrationAuthActions.hidden = true;
+}
+
+async function validatePartnerInvite() {
+  if (!partnerInviteToken) return null;
+  const response = await fetch(API_BASE + "/api/partner-registration-invites?token=" + encodeURIComponent(partnerInviteToken));
+  const result = await response.json().catch(function () { return {}; });
+  if (!response.ok || !result.valid) throw new Error(result.error || "유효한 센터 등록 초대 링크가 아닙니다.");
+  return result;
+}
+
 async function initRegistrationPage() {
+  try {
+    partnerInvite = await validatePartnerInvite();
+    if (!partnerInvite) {
+      showInviteError("먼저 파트너 센터 신청을 남겨주세요. 서류 검토 후 정식 등록 링크를 보내드립니다.");
+      return;
+    }
+  } catch (error) {
+    showInviteError(error.message);
+    return;
+  }
   try {
     const response = await fetch(API_BASE + "/api/config");
     publicConfig = await response.json();
@@ -836,7 +876,7 @@ async function initRegistrationPage() {
 document.querySelectorAll("[data-registration-provider]").forEach(function (button) {
   button.addEventListener("click", function () {
     if (button.dataset.ready !== "true") return;
-    sessionStorage.setItem(AUTH_RETURN_KEY, "/register/");
+    sessionStorage.setItem(AUTH_RETURN_KEY, "/register/?invite=" + encodeURIComponent(partnerInviteToken));
     location.href = "/api/auth/start?provider=" + encodeURIComponent(button.dataset.registrationProvider);
   });
 });
@@ -1001,6 +1041,7 @@ form.addEventListener("submit", async function (event) {
       consent: data.get("consent") === "on",
       therapistBackground: isTherapistBackground(),
       registrationToken: registrationToken,
+      partnerInviteToken: partnerInviteToken,
     };
     const response = await fetch(API_BASE + "/api/center-applications", {
       method: "POST",

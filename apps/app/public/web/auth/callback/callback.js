@@ -1,6 +1,6 @@
 const title=document.querySelector("#callbackTitle"),message=document.querySelector("#callbackMessage"),home=document.querySelector("#callbackHome");
 const AUTH_RETURN_KEY="dail_auth_return_to";
-function safeReturnPath(){const value=sessionStorage.getItem(AUTH_RETURN_KEY)||"/";sessionStorage.removeItem(AUTH_RETURN_KEY);return ["/register/","/center-dashboard/","/account/"].includes(value)?value:"/"}
+function safeReturnPath(){const value=sessionStorage.getItem(AUTH_RETURN_KEY)||"/";sessionStorage.removeItem(AUTH_RETURN_KEY);if(["/center-dashboard/","/account/"].includes(value))return value;if(/^\/register\/\?invite=[A-Za-z0-9._~-]+$/.test(value))return value;return "/"}
 function fail(text){sessionStorage.removeItem(AUTH_RETURN_KEY);title.textContent="로그인하지 못했어요";message.textContent=text;document.querySelector(".auth-spinner").hidden=true;home.hidden=false}
 async function run(){
   const query=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.slice(1));

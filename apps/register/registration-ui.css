@@ -1442,3 +1442,4 @@ select:focus {
   .human-check > label { grid-template-columns: 1fr; }
   .credential-file-input::file-selector-button { display: block; margin: 0 0 7px; }
 }
+.registration-auth-loading a{display:inline-flex;margin-top:13px;padding:10px 15px;border-radius:9px;background:#17283c;color:#fff;font-weight:750;text-decoration:none}

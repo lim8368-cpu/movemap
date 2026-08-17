@@ -20,6 +20,10 @@ const {
   scheduleSummary,
 } = require("./_booking");
 const { normalizeCenterCategories } = require("./_center-categories");
+const {
+  partnerInviteConfigured,
+  verifyPartnerRegistrationInvite,
+} = require("./_partner-registration-invite");
 
 function readJsonBody(req) {
   if (req.body && typeof req.body === "object") {
@@ -103,6 +107,29 @@ module.exports = async function handler(req, res) {
       });
       return;
     }
+    let partnerInvite = null;
+    let partnerApplication = null;
+    if (partnerInviteConfigured()) {
+      partnerInvite = verifyPartnerRegistrationInvite(body.partnerInviteToken);
+      if (!partnerInvite) {
+        sendJson(res, 403, {
+          error: "정식 센터 등록은 서류 검토 후 받은 전용 링크에서만 진행할 수 있습니다.",
+          code: "partner_invite_required",
+        });
+        return;
+      }
+      const partnerApplications = await supabaseRequest("partner_applications", {
+        query: `?select=id,contact_email,status&id=eq.${encodeURIComponent(partnerInvite.applicationId)}&contact_email=eq.${encodeURIComponent(partnerInvite.email)}&limit=1`,
+      });
+      partnerApplication = partnerApplications[0];
+      if (!partnerApplication || ["closed", "converted"].includes(partnerApplication.status)) {
+        sendJson(res, 403, {
+          error: "센터 등록 초대 링크가 만료되었거나 이미 사용되었습니다.",
+          code: "partner_invite_invalid",
+        });
+        return;
+      }
+    }
     const requiredFields = [
       "centerName",
       "ownerName",
@@ -167,6 +194,13 @@ module.exports = async function handler(req, res) {
     const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       sendJson(res, 400, { error: "센터장 계정에 사용할 올바른 이메일을 입력해 주세요." });
+      return;
+    }
+    if (partnerInvite && email !== partnerInvite.email) {
+      sendJson(res, 403, {
+        error: "파트너 신청에 사용한 이메일로 등록 정보를 입력해 주세요.",
+        code: "partner_invite_email_mismatch",
+      });
       return;
     }
     const phone = normalizePhone(body.phone);
@@ -252,13 +286,25 @@ module.exports = async function handler(req, res) {
       });
     }
     await consumeRegistrationSession(secureSession.id);
+    if (partnerApplication) {
+      await supabaseRequest("partner_applications", {
+        method: "PATCH",
+        query: `?id=eq.${encodeURIComponent(partnerApplication.id)}`,
+        body: { status: "converted", updated_at: new Date().toISOString() },
+      });
+    }
     await recordAuditLog(req, {
       actorUserId: auth.user.id,
       actorRole: "center_applicant",
       action: "center_application.create",
       targetType: "center_application",
       targetId: rows[0].id,
-      metadata: { qualificationType, therapistBackground, uploadedFiles: requestedPaths.length },
+      metadata: {
+        qualificationType,
+        therapistBackground,
+        uploadedFiles: requestedPaths.length,
+        partnerApplicationId: partnerApplication?.id || null,
+      },
     });
 
     sendJson(res, 202, {

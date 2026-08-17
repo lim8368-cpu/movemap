@@ -238,12 +238,12 @@ const APP_SCREENS = {
   },
   register: {
     id: "register",
-    label: "센터 등록",
-    title: "센터 등록",
-    subtitle: "전문가가 운영하는 센터를 DAIL에 알려주세요",
+    label: "파트너 신청",
+    title: "파트너 센터 신청",
+    subtitle: "먼저 센터 정보를 남기면 검토 후 등록을 안내해 드려요",
     icon: "add-circle-outline",
     activeIcon: "add-circle",
-    path: "/register/?appView=register",
+    path: "/partner-apply/?appView=register",
   },
 };
 
@@ -280,8 +280,8 @@ const HOME_ACTIONS = [
   {
     screen: APP_SCREENS.register,
     eyebrow: "PARTNER",
-    title: "센터 등록",
-    description: "전문가 센터를 직접 등록해요",
+    title: "파트너 센터 신청",
+    description: "센터 정보를 남기고 등록 안내를 받아요",
     icon: "add-circle-outline",
   },
 ];

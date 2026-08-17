@@ -19,6 +19,9 @@ function normalizePublicCenterCategories(values) {
 const sampleCenters = [
   {
     id: "core",
+    isExample: true,
+    photoUrl: "/assets/example-centers/corefit.jpg?v=20260817-examples",
+    photoUrls: ["/assets/example-centers/corefit.jpg?v=20260817-examples"],
     name: "코어핏 무브센터",
     region: "gangnam",
     area: "서울 강남구",
@@ -42,6 +45,9 @@ const sampleCenters = [
   },
   {
     id: "reform",
+    isExample: true,
+    photoUrl: "/assets/example-centers/reformmove.jpg?v=20260817-examples",
+    photoUrls: ["/assets/example-centers/reformmove.jpg?v=20260817-examples"],
     name: "리폼무브 스튜디오",
     region: "mapo",
     area: "서울 마포구",
@@ -65,6 +71,9 @@ const sampleCenters = [
   },
   {
     id: "posture",
+    isExample: true,
+    photoUrl: "/assets/example-centers/posturelab.jpg?v=20260817-examples",
+    photoUrls: ["/assets/example-centers/posturelab.jpg?v=20260817-examples"],
     name: "포스처랩 분당",
     region: "bundang",
     area: "경기 성남시 분당구",
@@ -88,6 +97,9 @@ const sampleCenters = [
   },
   {
     id: "shoulder",
+    isExample: true,
+    photoUrl: "/assets/example-centers/shoulderwork.jpg?v=20260817-examples",
+    photoUrls: ["/assets/example-centers/shoulderwork.jpg?v=20260817-examples"],
     name: "숄더워크 랩",
     region: "gangnam",
     area: "서울 강남구",
@@ -139,10 +151,11 @@ const centerExperienceOverlay = document.querySelector("#centerExperienceOverlay
 const centerExperienceSheet = document.querySelector("#centerExperienceSheet");
 const centerExperienceContent = document.querySelector("#centerExperienceContent");
 const centerExperienceScrim = document.querySelector("#centerExperienceScrim");
+const centerDataNotice = document.querySelector("#centerDataNotice");
 
 let selectedRegion = "all";
 let selectedCategory = "";
-let centers = sampleCenters;
+let centers = sampleCenters.map(normalizeCenter);
 let selectedId = "";
 let naverMap = null;
 let naverMarkers = [];
@@ -192,6 +205,12 @@ function escapeHtml(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
+function safePersonName(value, fallback = "DAIL 이용자") {
+  const normalized = String(value == null ? "" : value).trim();
+  if (!normalized || /^(?:undefined|unidentified|unknown|null)(?:\s*분)?$/i.test(normalized)) return fallback;
+  return normalized;
+}
+
 function uiIcon(name, className = "") {
   return `<svg class="ui-icon ${className}" aria-hidden="true"><use href="/assets/ui-icons.svg#${name}"></use></svg>`;
 }
@@ -218,7 +237,7 @@ function normalizeOpeningSchedule(value) {
     const fallback = PUBLIC_DEFAULT_SCHEDULE[key];
     const item = source[key] && typeof source[key] === "object" ? source[key] : {};
     return [key, {
-      closed: Boolean(item.closed),
+      closed: item.closed === undefined ? fallback.closed : Boolean(item.closed),
       open: /^\d{2}:(?:00|30)$/.test(item.open) ? item.open : fallback.open,
       close: /^\d{2}:(?:00|30)$/.test(item.close) ? item.close : fallback.close,
     }];
@@ -296,6 +315,7 @@ function normalizeCenter(center) {
     openingSchedule: normalizeOpeningSchedule(center.openingSchedule || center.opening_schedule),
     bookingSlotMinutes: Number(center.bookingSlotMinutes || center.booking_slot_minutes || 60),
     bookingEnabled: center.bookingEnabled !== false && center.booking_enabled !== false,
+    isExample: center.isExample === true,
     naverMapUrl: center.naverMapUrl || center.naver_map_url || "",
     photoUrl: center.photoUrl || "",
     photoUrls: Array.isArray(center.photoUrls)
@@ -316,10 +336,10 @@ async function loadApprovedCenters() {
     if (!response.ok) throw new Error("centers unavailable");
     const data = await response.json();
     const approvedCenters = (data.centers || []).map(normalizeCenter);
-    centers = approvedCenters;
+    centers = approvedCenters.length ? approvedCenters : sampleCenters.map(normalizeCenter);
     selectedId = centers.some((center) => center.id === selectedId) ? selectedId : "";
   } catch {
-    centers = sampleCenters;
+    centers = sampleCenters.map(normalizeCenter);
     selectedId = "";
   }
 }
@@ -366,7 +386,7 @@ document.querySelectorAll("[data-store-platform]").forEach((link) => {
     if (link.getAttribute("aria-disabled") !== "true") return;
     event.preventDefault();
     const message = document.querySelector("#appDownloadMessage");
-    if (message) message.textContent = "스토어 등록이 완료되면 이 버튼에서 바로 다운로드할 수 있습니다.";
+    if (message) message.textContent = "DAIL 앱은 출시 전입니다. App Store와 Google Play에서 곧 만나보실 수 있어요.";
   });
 });
 
@@ -501,7 +521,13 @@ function matchesFilters(center) {
 
 function renderList() {
   const filtered = centers.filter(matchesFilters);
-  resultCount.textContent = `${filtered.length}곳`;
+  const examplesOnly = Boolean(filtered.length) && filtered.every((center) => center.isExample);
+  resultCount.textContent = examplesOnly ? `예시 ${filtered.length}곳` : `${filtered.length}곳`;
+  if (centerDataNotice) {
+    centerDataNotice.textContent = examplesOnly
+      ? "현재 센터 카드와 상세 화면은 파트너 센터가 표시될 방식을 보여주는 예시입니다."
+      : "지역과 목적을 선택하면 등록 센터를 지도에서 확인할 수 있습니다.";
+  }
   syncRehabSelection();
 
   const selectedTags = [...checkboxes].filter((box) => box.checked).map((box) => box.value);
@@ -520,8 +546,14 @@ function renderList() {
     .map(
       (center) => {
         const saved = isFavoriteCenter(center.id);
+        const cardPhoto = center.photoUrls?.[0] || center.photoUrl || "";
         return `
         <article class="center-card ${center.id === selectedId ? "active" : ""}" data-card-id="${center.id}" tabindex="0" aria-label="${escapeHtml(center.name)} 센터 상세 보기">
+          <div class="center-card-media ${cardPhoto ? "" : "is-placeholder"}">
+            ${cardPhoto ? `<img src="${escapeHtml(cardPhoto)}" alt="${escapeHtml(center.name)} 센터 사진" loading="lazy" decoding="async" />` : '<span class="center-card-placeholder">DAIL</span>'}
+            ${center.isExample ? '<span class="example-center-badge">예시 센터</span>' : ""}
+          </div>
+          <div class="center-card-body">
           <div class="card-top">
             <div>
               ${center.physicalTherapistVerified ? `<span class="pt-verification-badge">${uiIcon("badge-check")}물리치료사 면허 확인</span>` : ""}
@@ -541,6 +573,7 @@ function renderList() {
           </div>
           <div class="card-tags">${[...center.categories,...center.tags].slice(0, 3).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
           <span class="card-cta icon-label">센터 상세 보기 ${uiIcon("arrow-right")}</span>
+          </div>
         </article>
       `;
       }
@@ -604,7 +637,7 @@ async function loadCenterReviews(centerId) {
     const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
     const data = await response.json();
     if (!response.ok) throw new Error();
-    list.innerHTML = data.reviews.map((review) => `<article><strong class="review-title"><span class="stars">${ratingIcons(review.rating)}</span><span>${escapeHtml(review.nickname)}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
+    list.innerHTML = data.reviews.map((review) => `<article><strong class="review-title"><span class="stars">${ratingIcons(review.rating)}</span><span>${escapeHtml(safePersonName(review.nickname))}</span></strong><p>${escapeHtml(review.content)}</p><small>${new Date(review.created_at).toLocaleDateString("ko-KR")}</small></article>`).join("") || "<p>첫 후기를 남겨주세요.</p>";
   } catch { list.innerHTML = "<p>후기를 불러오지 못했습니다.</p>"; }
 }
 
@@ -672,7 +705,7 @@ function centerPopupContent(center) {
     ${mapPopupPhotoMarkup(center)}
     <div class="map-popup-body">
       <div class="map-popup-heading"><h3>${escapeHtml(center.name)}</h3>${center.distance ? `<span class="map-popup-distance">${escapeHtml(center.distance)}</span>` : ""}</div>
-      <p class="map-popup-category">DAIL 등록 운동센터${center.physicalTherapistVerified ? `<b class="pt-inline-badge">${uiIcon("badge-check")} 물리치료사 면허 확인</b>` : ""}</p>
+      <p class="map-popup-category">${center.isExample ? '<b class="example-inline-badge">예시 센터</b> 실제 센터가 등록될 화면 예시' : 'DAIL 등록 운동센터'}${center.physicalTherapistVerified ? `<b class="pt-inline-badge">${uiIcon("badge-check")} 물리치료사 면허 확인</b>` : ""}</p>
       <p class="map-popup-location">${escapeHtml(center.area)}</p>
       <div class="map-popup-tags">${center.tags.slice(0,2).map(tag=>`<span>${escapeHtml(tag)}</span>`).join("")}</div>
       <div class="map-popup-actions"><button class="map-popup-cta icon-label" type="button" onclick="window.openDailCenterSheet('${escapeHtml(center.id)}')">상세보기 ${uiIcon("arrow-right")}</button><button class="map-popup-route icon-label" type="button" onclick="window.openDailRouteSheet('${escapeHtml(center.id)}')">${uiIcon("map-pin")}길찾기</button></div>
@@ -842,6 +875,7 @@ function centerBookingMarkup(center) {
   }
   return `<section id="centerBookingSection" class="center-sheet-section center-booking-section">
     <div class="center-booking-heading"><div><p class="center-sheet-kicker">온라인 예약</p><h3>방문할 날짜와 시간을 선택하세요</h3></div><span>${center.bookingSlotMinutes}분 단위</span></div>
+    ${center.isExample ? `<p class="example-booking-note">예시 센터의 예약 화면입니다. 실제 센터 등록 후 운영시간과 남은 예약 시간이 자동으로 표시됩니다.</p>` : ""}
     <div class="booking-date-strip" role="list" aria-label="예약 날짜">
       ${dates.map((item) => `<button type="button" data-booking-date="${item.date}" class="${item.date === bookingSelectedDate ? "active" : ""}">
         <small>${item.today ? "오늘" : item.weekday}</small><strong>${item.day}</strong>
@@ -868,7 +902,7 @@ function renderBookingSlots(center) {
     ? `<form id="centerBookingForm" class="center-booking-form">
         <div class="selected-booking-time">${uiIcon("calendar")}<div><span>선택한 예약 시간</span><strong>${escapeHtml(formatBookingDateTime(bookingSelectedSlot.startAt))}</strong></div></div>
         <div class="booking-form-grid">
-          <label>이름<input name="customerName" maxlength="40" required value="${escapeHtml(currentUserProfile?.profile?.nickname || "")}" placeholder="예약자 이름" /></label>
+          <label>이름<input name="customerName" maxlength="40" required value="${escapeHtml(safePersonName(currentUserProfile?.profile?.nickname, ""))}" placeholder="예약자 이름" /></label>
           <label>전화번호<input name="customerPhone" inputmode="tel" maxlength="30" required placeholder="010-0000-0000" /></label>
           <label class="wide">불편한 부위<input name="painArea" maxlength="100" required placeholder="예: 오른쪽 어깨, 허리" /></label>
           <label class="wide">센터에 전할 내용 <small>선택</small><textarea name="customerNote" maxlength="500" rows="3" placeholder="운동 시 참고할 내용을 적어주세요. 진단서나 상세 의료기록은 입력하지 마세요."></textarea></label>
@@ -888,6 +922,30 @@ function renderBookingSlots(center) {
   centerExperienceContent?.querySelector("#centerBookingForm")?.addEventListener("submit", (event) => submitCenterBooking(event, center));
 }
 
+function exampleBookingAvailability(center, date) {
+  const schedule = normalizeOpeningSchedule(center.openingSchedule);
+  const dateValue = new Date(`${date}T12:00:00+09:00`);
+  const dayKey = PUBLIC_DAY_KEYS[dateValue.getUTCDay()];
+  const day = schedule[dayKey];
+  if (!day || day.closed) return { bookingEnabled: true, date, slotMinutes: center.bookingSlotMinutes, slots: [] };
+  const [openHour, openMinute] = day.open.split(":").map(Number);
+  const [closeHour, closeMinute] = day.close.split(":").map(Number);
+  const startMinutes = openHour * 60 + openMinute;
+  const closeMinutes = closeHour * 60 + closeMinute;
+  const slotMinutes = Math.max(30, Number(center.bookingSlotMinutes) || 60);
+  const slots = [];
+  for (let minute = startMinutes; minute + slotMinutes <= closeMinutes; minute += slotMinutes) {
+    const hour = String(Math.floor(minute / 60)).padStart(2, "0");
+    const minutes = String(minute % 60).padStart(2, "0");
+    slots.push({
+      time: `${hour}:${minutes}`,
+      startAt: `${date}T${hour}:${minutes}:00+09:00`,
+      available: true,
+    });
+  }
+  return { bookingEnabled: true, date, slotMinutes, slots };
+}
+
 async function loadBookingAvailability(center) {
   const panel = centerExperienceContent?.querySelector("#bookingSlotPanel");
   if (!panel) return;
@@ -895,6 +953,11 @@ async function loadBookingAvailability(center) {
   bookingSelectedSlot = null;
   panel.innerHTML = '<p class="booking-loading">예약 가능한 시간을 확인하고 있습니다.</p>';
   centerExperienceContent.querySelector("#bookingFormPanel").innerHTML = "";
+  if (center.isExample) {
+    bookingAvailability = exampleBookingAvailability(center, bookingSelectedDate);
+    renderBookingSlots(center);
+    return;
+  }
   try {
     const response = await fetch(`${API_BASE}/api/bookings?centerId=${encodeURIComponent(center.id)}&date=${encodeURIComponent(bookingSelectedDate)}`);
     const data = await response.json().catch(() => ({}));
@@ -913,6 +976,10 @@ async function submitCenterBooking(event, center) {
   event.preventDefault();
   const form = event.currentTarget;
   const message = form.querySelector(".booking-form-message");
+  if (center.isExample) {
+    form.innerHTML = `<div class="booking-success example-booking-success">${uiIcon("info")}<div><strong>예약 기능 예시입니다</strong><p>실제 파트너 센터가 등록되면 선택한 시간으로 예약 요청을 보낼 수 있어요.</p></div></div>`;
+    return;
+  }
   const session = await activeAuthSession();
   if (!session) {
     message.textContent = "예약하려면 먼저 로그인해 주세요.";
@@ -971,6 +1038,7 @@ function renderCenterExperienceDetail(center) {
     <div class="center-sheet-scroll">
       ${centerPhotoMarkup(center)}
       <section class="center-sheet-summary">
+        ${center.isExample ? `<div class="center-example-notice"><b>예시 센터</b><span>센터가 등록되면 이용자에게 보이는 화면을 미리 구성한 예시입니다.</span></div>` : ""}
         ${center.physicalTherapistVerified ? `<span class="pt-verification-badge center-sheet-verification">${uiIcon("badge-check")}물리치료사 면허 확인</span>` : ""}
         <h2>${escapeHtml(center.name)}</h2>
         <p class="center-sheet-rating">${center.rating === "신규"
@@ -1055,13 +1123,18 @@ function renderCenterExperienceDetail(center) {
 async function loadCenterSheetReviews(centerId) {
   const list = centerExperienceContent?.querySelector("#centerSheetReviewList");
   if (!list) return;
+  const center = centers.find((item) => item.id === centerId);
+  if (center?.isExample) {
+    list.innerHTML = `<div class="center-sheet-empty"><span>${uiIcon("message-circle")}</span><strong>후기 영역 예시</strong><p>실제 센터가 등록되면 방문자가 남긴 후기가 이곳에 표시됩니다.</p></div>`;
+    return;
+  }
   try {
     const response = await fetch(`${API_BASE}/api/reviews?centerId=${encodeURIComponent(centerId)}`);
     const data = await response.json();
     if (!response.ok) throw new Error();
     list.innerHTML = data.reviews?.length
       ? data.reviews.slice(0, 4).map((review) => `<article>
-          <div><strong>${escapeHtml(review.nickname)}</strong><span class="stars">${ratingIcons(review.rating)}</span></div>
+          <div><strong>${escapeHtml(safePersonName(review.nickname))}</strong><span class="stars">${ratingIcons(review.rating)}</span></div>
           <p>${escapeHtml(review.content)}</p>
           <time>${new Date(review.created_at).toLocaleDateString("ko-KR")}</time>
         </article>`).join("")
@@ -2259,7 +2332,7 @@ async function loadUserProfile(){
   const response=await fetch("/api/auth/profile",{headers:{Authorization:`Bearer ${session.access_token}`}});if(response.status===401){localStorage.removeItem(AUTH_STORAGE_KEY);return null}if(!response.ok)return null;return response.json();
 }
 function renderAuthState(data){
-  currentUserProfile=data;const nickname=data?.profile?.nickname||"회원";userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));userMenuButton.setAttribute("aria-label",data?`${nickname}님 계정`:"로그인");headerAccountLink.hidden=!data;headerLogoutButton.hidden=!data;
+  currentUserProfile=data;const nickname=safePersonName(data?.profile?.nickname,"회원");userMenuButton.textContent=data?`${nickname}님`:"로그인";userMenuButton.classList.toggle("signed-in",Boolean(data));userMenuButton.setAttribute("aria-label",data?`${nickname}님 계정`:"로그인");headerAccountLink.hidden=!data;headerLogoutButton.hidden=!data;
   centerDashboardLink.hidden=!data?.centerAccess?.hasActiveMembership;
   if(!data)return;document.querySelector("#accountNickname").textContent=nickname;document.querySelector("#accountEmail").textContent=data.user?.email||`${data.user?.provider||"소셜"} 계정`;
 }
