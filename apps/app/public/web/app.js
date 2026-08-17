@@ -16,6 +16,14 @@ function normalizePublicCenterCategories(values) {
   }).filter(Boolean))];
 }
 
+const EXAMPLE_CENTER_PHOTOS = new Map([
+  ["다일 테스트 무브센터", "/assets/example-centers/corefit.jpg?v=20260817-examples"],
+  ["코어핏 무브센터", "/assets/example-centers/corefit.jpg?v=20260817-examples"],
+  ["리폼무브 스튜디오", "/assets/example-centers/reformmove.jpg?v=20260817-examples"],
+  ["포스처랩 분당", "/assets/example-centers/posturelab.jpg?v=20260817-examples"],
+  ["숄더워크 랩", "/assets/example-centers/shoulderwork.jpg?v=20260817-examples"],
+]);
+
 const sampleCenters = [
   {
     id: "core",
@@ -294,6 +302,12 @@ function publicCareerText(value) {
 }
 
 function normalizeCenter(center) {
+  const examplePhoto = EXAMPLE_CENTER_PHOTOS.get(String(center.name || "").trim()) || "";
+  const isExample = center.isExample === true || Boolean(examplePhoto);
+  const photoUrl = center.photoUrl || examplePhoto;
+  const photoUrls = Array.isArray(center.photoUrls) && center.photoUrls.filter(Boolean).length
+    ? center.photoUrls.filter(Boolean)
+    : (photoUrl ? [photoUrl] : []);
   return {
     ...center,
     region: center.region || "other",
@@ -315,12 +329,10 @@ function normalizeCenter(center) {
     openingSchedule: normalizeOpeningSchedule(center.openingSchedule || center.opening_schedule),
     bookingSlotMinutes: Number(center.bookingSlotMinutes || center.booking_slot_minutes || 60),
     bookingEnabled: center.bookingEnabled !== false && center.booking_enabled !== false,
-    isExample: center.isExample === true,
+    isExample,
     naverMapUrl: center.naverMapUrl || center.naver_map_url || "",
-    photoUrl: center.photoUrl || "",
-    photoUrls: Array.isArray(center.photoUrls)
-      ? center.photoUrls.filter(Boolean)
-      : (center.photoUrl ? [center.photoUrl] : []),
+    photoUrl,
+    photoUrls,
     lat: Number(center.lat) || 37.5665,
     lng: Number(center.lng) || 126.978,
     fallbackX: center.fallbackX || "52%",
