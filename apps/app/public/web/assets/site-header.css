@@ -382,8 +382,16 @@ html{scroll-padding-top:82px}
   .site-header .header-actions{margin-left:auto;gap:4px;order:2}
   .site-header .header-actions .button.primary.small,
   .site-header .header-find-link,
-  .site-header .header-logout-button,
   .site-header #headerAccountLink{display:none!important}
+  .site-header .header-logout-button:not([hidden]){
+    height:38px;
+    min-height:38px;
+    padding:0 10px;
+    display:inline-flex!important;
+    border-color:#dedfdb;
+    background:#fff;
+    color:#313330;
+  }
   .site-header .center-login-link:not([hidden]){
     max-width:104px;
     height:38px;
@@ -415,8 +423,11 @@ html{scroll-padding-top:82px}
   .site-header .main-nav{left:12px;right:12px}
   .site-header .user-login-button,
   .site-header .shared-account-link{max-width:70px;padding:0 8px}
-  .site-header:has(.center-login-link:not([hidden])) .brand-name{display:none}
-  .site-header .center-login-link:not([hidden]){max-width:86px;padding:0 8px;font-size:10px}
+  .site-header:has(.center-login-link:not([hidden])) .brand-name,
+  .site-header:has(.header-logout-button:not([hidden])) .brand-name{display:none}
+  .site-header .center-login-link:not([hidden]){max-width:74px;padding:0 6px;font-size:9.5px}
+  .site-header .shared-account-link{max-width:58px;padding:0 6px;font-size:9.5px}
+  .site-header .header-logout-button:not([hidden]){max-width:56px;padding:0 6px;font-size:9.5px}
 }
 
 @media(prefers-reduced-motion:reduce){

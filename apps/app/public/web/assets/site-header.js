@@ -39,8 +39,48 @@
       link.setAttribute("aria-label", signedIn ? "마이페이지로 이동" : "로그인하기");
     });
 
+    const accountLink = header.querySelector("[data-shared-account]");
+    const logoutButton = header.querySelector("[data-shared-logout]") || (() => {
+      if (!accountLink) return null;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "header-logout-button shared-logout-button";
+      button.dataset.sharedLogout = "";
+      button.textContent = "로그아웃";
+      button.setAttribute("aria-label", "로그아웃");
+      accountLink.after(button);
+      return button;
+    })();
+    if (logoutButton) logoutButton.hidden = !signedIn;
+
+    logoutButton?.addEventListener("click", async () => {
+      if (logoutButton.disabled) return;
+      logoutButton.disabled = true;
+      logoutButton.textContent = "로그아웃 중";
+      try {
+        let current = null;
+        try { current = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null"); } catch {}
+        if (current?.access_token) {
+          const configResponse = await fetch("/api/config", { headers: { "X-DAIL-Source": "web" } });
+          const config = await configResponse.json().catch(() => ({}));
+          const auth = config.auth || {};
+          if (auth.supabaseUrl && auth.supabaseAnonKey) {
+            await fetch(`${auth.supabaseUrl}/auth/v1/logout`, {
+              method: "POST",
+              headers: {
+                apikey: auth.supabaseAnonKey,
+                Authorization: `Bearer ${current.access_token}`,
+              },
+            }).catch(() => {});
+          }
+        }
+      } finally {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.location.reload();
+      }
+    });
+
     const centerLink = header.querySelector("#centerDashboardLink") || (() => {
-      const accountLink = header.querySelector("[data-shared-account]");
       if (!accountLink) return null;
       const link = document.createElement("a");
       link.className = "center-login-link shared-center-link";
