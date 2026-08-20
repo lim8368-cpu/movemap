@@ -612,7 +612,8 @@ async function createPartnerInvite(id) {
         : "자동 메일이 아직 설정되지 않았습니다. 아래 링크를 직접 전달해 주세요.";
     resultBox.innerHTML = '<label>정식 등록 링크<input readonly value="' + escapeHtml(result.inviteUrl) + '" /></label><small>' +
       escapeHtml(formatDate(result.expiresAt, true)) + '까지 유효 · 1회 사용</small><small class="invite-delivery-copy">' +
-      escapeHtml(deliveryCopy) + '</small>';
+      escapeHtml(deliveryCopy) + '</small><button type="button" class="invite-revoke-inline" data-revoke-partner-invite="' +
+      escapeHtml(result.invitationId) + '">이 링크 취소</button>';
     resultBox.querySelector("input").addEventListener("click", function (event) { event.currentTarget.select(); });
     const copied = await copyInviteLink(result.inviteUrl);
     button.dataset.hasActiveInvite = "true";
