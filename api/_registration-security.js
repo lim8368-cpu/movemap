@@ -10,6 +10,9 @@ const CHALLENGE_TTL_MS = 10 * 60 * 1000;
 
 function captchaMode() {
   if (process.env.TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY) return "turnstile";
+  if (["staging", "production"].includes(process.env.APP_ENV) && process.env.REGISTRATION_CHALLENGE_SECRET) {
+    return "signed_passive";
+  }
   if (["staging", "production"].includes(process.env.APP_ENV)) return "unconfigured";
   return "signed_math";
 }
@@ -58,6 +61,17 @@ function createMathChallenge() {
   };
 }
 
+function createPassiveChallenge() {
+  return {
+    mode: "signed_passive",
+    challengeToken: signPayload({
+      kind: "passive",
+      nonce: crypto.randomBytes(18).toString("base64url"),
+      exp: Date.now() + CHALLENGE_TTL_MS,
+    }),
+  };
+}
+
 async function verifyTurnstile(token, req) {
   if (!token || String(token).length > 2048) return false;
   const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -86,6 +100,10 @@ async function verifyHumanChallenge(req, body = {}) {
     const challenge = verifySignedPayload(body.challengeToken);
     const answer = Number(String(body.challengeAnswer || "").trim());
     return Boolean(challenge && Number.isInteger(answer) && answer === challenge.left + challenge.right);
+  }
+  if (body.challengeMode === "signed_passive" && captchaMode() === "signed_passive") {
+    const challenge = verifySignedPayload(body.challengeToken);
+    return Boolean(challenge && challenge.kind === "passive");
   }
   if (captchaMode() === "turnstile") {
     return verifyTurnstile(String(body.turnstileToken || ""), req);
@@ -166,6 +184,7 @@ async function consumeRegistrationSession(sessionId) {
 module.exports = {
   attachRegistrationUpload,
   captchaMode,
+  createPassiveChallenge,
   consumeRegistrationSession,
   createMathChallenge,
   createRegistrationSession,

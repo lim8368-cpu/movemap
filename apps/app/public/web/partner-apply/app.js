@@ -312,8 +312,11 @@
       const config = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(config.error || "요청 확인을 준비하지 못했습니다.");
       captchaConfig = config;
-      if (config.mode !== "turnstile") throw new Error("요청 확인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      await loadTurnstile(config.siteKey);
+      if (config.mode === "turnstile") {
+        await loadTurnstile(config.siteKey);
+      } else if (config.mode !== "signed_passive") {
+        throw new Error("요청 확인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
     } catch (error) {
       captchaConfig = null;
       challengeStatus.textContent = error.message || "요청 확인을 준비하지 못했습니다.";

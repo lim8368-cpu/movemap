@@ -1,6 +1,7 @@
 const {
   captchaMode,
   createMathChallenge,
+  createPassiveChallenge,
 } = require("./_registration-security");
 const {
   enforceRateLimit,
@@ -28,6 +29,9 @@ module.exports = async function handler(req, res) {
       siteKey: process.env.TURNSTILE_SITE_KEY,
       fallbackChallenge: createMathChallenge(),
     });
+  }
+  if (mode === "signed_passive") {
+    return sendJson(res, 200, createPassiveChallenge());
   }
   sendJson(res, 200, createMathChallenge());
 };
