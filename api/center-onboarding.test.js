@@ -207,7 +207,7 @@ async function testPartnerInvitationIsBoundAndConsumed() {
     const parsed = new URL(url);
     const method = init.method || "GET";
     if (parsed.pathname === "/auth/v1/user") {
-      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
+      return jsonResponse({ id: "auth-user-1", email: "social-login@example.com" });
     }
     const table = parsed.pathname.split("/").pop();
     if (table === "registration_sessions" && method === "GET") {
@@ -263,6 +263,8 @@ async function testPartnerInvitationIsBoundAndConsumed() {
   }
   assert.equal(res.statusCode, 202);
   assert.equal(insertedApplication.partner_application_id, "partner-application-1");
+  assert.equal(insertedApplication.email, "owner@example.com");
+  assert.equal(insertedApplication.applicant_auth_user_id, "auth-user-1");
   assert.equal(partnerPatch.status, "converted");
   assert.equal(invitationPatch.status, "used");
   assert.equal(invitationPatch.used_by_user_id, "auth-user-1");

@@ -118,14 +118,6 @@ module.exports = async function handler(req, res) {
         });
         return;
       }
-      const authenticatedEmail = String(auth.user.email || "").trim().toLowerCase();
-      if (!authenticatedEmail || authenticatedEmail !== String(partnerInvite.email || "").toLowerCase()) {
-        sendJson(res, 403, {
-          error: "파트너 신청에 사용한 이메일 계정으로 로그인해 주세요.",
-          code: "partner_invite_account_mismatch",
-        });
-        return;
-      }
       const partnerApplications = await supabaseRequest("partner_applications", {
         query: `?select=id,contact_email,status&id=eq.${encodeURIComponent(partnerInvite.partner_application_id)}&contact_email=eq.${encodeURIComponent(partnerInvite.email)}&status=eq.invited&limit=1`,
       });
