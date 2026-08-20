@@ -11,7 +11,7 @@
 .owner-social.apple{border-color:#000;background:#000}
 .owner-social b{display:grid;place-items:center}
 .owner-social .auth-provider-icon{width:24px;height:24px;display:block;object-fit:contain}
-.owner-social .auth-provider-icon.apple-icon{width:44px;height:44px}
+.owner-social .auth-provider-icon.apple-icon{width:49px;height:49px}
 
 .login-copy li{display:flex;align-items:center;gap:10px}.login-copy li:before{content:none}.login-copy li>.ui-icon{color:var(--teal);font-size:17px}.metric-icon .ui-icon{font-size:17px}.funnel>i .ui-icon{font-size:16px}.mini-card>span .ui-icon,.guidance>span .ui-icon{font-size:19px}.category-options .icon-label{justify-content:flex-start;gap:7px}.category-options .ui-icon{font-size:15px}.checklist i .ui-icon{font-size:12px}.tag-chip i .ui-icon{font-size:12px}.review-list .stars{display:inline-flex;gap:2px}.review-list .stars .ui-icon{font-size:11px}.save-status .ui-icon{font-size:14px}.owner-join-info p i .ui-icon{font-size:11px}
 .invite-activation{min-height:calc(100vh - 180px);display:grid;grid-template-columns:1fr 420px;align-items:center;gap:80px}.invite-activation h1{margin-bottom:14px;font-size:42px;letter-spacing:-.045em}.invite-activation>div>p:last-child{max-width:600px;color:var(--muted);line-height:1.7}.invite-activation form{padding:28px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 20px 60px rgba(15,28,46,.1)}.invite-activation form label{display:grid;gap:8px;color:#475467;font-size:12px;font-weight:800}.invite-activation form button{width:100%;margin-top:16px}
