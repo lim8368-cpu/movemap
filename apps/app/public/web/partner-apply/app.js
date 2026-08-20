@@ -316,7 +316,8 @@
       await loadTurnstile(config.siteKey);
     } catch (error) {
       captchaConfig = null;
-      setStatus(error.message || "요청 확인을 준비하지 못했습니다.");
+      challengeStatus.textContent = error.message || "요청 확인을 준비하지 못했습니다.";
+      challengeStatus.className = "visually-hidden";
     }
   }
 

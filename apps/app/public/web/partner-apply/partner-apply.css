@@ -36,6 +36,7 @@
 .partner-hero .collaboration-eyebrow{color:var(--partner-accent)}
 .partner-hero h1{color:#fff}
 .partner-hero h1 em{color:#8bc2c4}
+.partner-title-line{display:block;white-space:nowrap}
 .partner-hero .collaboration-hero-grid{margin-top:66px;position:relative;z-index:1}
 .partner-hero-copy>p{max-width:470px;margin:0;color:#c3ccd4;font-size:17px;line-height:1.75;letter-spacing:-.02em}
 
@@ -162,7 +163,7 @@
 .partner-address-detail>span small{margin-left:4px;color:#969994;font-size:9px;font-weight:650}
 .partner-address-detail input{width:100%;height:52px;padding:0 14px;border:1px solid #d5d6d2;border-radius:8px;background:#fff;color:#111;outline:0}
 .partner-address-detail input:focus{border-color:var(--partner-black);box-shadow:0 0 0 3px rgba(17,17,17,.08)}
-.partner-security-challenge{min-height:0}
+.partner-security-challenge{min-height:0;margin:0;padding:0;border:0}
 .partner-form-card .consent-box{margin-top:26px;padding:18px 0;border:0;border-bottom:1px solid #e5e5e1;border-radius:0;background:transparent}
 .partner-form-card .consent-check{border-radius:4px}
 .partner-form-card .form-status{border-radius:6px}
@@ -178,11 +179,46 @@
   .partner-hero-copy>p{font-size:15px}
   .partner-content{padding-top:52px}
   .partner-guide h2{margin-bottom:20px;font-size:25px}
-  .partner-steps li{padding:13px 10px;grid-template-columns:1fr;gap:4px}
-  .partner-steps li:first-child{padding-left:0}
-  .partner-steps li:last-child{padding-right:0}
-  .partner-steps strong{font-size:12px}
-  .partner-steps span{font-size:9px;line-height:1.4}
+  .partner-steps{
+    align-items:stretch;
+    overflow:hidden;
+    border:1px solid #d9dad6;
+    border-radius:10px;
+    background:#fff;
+  }
+  .partner-steps li,
+  .partner-steps li:first-child,
+  .partner-steps li:last-child{
+    min-height:112px;
+    height:100%;
+    padding:15px 12px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-start;
+    flex-direction:column;
+    gap:10px;
+    border-right:1px solid #d9dad6;
+  }
+  .partner-steps li:last-child{border-right:0}
+  .partner-steps li>b{
+    min-height:12px;
+    padding-top:0;
+    line-height:1.2;
+  }
+  .partner-steps li>div{
+    width:100%;
+    display:grid;
+    grid-template-rows:34px auto;
+    align-content:start;
+  }
+  .partner-steps strong{
+    min-height:34px;
+    display:flex;
+    align-items:flex-start;
+    font-size:12px;
+    line-height:1.35;
+  }
+  .partner-steps span{margin-top:0;font-size:9.5px;line-height:1.45}
   .partner-principle{grid-template-columns:1fr;gap:6px;padding:14px 0}
   .partner-form-card{margin-top:36px}
   .partner-form-card .form-heading{padding:30px 24px 26px}
@@ -203,9 +239,11 @@
   .partner-form-card .form-heading{padding-right:20px;padding-left:20px}
   .partner-form-card form{padding-right:20px;padding-left:20px}
   .partner-address-field{padding:0}
-  .partner-steps li{padding-right:9px;padding-left:9px}
+  .partner-steps li,
+  .partner-steps li:first-child,
+  .partner-steps li:last-child{min-height:110px;padding-right:9px;padding-left:9px}
   .partner-steps strong{font-size:11px}
-  .partner-steps span{font-size:8.5px}
+  .partner-steps span{font-size:9px}
 }
 
 @media(prefers-reduced-motion:reduce){.partner-address-status.loading::before{animation:none}}
