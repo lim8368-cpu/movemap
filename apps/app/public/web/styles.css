@@ -32,6 +32,11 @@
 /* Consistent SVG icon language */
 .specialty-grid b .ui-icon{font-size:22px}.photo>i{display:inline-flex;align-items:center;gap:6px}.status-dot-mini{width:6px;height:6px;display:inline-block;border-radius:50%;background:currentColor}.feature-body p.icon-label{justify-content:flex-start}.feature-body p.icon-label .ui-icon{font-size:14px}.feature-body>button.icon-label{gap:8px}.steps i .ui-icon,.trust-features i .ui-icon{font-size:22px}.proof-copy>a.icon-label{gap:24px}.proof-copy>a.icon-label .ui-icon{color:var(--accent)}.icon-button .ui-icon{font-size:20px}.auth-close .ui-icon,.map-popup-close .ui-icon{font-size:17px}.social b{display:grid;place-items:center}.social b .ui-icon{font-size:20px}.favorite .ui-icon{font-size:18px}.rating .ui-icon,.marker-rating .ui-icon{font-size:12px}.review-title{display:flex;align-items:center;gap:8px}.stars{display:inline-flex;gap:2px;color:#f59e0b}.stars .ui-icon{font-size:13px}.map-popup-actions .icon-label{gap:5px}.map-popup-actions .ui-icon{font-size:13px}
 
+.social.naver{background:#03a94d}
+.social.apple{background:#000}
+.social b .auth-provider-icon{width:24px;height:24px;display:block;object-fit:contain}
+.social b .auth-provider-icon.apple-icon{width:44px;height:44px}
+
 /* DAIL map markers */
 .naver-marker{
   position:relative;

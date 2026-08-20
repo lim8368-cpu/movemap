@@ -116,7 +116,7 @@
 .partner-auth-gate h3{margin:8px 0 0;color:#111;font-size:22px;line-height:1.35;letter-spacing:-.035em}
 .partner-auth-gate>span{max-width:510px;margin-top:10px;color:#6a6d68;font-size:12px;line-height:1.7;word-break:keep-all}
 .partner-auth-gate>button{min-width:250px;height:52px;margin-top:24px;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;background:#fee500;color:#171300;font-size:13px;font-weight:850;cursor:pointer}
-.partner-auth-gate>button i{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#171300;color:#fee500;font-size:11px;font-style:normal}
+.partner-auth-gate>button .auth-provider-icon{width:24px;height:24px;display:block;object-fit:contain}
 .partner-auth-gate>button:hover,.partner-auth-gate>button:focus-visible{outline:0;background:#f4dc00}
 .partner-auth-gate>small{margin-top:13px;color:#81847e;font-size:10px;line-height:1.5}
 .partner-account-panel{margin:30px 42px 0;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #dfe0dc;border-radius:10px;background:#f7f7f5}
