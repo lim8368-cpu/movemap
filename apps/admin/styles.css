@@ -197,6 +197,17 @@ input:focus, textarea:focus, select:focus { border-color: var(--teal); box-shado
 .partner-application-actions textarea { min-height: 82px; padding: 10px; font-size: 10px; }
 .partner-application-actions button { min-height: 40px; border: 1px solid var(--teal); border-radius: 8px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 850; }
 .partner-application-actions button:disabled { cursor: wait; opacity: .6; }
+.partner-account-state{width:max-content;margin-top:7px;padding:5px 8px;display:inline-flex;border-radius:999px;font-size:9px;font-weight:800;line-height:1}
+.partner-account-state.connected{background:#e9f5f0;color:#176c53}
+.partner-account-state.required{background:#f3f1ed;color:#746b5d}
+.partner-direct-approval{margin-top:4px;padding:15px;border:1px solid #cfd9df;border-radius:14px;background:#f8faf9}
+.partner-direct-approval>strong{display:block;color:#17283d;font-size:12px}
+.partner-direct-approval>p{margin:7px 0 12px;color:#5b6572;font-size:11px;line-height:1.55}
+.partner-direct-approval>button{width:100%;min-height:44px!important;border-color:#18283c!important;border-radius:10px!important;background:#18283c!important;color:#fff!important;font-size:11px!important}
+.partner-direct-approval>button:hover:not(:disabled){background:#263b53!important}
+.partner-direct-approval>button:disabled{cursor:not-allowed!important;border-color:#d4dade!important;background:#e9edef!important;color:#8b959c!important;opacity:1!important}
+.partner-direct-approval.complete{border-color:#bedfd2;background:#f2faf6}
+.partner-direct-approval.complete>a{display:inline-flex;margin-top:2px;color:#176c53;font-size:10px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 
 .directory-tools { display: grid; grid-template-columns: 1fr 180px 150px; gap: 10px; margin-top: 20px; }
 .search-field { position: relative; display: block; }

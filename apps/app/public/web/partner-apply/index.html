@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <meta name="description" content="DAIL 파트너 센터 신청 정보를 남기고 정식 등록 안내를 받아보세요." />
+  <meta name="description" content="DAIL 파트너 센터를 신청하세요. 운영팀 승인 후 현재 계정에 센터 관리 권한이 바로 연결됩니다." />
   <title>DAIL 파트너 센터 신청</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
@@ -12,9 +12,9 @@
   <link rel="stylesheet" href="../mobile-containment.css?v=20260729-monochrome-rehab" />
   <link rel="stylesheet" href="../assets/ui-icons.css?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="../collaboration/collaboration.css?v=20260730-collaboration-soft3" />
-  <link rel="stylesheet" href="./partner-apply.css?v=20260820-mobile-title-v9" />
-  <link rel="stylesheet" href="../assets/site-header.css?v=20260812-logo-alpha" />
-  <script defer src="../assets/site-header.js?v=20260802-shared-header2"></script>
+  <link rel="stylesheet" href="./partner-apply.css?v=20260820-direct-approval-v10" />
+  <link rel="stylesheet" href="../assets/site-header.css?v=20260820-center-access" />
+  <script defer src="../assets/site-header.js?v=20260820-center-access"></script>
 </head>
 <body class="collaboration-page partner-apply-page">
   <header class="site-header">
@@ -44,7 +44,7 @@
           <h1 id="partnerTitle"><span class="partner-title-line">좋은센터가</span><em class="partner-title-line">먼저 발견되기를</em></h1>
         </div>
         <div class="partner-hero-copy">
-          <p>센터명과 위치, 연락처를 남겨주세요. DAIL 운영팀이 내용을 확인한 뒤 등록 방법을 안내드립니다.</p>
+          <p>센터명과 위치, 연락처를 한 번만 남겨주세요. 운영팀 승인 후 현재 카카오 계정에 센터 관리 권한이 바로 연결됩니다.</p>
         </div>
       </div>
     </section>
@@ -56,11 +56,11 @@
         <ol class="partner-steps">
           <li><b>01</b><div><strong>센터 정보 입력</strong><span>센터명·주소·연락처 작성</span></div></li>
           <li><b>02</b><div><strong>운영팀 확인</strong><span>센터와 운영자 정보 확인</span></div></li>
-          <li><b>03</b><div><strong>등록 안내</strong><span>확인 후 등록 방법 안내</span></div></li>
+          <li><b>03</b><div><strong>센터 등록 완료</strong><span>승인 즉시 관리 권한 연결</span></div></li>
         </ol>
         <div class="collaboration-principle partner-principle">
           <span>신청 전 확인</span>
-          <p>사전 신청은 센터 승인이나 지도 노출을 의미하지 않습니다. 정식 등록 단계에서 물리치료사 면허 또는 체육학 관련 학위를 확인합니다.</p>
+          <p>운영팀이 물리치료사 면허 또는 체육학 관련 학위를 확인한 뒤 승인합니다. 승인되면 별도 링크나 중복 입력 없이 센터 관리가 시작됩니다.</p>
         </div>
       </aside>
 
@@ -72,7 +72,21 @@
           </div>
         </div>
 
-        <form id="partnerApplicationForm" novalidate>
+        <section id="partnerAuthGate" class="partner-auth-gate" aria-labelledby="partnerAuthTitle">
+          <div class="partner-auth-symbol" aria-hidden="true">D</div>
+          <p>신청 계정 연결</p>
+          <h3 id="partnerAuthTitle">카카오 계정으로 신청을 시작해 주세요</h3>
+          <span>신청이 승인되면 로그인한 계정에 센터장 권한이 바로 연결됩니다. 별도 가입이나 등록 링크는 없습니다.</span>
+          <button id="partnerKakaoLogin" type="button"><i aria-hidden="true">K</i>카카오로 계속하기</button>
+          <small id="partnerAuthStatus" role="status">로그인 후 센터 정보를 입력할 수 있습니다.</small>
+        </section>
+
+        <div id="partnerAccountPanel" class="partner-account-panel" hidden>
+          <div><small>신청 계정</small><strong id="partnerAccountName">카카오 계정</strong><span id="partnerAccountEmail"></span></div>
+          <a href="/account/">마이페이지</a>
+        </div>
+
+        <form id="partnerApplicationForm" novalidate hidden>
           <section class="partner-form-section" aria-labelledby="centerInfoTitle">
             <div class="partner-section-heading">
               <h3 id="centerInfoTitle">센터 정보</h3>
@@ -121,7 +135,7 @@
           <section class="partner-form-section" aria-labelledby="applicantInfoTitle">
             <div class="partner-section-heading">
               <h3 id="applicantInfoTitle">신청자 정보</h3>
-              <p>등록 안내를 받을 담당자 연락처를 입력해 주세요.</p>
+              <p>운영팀이 신청 내용을 확인할 때 사용할 연락처입니다. 승인 후 다시 입력하지 않습니다.</p>
             </div>
             <div class="form-grid">
               <label class="form-field">
@@ -165,7 +179,7 @@
 
           <div id="formStatus" class="form-status" role="alert" aria-live="polite" tabindex="-1"></div>
           <div class="form-submit">
-            <p>계정은 생성되지 않습니다. 정식 등록이 시작되면 입력한 연락처로 별도 안내드립니다.</p>
+            <p>승인되면 현재 로그인 계정에 센터 운영 권한이 자동으로 연결됩니다.</p>
             <button id="submitButton" type="submit">
               <span>파트너 센터 신청하기</span>
               <svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg>
@@ -177,7 +191,7 @@
           <i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#circle-check"></use></svg></i>
           <p>EARLY PARTNER RECEIVED</p>
           <h2 id="successTitle" tabindex="-1">사전 신청이 접수되었습니다.</h2>
-          <p>DAIL 운영팀이 내용을 확인하고 순서대로 연락드리겠습니다. 지금은 별도 계정이나 자격 서류를 준비하지 않으셔도 됩니다.</p>
+          <p>DAIL 운영팀이 자격과 센터 정보를 확인합니다. 승인되면 별도 링크 없이 현재 계정의 우측 상단에 ‘내 센터 관리’ 버튼이 열립니다.</p>
           <div>
             <a class="button primary" href="/">DAIL 홈으로</a>
             <button id="newApplicationButton" class="button outline" type="button">다른 신청 보내기</button>
@@ -197,6 +211,6 @@
     <p class="copyright">© 2026 DAIL. All rights reserved.</p>
   </footer>
 
-  <script src="./app.js?v=20260820-passive-security-v3"></script>
+  <script src="./app.js?v=20260820-direct-approval-v10"></script>
 </body>
 </html>

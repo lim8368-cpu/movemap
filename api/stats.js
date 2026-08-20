@@ -149,6 +149,9 @@ module.exports = async function handler(req, res) {
           lastContactedAt: item.last_contacted_at,
           createdAt: item.created_at,
           updatedAt: item.updated_at,
+          applicantAuthUserId: item.applicant_auth_user_id || "",
+          approvedCenterId: item.approved_center_id || "",
+          approvedAt: item.approved_at || null,
           registrationInvitation: invitation ? {
             id: invitation.id,
             status: invitationStatus,

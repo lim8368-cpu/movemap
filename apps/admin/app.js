@@ -124,8 +124,8 @@ function statusLabel(status) {
     reviewing: "검토 중",
     contacted: "연락 완료",
     qualified: "정식 등록 후보",
-    invited: "등록 초대 완료",
-    converted: "정식 등록 전환",
+    invited: "기존 초대 발급",
+    converted: "센터 등록 완료",
     closed: "종료",
   };
   return labels[status] || String(status || "-");
@@ -519,18 +519,25 @@ function renderPartnerApplications() {
         '</strong><small>네이버 지도에서 위치 보기</small></span>' + uiIcon("external-link") + "</a>"
       : '<div class="partner-location">' + uiIcon("map-pin") + '<span><strong>' +
         escapeHtml(item.address || item.region) + "</strong><small>저장된 센터 주소</small></span></div>";
-    const statusOptions = ["received", "reviewing", "contacted", "qualified", "invited", "converted", "closed"].map(function (status) {
+    const selectableStatuses = ["received", "reviewing", "contacted", "qualified", "closed"];
+    if (["invited", "converted"].includes(item.status)) selectableStatuses.splice(4, 0, item.status);
+    const statusOptions = selectableStatuses.map(function (status) {
       return '<option value="' + status + '"' + (item.status === status ? " selected" : "") + ">" + escapeHtml(statusLabel(status)) + "</option>";
     }).join("");
-    const canInvite = ["qualified", "invited"].includes(item.status);
-    const activeInvitation = item.registrationInvitation?.status === "pending" ? item.registrationInvitation : null;
-    const inviteButtonLabel = activeInvitation ? "새 링크 재발급" : "정식 등록 초대 링크 발급";
+    const accountState = item.applicantAuthUserId
+      ? '<span class="partner-account-state connected">DAIL 계정 연결 완료</span>'
+      : '<span class="partner-account-state required">카카오 계정 연결 필요</span>';
+    const approvalAction = item.status === "converted"
+      ? '<div class="partner-direct-approval complete"><strong>센터 등록 완료</strong><p>신청자의 DAIL 계정에 센터장 권한이 연결되었습니다.</p>' +
+        (item.approvedCenterId ? '<a href="#centerDirectorySection">센터 목록에서 확인</a>' : "") + '</div>'
+      : '<div class="partner-direct-approval"><strong>검토 완료 후 바로 등록</strong><p>승인하면 이 신청 정보로 센터가 생성되고, 신청자의 카카오 계정에 센터장 권한이 즉시 연결됩니다.</p><button type="button" data-approve-partner="' +
+        escapeHtml(item.id) + '"' + (item.applicantAuthUserId ? "" : ' disabled title="신청자가 카카오 로그인으로 계정을 연결해야 합니다."') + '>센터 등록 승인</button></div>';
     return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
       '운영 센터</p><h3>' + escapeHtml(item.centerName) +
       '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
       '</span></header><div class="partner-person"><strong>' + escapeHtml(item.applicantName) +
       '</strong><span>' + escapeHtml(partnerQualificationLabel(item.qualificationType)) +
-      '</span></div>' + mapLink + '<div class="partner-contact"><a href="tel:' + escapeHtml(item.contactPhone.replace(/-/g, "")) + '">' +
+      '</span>' + accountState + '</div>' + mapLink + '<div class="partner-contact"><a href="tel:' + escapeHtml(item.contactPhone.replace(/-/g, "")) + '">' +
       uiIcon("phone-call") + escapeHtml(item.contactPhone) + '</a><a href="mailto:' + escapeHtml(item.contactEmail) + '">' +
       uiIcon("message-circle") + escapeHtml(item.contactEmail) + "</a>" + website +
       "</div>" +
@@ -541,13 +548,31 @@ function renderPartnerApplications() {
       escapeHtml(item.id) + '">' + statusOptions + '</select></label><label>운영 메모<textarea data-partner-note="' +
       escapeHtml(item.id) + '" rows="4" maxlength="2000" placeholder="통화 내용, 다음 연락 일정 등">' +
       escapeHtml(item.adminNote || "") + '</textarea></label><button type="button" data-save-partner="' +
-      escapeHtml(item.id) + '">상태와 메모 저장</button><div class="partner-invite-action"><p>서류 검토가 끝난 센터에만 정식 등록 링크를 발급하세요. 새 링크를 발급하면 기존 링크는 즉시 취소되며, 새 링크는 14일 동안 한 번만 사용할 수 있습니다.</p>' +
-      partnerInvitationSummary(item.registrationInvitation) + '<button type="button" data-create-partner-invite="' +
-      escapeHtml(item.id) + '" data-has-active-invite="' + (activeInvitation ? "true" : "false") + '"' +
-      (canInvite ? "" : ' disabled title="처리 상태를 정식 등록 후보로 저장한 뒤 발급할 수 있습니다."') + '>' +
-      escapeHtml(inviteButtonLabel) + '</button><div data-partner-invite-result="' +
-      escapeHtml(item.id) + '" hidden></div></div></div></article>';
+      escapeHtml(item.id) + '">상태와 메모 저장</button>' + approvalAction + '</div></article>';
   }).join("");
+}
+
+async function approvePartnerApplication(id) {
+  if (!window.confirm("이 신청 정보로 센터를 등록하고 신청자 계정에 센터장 권한을 연결할까요?")) return;
+  const button = document.querySelector('[data-approve-partner="' + CSS.escape(id) + '"]');
+  const adminNote = document.querySelector('[data-partner-note="' + CSS.escape(id) + '"]')?.value.trim() || "";
+  button.disabled = true;
+  button.textContent = "센터 등록 중";
+  try {
+    const response = await fetch(API_BASE + "/api/partner-applications", {
+      method: "PATCH",
+      headers: adminHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ id: id, action: "approve", adminNote: adminNote }),
+    });
+    const result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || "센터 등록 승인을 처리하지 못했습니다.");
+    await loadStats(false);
+    showToast("센터 등록과 센터장 권한 연결을 완료했습니다.");
+  } catch (error) {
+    showToast(error.message, true);
+    button.disabled = false;
+    button.textContent = "센터 등록 승인";
+  }
 }
 
 async function updatePartnerApplication(id) {
@@ -1183,11 +1208,9 @@ document.querySelector("#partnerApplicationSearch").addEventListener("input", re
 
 document.querySelector("#partnerApplications").addEventListener("click", function (event) {
   const saveButton = event.target.closest("[data-save-partner]");
-  const inviteButton = event.target.closest("[data-create-partner-invite]");
-  const revokeInviteButton = event.target.closest("[data-revoke-partner-invite]");
+  const approveButton = event.target.closest("[data-approve-partner]");
   if (saveButton) updatePartnerApplication(saveButton.dataset.savePartner);
-  if (inviteButton) createPartnerInvite(inviteButton.dataset.createPartnerInvite);
-  if (revokeInviteButton) revokePartnerInvite(revokeInviteButton.dataset.revokePartnerInvite);
+  if (approveButton) approvePartnerApplication(approveButton.dataset.approvePartner);
 });
 
 document.querySelector("#centerApplications").addEventListener("click", function (event) {

@@ -21,13 +21,117 @@
   const challengeStatus = document.getElementById("challengeStatus");
   const turnstileChallenge = document.getElementById("turnstileChallenge");
   const companyWebsite = document.getElementById("companyWebsite");
+  const partnerAuthGate = document.getElementById("partnerAuthGate");
+  const partnerKakaoLogin = document.getElementById("partnerKakaoLogin");
+  const partnerAuthStatus = document.getElementById("partnerAuthStatus");
+  const partnerAccountPanel = document.getElementById("partnerAccountPanel");
+  const partnerAccountName = document.getElementById("partnerAccountName");
+  const partnerAccountEmail = document.getElementById("partnerAccountEmail");
+  const applicantName = document.getElementById("applicantName");
+  const contactEmail = document.getElementById("contactEmail");
 
+  const AUTH_STORAGE_KEY = "dail_auth_session";
+  const AUTH_RETURN_KEY = "dail_auth_return_to";
   let captchaConfig = null;
   let turnstileWidgetId = null;
   let registrationToken = "";
   let formStartedAt = Date.now();
   let selectedLocation = null;
   let naverGeocoderPromise = null;
+  let authConfig = { supabaseUrl: "", supabaseAnonKey: "", providers: {} };
+
+  function storedSession() {
+    try {
+      return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  async function loadAuthConfig() {
+    try {
+      const response = await fetch("/api/config", { headers: { "X-DAIL-Source": "web" } });
+      const config = await response.json();
+      if (!response.ok) throw new Error();
+      authConfig = config.auth || authConfig;
+    } catch {
+      authConfig = { supabaseUrl: "", supabaseAnonKey: "", providers: {} };
+    }
+  }
+
+  async function refreshSession(current) {
+    if (!current?.refresh_token || !authConfig.supabaseUrl || !authConfig.supabaseAnonKey) return null;
+    try {
+      const response = await fetch(`${authConfig.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: { apikey: authConfig.supabaseAnonKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: current.refresh_token }),
+      });
+      if (!response.ok) return null;
+      const next = await response.json();
+      next.expires_at = Math.floor(Date.now() / 1000) + (Number(next.expires_in) || 3600);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    } catch {
+      return null;
+    }
+  }
+
+  async function activeSession(forceRefresh = false) {
+    let current = storedSession();
+    if (!current) return null;
+    const expiresSoon = Number(current.expires_at || 0) < Math.floor(Date.now() / 1000) + 60;
+    if (forceRefresh || expiresSoon) current = await refreshSession(current);
+    if (!current) localStorage.removeItem(AUTH_STORAGE_KEY);
+    return current;
+  }
+
+  function showAuthGate(message = "로그인 후 센터 정보를 입력할 수 있습니다.") {
+    partnerAuthGate.hidden = false;
+    partnerAccountPanel.hidden = true;
+    form.hidden = true;
+    partnerAuthStatus.textContent = message;
+  }
+
+  async function loadPartnerIdentity() {
+    await loadAuthConfig();
+    let session = await activeSession();
+    if (!session?.access_token) {
+      showAuthGate();
+      return false;
+    }
+    let response = await fetch("/api/auth/profile", {
+      headers: { Authorization: `Bearer ${session.access_token}`, "X-DAIL-Source": "web" },
+    });
+    if (response.status === 401) {
+      session = await activeSession(true);
+      if (session?.access_token) {
+        response = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${session.access_token}`, "X-DAIL-Source": "web" },
+        });
+      }
+    }
+    if (!session?.access_token || response.status === 401) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      showAuthGate("로그인 시간이 만료되었습니다. 카카오로 다시 로그인해 주세요.");
+      return false;
+    }
+    if (!response.ok) {
+      showAuthGate("계정 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      return false;
+    }
+    const data = await response.json();
+    const nickname = String(data.profile?.nickname || "").trim();
+    const email = String(data.user?.email || "").trim();
+    partnerAccountName.textContent = nickname || "DAIL 카카오 계정";
+    partnerAccountEmail.textContent = email || "로그인 계정 연결 완료";
+    if (!applicantName.value && nickname.length >= 2) applicantName.value = nickname;
+    if (!contactEmail.value && email) contactEmail.value = email;
+    partnerAuthGate.hidden = true;
+    partnerAccountPanel.hidden = false;
+    form.hidden = false;
+    return true;
+  }
 
   function formatPhone(value) {
     const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
@@ -386,11 +490,17 @@
     submitButton.disabled = true;
     submitButton.querySelector("span").textContent = "신청을 보내는 중";
     try {
+      const session = await activeSession();
+      if (!session?.access_token) {
+        showAuthGate("신청을 보내려면 카카오 로그인이 필요합니다.");
+        throw new Error("카카오로 로그인한 뒤 다시 신청해 주세요.");
+      }
       const token = await ensureRegistrationSession();
       const response = await fetch("/api/partner-applications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
           "X-Registration-Token": token,
           "X-DAIL-Source": "web",
         },
@@ -444,6 +554,17 @@
     centerName.focus({ preventScroll: true });
   });
 
+  partnerKakaoLogin.addEventListener("click", () => {
+    if (authConfig.providers?.kakao === false) {
+      partnerAuthStatus.textContent = "카카오 로그인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+      return;
+    }
+    sessionStorage.setItem(AUTH_RETURN_KEY, "/partner-apply/");
+    location.href = "/api/auth/start?provider=kakao";
+  });
+
   updateMessageCount();
-  loadRegistrationChallenge();
+  loadPartnerIdentity().then((ready) => {
+    if (ready) loadRegistrationChallenge();
+  });
 })();

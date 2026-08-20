@@ -29,16 +29,73 @@
       if (toggle?.getAttribute("aria-expanded") === "true" && !header.contains(event.target)) setMenuOpen(false);
     });
 
+    const AUTH_STORAGE_KEY = "dail_auth_session";
+    let session = null;
+    try { session = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || "null"); } catch {}
+    const signedIn = Boolean(session?.access_token);
     document.querySelectorAll("[data-shared-account]").forEach((link) => {
-      let signedIn = false;
-      try {
-        const session = JSON.parse(localStorage.getItem("dail_auth_session") || "null");
-        signedIn = Boolean(session?.access_token);
-      } catch {}
       link.textContent = signedIn ? "마이페이지" : "로그인";
       link.href = signedIn ? "/account/" : "/?login=1";
       link.setAttribute("aria-label", signedIn ? "마이페이지로 이동" : "로그인하기");
     });
+
+    const centerLink = header.querySelector("#centerDashboardLink") || (() => {
+      const accountLink = header.querySelector("[data-shared-account]");
+      if (!accountLink) return null;
+      const link = document.createElement("a");
+      link.className = "center-login-link shared-center-link";
+      link.href = "/center-dashboard/";
+      link.textContent = "내 센터 관리";
+      link.hidden = true;
+      accountLink.before(link);
+      return link;
+    })();
+
+    const refreshSession = async (current, auth) => {
+      if (!current?.refresh_token || !auth?.supabaseUrl || !auth?.supabaseAnonKey) return null;
+      try {
+        const response = await fetch(`${auth.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+          method: "POST",
+          headers: { apikey: auth.supabaseAnonKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: current.refresh_token }),
+        });
+        if (!response.ok) return null;
+        const next = await response.json();
+        next.expires_at = Math.floor(Date.now() / 1000) + (Number(next.expires_in) || 3600);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      } catch { return null; }
+    };
+
+    const loadCenterAccess = async () => {
+      if (!signedIn || !centerLink) return;
+      try {
+        let current = session;
+        if (Number(current.expires_at || 0) < Math.floor(Date.now() / 1000) + 60) {
+          const configResponse = await fetch("/api/config", { headers: { "X-DAIL-Source": "web" } });
+          const config = await configResponse.json();
+          current = await refreshSession(current, config.auth || {});
+        }
+        if (!current?.access_token) return;
+        let response = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${current.access_token}`, "X-DAIL-Source": "web" },
+        });
+        if (response.status === 401) {
+          const configResponse = await fetch("/api/config", { headers: { "X-DAIL-Source": "web" } });
+          const config = await configResponse.json();
+          current = await refreshSession(current, config.auth || {});
+          if (current?.access_token) {
+            response = await fetch("/api/auth/profile", {
+              headers: { Authorization: `Bearer ${current.access_token}`, "X-DAIL-Source": "web" },
+            });
+          }
+        }
+        if (!response.ok) return;
+        const profile = await response.json();
+        centerLink.hidden = !profile.centerAccess?.hasActiveMembership;
+      } catch {}
+    };
+    loadCenterAccess();
 
     let previousY = Math.max(window.scrollY, 0);
     let frame = 0;

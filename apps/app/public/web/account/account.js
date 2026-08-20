@@ -100,13 +100,13 @@ function renderCenterAccess(data){
   if(access.hasActiveMembership){
     centerBadge.textContent="운영 권한 활성";centerBadge.className="active";centerTitle.textContent="센터 운영 계정이 연결되어 있습니다";centerMessage.textContent="이 계정으로 승인된 센터의 정보와 직원 권한을 관리할 수 있습니다.";centerAction.textContent="센터 대시보드 열기";centerAction.href="/center-dashboard/";return;
   }
-  if(application?.status==="pending"){
+  if(["pending","received","reviewing","contacted","qualified","invited"].includes(application?.status)){
     centerBadge.textContent="심사 중";centerBadge.className="pending";centerTitle.textContent=`${application.center_name||"센터"} 등록 신청을 검토하고 있습니다`;centerMessage.textContent="검토가 끝나면 이 계정에 센터 운영 권한이 자동으로 추가됩니다.";centerAction.textContent="파트너 신청 안내 보기";centerAction.href="/partner-apply/";return;
   }
-  if(application?.status==="rejected"){
-    centerBadge.textContent="보완 필요";centerBadge.className="rejected";centerTitle.textContent=`${application.center_name||"센터"} 신청의 보완 사항이 있습니다`;centerMessage.textContent=application.rejection_reason||"안내받은 정식 등록 링크에서 내용을 보완해주세요.";centerAction.textContent="파트너 신청 안내 보기";centerAction.href="/partner-apply/";return;
+  if(["rejected","closed"].includes(application?.status)){
+    centerBadge.textContent="보완 필요";centerBadge.className="rejected";centerTitle.textContent=`${application.center_name||"센터"} 신청의 보완 사항이 있습니다`;centerMessage.textContent=application.rejection_reason||"운영팀 안내를 확인한 뒤 신청 정보를 보완해 주세요.";centerAction.textContent="파트너 센터 신청 보기";centerAction.href="/partner-apply/";return;
   }
-  centerBadge.textContent="센터 파트너";centerBadge.className="ready";centerTitle.textContent="센터를 운영하고 계신가요?";centerMessage.textContent="파트너 신청 후 서류 검토가 끝나면 정식 센터 등록 링크를 보내드립니다.";centerAction.textContent="파트너 센터 신청하기";centerAction.href="/partner-apply/";
+  centerBadge.textContent="센터 파트너";centerBadge.className="ready";centerTitle.textContent="센터를 운영하고 계신가요?";centerMessage.textContent="파트너 신청 후 검토가 끝나면 이 계정에 센터 운영 권한이 바로 연결됩니다.";centerAction.textContent="파트너 센터 신청하기";centerAction.href="/partner-apply/";
 }
 
 function favoriteCardMarkup(item) {

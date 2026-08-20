@@ -4,18 +4,30 @@ const { authSupabaseServiceRoleKey, authSupabaseUrl, syncUserProfile, userFromAc
 function bearer(req) { const value = String(req.headers.authorization || ""); return value.startsWith("Bearer ") ? value.slice(7) : ""; }
 
 async function centerAccessForUser(userId) {
-  const [memberships, applications] = await Promise.all([
+  const [memberships, applications, partnerApplications] = await Promise.all([
     supabaseRequest("center_memberships", {
       query: `?select=id,center_id,role,status&user_id=eq.${encodeURIComponent(userId)}&status=eq.active&order=created_at.asc`,
     }),
     supabaseRequest("center_applications", {
       query: `?select=id,center_name,status,rejection_reason,created_at,reviewed_at&applicant_auth_user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=1`,
     }),
+    supabaseRequest("partner_applications", {
+      query: `?select=id,center_name,status,admin_note,created_at,approved_at,approved_center_id&applicant_auth_user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&limit=1`,
+    }).catch(() => []),
   ]);
+  const centerApplication = applications[0] || null;
+  const partnerApplication = partnerApplications[0] || null;
+  const latestApplication = [centerApplication, partnerApplication]
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
   return {
     hasActiveMembership: memberships.length > 0,
     memberships,
-    latestApplication: applications[0] || null,
+    latestApplication: latestApplication === partnerApplication ? {
+      ...partnerApplication,
+      rejection_reason: partnerApplication.status === "closed" ? partnerApplication.admin_note : null,
+      application_type: "partner",
+    } : latestApplication,
   };
 }
 

@@ -109,6 +109,23 @@
 .partner-form-card .form-heading{padding:36px 42px 32px;border-bottom:1px solid #e5e5e1;text-align:left}
 .partner-form-card .form-heading h2{margin:0;font-size:30px}
 .partner-form-card .form-heading p{margin-top:8px;font-size:12px;line-height:1.6}
+.partner-auth-gate{margin:34px 42px 42px;padding:38px;display:grid;justify-items:center;border:1px solid #e1e2de;border-radius:12px;background:#fafaf8;text-align:center}
+.partner-auth-gate[hidden],.partner-account-panel[hidden]{display:none!important}
+.partner-auth-symbol{width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:var(--partner-navy);color:#fff;font-size:21px;font-weight:900}
+.partner-auth-gate>p{margin:18px 0 0;color:var(--partner-teal-dark);font-size:10px;font-weight:850;letter-spacing:.08em}
+.partner-auth-gate h3{margin:8px 0 0;color:#111;font-size:22px;line-height:1.35;letter-spacing:-.035em}
+.partner-auth-gate>span{max-width:510px;margin-top:10px;color:#6a6d68;font-size:12px;line-height:1.7;word-break:keep-all}
+.partner-auth-gate>button{min-width:250px;height:52px;margin-top:24px;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;background:#fee500;color:#171300;font-size:13px;font-weight:850;cursor:pointer}
+.partner-auth-gate>button i{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#171300;color:#fee500;font-size:11px;font-style:normal}
+.partner-auth-gate>button:hover,.partner-auth-gate>button:focus-visible{outline:0;background:#f4dc00}
+.partner-auth-gate>small{margin-top:13px;color:#81847e;font-size:10px;line-height:1.5}
+.partner-account-panel{margin:30px 42px 0;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #dfe0dc;border-radius:10px;background:#f7f7f5}
+.partner-account-panel div{min-width:0}
+.partner-account-panel small,.partner-account-panel strong,.partner-account-panel span{display:block}
+.partner-account-panel small{color:var(--partner-teal-dark);font-size:9px;font-weight:850}
+.partner-account-panel strong{margin-top:4px;color:#111;font-size:13px}
+.partner-account-panel span{margin-top:3px;overflow:hidden;color:#727570;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.partner-account-panel>a{flex:0 0 auto;padding:8px 11px;border:1px solid #d6d7d3;border-radius:999px;background:#fff;color:#3f423d;font-size:10px;font-weight:800}
 .partner-form-card form{padding:0 42px 42px}
 .partner-form-card .partner-form-section{margin:0;padding:38px 0;border-bottom:1px solid #e5e5e1}
 .partner-section-heading{margin-bottom:25px}
@@ -222,6 +239,8 @@
   .partner-principle{grid-template-columns:1fr;gap:6px;padding:14px 0}
   .partner-form-card{margin-top:36px}
   .partner-form-card .form-heading{padding:30px 24px 26px}
+  .partner-auth-gate{margin:26px 24px 32px;padding:30px 22px}
+  .partner-account-panel{margin:24px 24px 0}
   .partner-form-card form{padding:0 24px 30px}
   .partner-form-card .partner-form-section{margin:0;padding:32px 0}
   .partner-section-heading{margin-bottom:22px}
@@ -237,6 +256,9 @@
   .partner-hero .collaboration-hero-grid{margin-top:48px}
   .partner-form-card{border-radius:10px}
   .partner-form-card .form-heading{padding-right:20px;padding-left:20px}
+  .partner-auth-gate{margin-right:20px;margin-left:20px;padding-right:18px;padding-left:18px}
+  .partner-account-panel{margin-right:20px;margin-left:20px;padding-right:14px;padding-left:14px}
+  .partner-auth-gate>button{width:100%;min-width:0}
   .partner-form-card form{padding-right:20px;padding-left:20px}
   .partner-address-field{padding:0}
   .partner-steps li,

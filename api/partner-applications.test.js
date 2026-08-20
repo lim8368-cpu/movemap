@@ -2,10 +2,12 @@ const assert = require("assert");
 
 process.env.SUPABASE_URL = "https://supabase.test";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role";
+process.env.AUTH_SUPABASE_URL = "https://auth.supabase.test";
+process.env.AUTH_SUPABASE_ANON_KEY = "test-auth-anon";
 process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret";
 process.env.APP_ENV = "development";
 
-const { privacyHash } = require("./_shared");
+const { privacyHash, signAdminSession } = require("./_shared");
 const partnerApplications = require("./partner-applications");
 
 function responseRecorder() {
@@ -35,6 +37,7 @@ function validRequest(ip = "203.0.113.30") {
       "x-forwarded-for": ip,
       "x-registration-token": "verified-session-token",
       "x-dail-source": "web",
+      authorization: "Bearer test-user-token",
     },
     body: {
       applicantName: "홍길동",
@@ -77,6 +80,9 @@ async function testValidApplicationIsStored() {
     const parsed = new URL(url);
     const table = parsed.pathname.split("/").pop();
     const method = init.method || "GET";
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "kakao-user@example.com" });
+    }
     if (table === "registration_sessions" && method === "GET") {
       return jsonResponse([registrationSession(ip)]);
     }
@@ -102,6 +108,7 @@ async function testValidApplicationIsStored() {
   assert.equal(res.statusCode, 201);
   assert.equal(res.body.id, "partner-1");
   assert.equal(inserted.contact_email, "partner@example.com");
+  assert.equal(inserted.applicant_auth_user_id, "auth-user-1");
   assert.equal(inserted.contact_phone, "010-1234-5678");
   assert.equal(inserted.center_stage, "operating");
   assert.equal(inserted.address, "서울특별시 강남구 테헤란로 212 3층 301호");
@@ -117,6 +124,9 @@ async function testInvalidApplicationIsRejected() {
   global.fetch = async function (url, init = {}) {
     const parsed = new URL(url);
     const table = parsed.pathname.split("/").pop();
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "kakao-user@example.com" });
+    }
     if (table === "registration_sessions" && (init.method || "GET") === "GET") {
       return jsonResponse([registrationSession(ip)]);
     }
@@ -151,6 +161,9 @@ async function testUnverifiedLocationIsRejected() {
   global.fetch = async function (url, init = {}) {
     const parsed = new URL(url);
     const table = parsed.pathname.split("/").pop();
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "kakao-user@example.com" });
+    }
     if (table === "registration_sessions" && (init.method || "GET") === "GET") {
       return jsonResponse([registrationSession(ip)]);
     }
@@ -172,6 +185,9 @@ async function testUnsupportedQualificationIsRejected() {
   global.fetch = async function (url, init = {}) {
     const parsed = new URL(url);
     const table = parsed.pathname.split("/").pop();
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "kakao-user@example.com" });
+    }
     if (table === "registration_sessions" && (init.method || "GET") === "GET") {
       return jsonResponse([registrationSession(ip)]);
     }
@@ -187,12 +203,84 @@ async function testUnsupportedQualificationIsRejected() {
   assert.equal(res.body.field, "qualificationType");
 }
 
+async function testAdminApprovalCreatesCenterAndOwnerMembership() {
+  let insertedCenter;
+  let insertedMembership;
+  let updatedApplication;
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const table = parsed.pathname.split("/").pop();
+    const method = init.method || "GET";
+    if (table === "partner_applications" && method === "GET") {
+      return jsonResponse([{
+        id: "partner-1",
+        applicant_auth_user_id: "auth-user-1",
+        applicant_name: "홍길동",
+        center_name: "DAIL 움직임센터",
+        qualification_type: "physical_therapist",
+        region: "서울 강남구",
+        address: "서울특별시 강남구 테헤란로 212 3층 301호",
+        road_address: "서울특별시 강남구 테헤란로 212",
+        lat: 37.5012,
+        lng: 127.0396,
+        naver_map_url: "https://map.naver.com/p/entry/place/1234567890",
+        contact_email: "partner@example.com",
+        contact_phone: "010-1234-5678",
+        website_url: "https://example.com/",
+        message: "허리와 골반 움직임 프로그램을 운영합니다.",
+        status: "qualified",
+        approved_center_id: null,
+      }]);
+    }
+    if (table === "centers" && method === "GET") return jsonResponse([]);
+    if (table === "centers" && method === "POST") {
+      insertedCenter = JSON.parse(init.body);
+      return jsonResponse([{ id: "center-1" }], 201);
+    }
+    if (table === "center_memberships" && method === "GET") return jsonResponse([]);
+    if (table === "center_memberships" && method === "POST") {
+      insertedMembership = JSON.parse(init.body);
+      return jsonResponse([{ id: "membership-1" }], 201);
+    }
+    if (table === "partner_applications" && method === "PATCH") {
+      updatedApplication = JSON.parse(init.body);
+      return new Response(null, { status: 204 });
+    }
+    if (table === "partner_registration_invitations" && method === "PATCH") {
+      return new Response(null, { status: 204 });
+    }
+    if (table === "audit_logs" && method === "POST") return jsonResponse([{ id: "audit-1" }], 201);
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+
+  const req = {
+    method: "PATCH",
+    url: "/api/partner-applications",
+    query: {},
+    headers: { authorization: `Bearer ${signAdminSession({ role: "super_admin" })}` },
+    body: { id: "partner-1", action: "approve", adminNote: "자격 확인 완료" },
+  };
+  const res = responseRecorder();
+  await partnerApplications(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.centerId, "center-1");
+  assert.equal(insertedCenter.partner_application_id, "partner-1");
+  assert.equal(insertedCenter.phone, "010-1234-5678");
+  assert.equal(insertedMembership.user_id, "auth-user-1");
+  assert.equal(insertedMembership.role, "owner");
+  assert.equal(insertedMembership.status, "active");
+  assert.equal(updatedApplication.status, "converted");
+  assert.equal(updatedApplication.approved_center_id, "center-1");
+}
+
 (async () => {
   await testValidApplicationIsStored();
   await testInvalidApplicationIsRejected();
   await testHoneypotIsAcceptedWithoutStorage();
   await testUnverifiedLocationIsRejected();
   await testUnsupportedQualificationIsRejected();
+  await testAdminApprovalCreatesCenterAndOwnerMembership();
   console.log("partner application tests passed");
 })().catch((error) => {
   console.error(error);

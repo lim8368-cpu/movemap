@@ -9,6 +9,7 @@ const {
   sendJson,
   supabaseRequest,
 } = require("./_shared");
+const { requireAuthenticatedUser } = require("./_platform-auth");
 const {
   consumeRegistrationSession,
   registrationSession,
@@ -83,6 +84,9 @@ async function submitApplication(req, res) {
     return sendJson(res, 201, { ok: true, message: "파트너 센터 신청이 접수되었습니다." });
   }
 
+  const auth = await requireAuthenticatedUser(req, res);
+  if (!auth) return;
+
   const secureSession = await registrationSession(req, body);
   if (!secureSession) {
     return sendJson(res, 403, {
@@ -143,12 +147,25 @@ async function submitApplication(req, res) {
   }
 
   const existing = await supabaseRequest("partner_applications", {
-    query: `?select=id,status&contact_email=eq.${encodeURIComponent(contactEmail)}&contact_phone=eq.${encodeURIComponent(contactPhone)}&status=in.(received,reviewing,contacted,qualified,invited)&order=created_at.desc&limit=1`,
+    query: `?select=id,status,applicant_auth_user_id&contact_email=eq.${encodeURIComponent(contactEmail)}&contact_phone=eq.${encodeURIComponent(contactPhone)}&status=in.(received,reviewing,contacted,qualified,invited)&order=created_at.desc&limit=1`,
   });
   await consumeRegistrationSession(secureSession.id);
   if (existing[0]) {
+    if (existing[0].applicant_auth_user_id && existing[0].applicant_auth_user_id !== auth.user.id) {
+      return sendJson(res, 409, {
+        error: "같은 연락처로 접수된 신청이 다른 DAIL 계정에 연결되어 있습니다. 운영팀에 문의해 주세요.",
+      });
+    }
+    if (!existing[0].applicant_auth_user_id) {
+      await supabaseRequest("partner_applications", {
+        method: "PATCH",
+        query: `?id=eq.${encodeURIComponent(existing[0].id)}`,
+        body: { applicant_auth_user_id: auth.user.id, updated_at: new Date().toISOString() },
+      });
+    }
     await recordAuditLog(req, {
-      actorRole: "anonymous",
+      actorUserId: auth.user.id,
+      actorRole: "user",
       action: "partner_application.duplicate_received",
       targetType: "partner_application",
       targetId: existing[0].id,
@@ -166,6 +183,7 @@ async function submitApplication(req, res) {
     method: "POST",
     body: {
       applicant_name: applicantName,
+      applicant_auth_user_id: auth.user.id,
       center_name: centerName,
       center_stage: centerStage,
       qualification_type: qualificationType,
@@ -193,7 +211,8 @@ async function submitApplication(req, res) {
   const applicationId = rows?.[0]?.id;
 
   await recordAuditLog(req, {
-    actorRole: "anonymous",
+    actorUserId: auth.user.id,
+    actorRole: "user",
     action: "partner_application.received",
     targetType: "partner_application",
     targetId: applicationId,
@@ -207,11 +226,164 @@ async function submitApplication(req, res) {
   });
 }
 
-async function updateApplication(req, res) {
-  const admin = await requireAdminRole(req, res, ["super_admin", "admin", "support"]);
-  if (!admin) return;
+async function approveApplication(req, res, admin, body) {
+  const id = text(body.id || req.query?.id, 80);
+  const adminNote = text(body.adminNote, 2_000) || null;
+  if (!id) return sendJson(res, 400, { error: "파트너 센터 신청 ID가 필요합니다." });
 
+  const applications = await supabaseRequest("partner_applications", {
+    query: `?select=*&id=eq.${encodeURIComponent(id)}&limit=1`,
+  });
+  const item = applications[0];
+  if (!item) return sendJson(res, 404, { error: "파트너 센터 신청을 찾을 수 없습니다." });
+  if (!item.applicant_auth_user_id) {
+    return sendJson(res, 409, {
+      error: "신청자의 DAIL 계정이 연결되지 않았습니다. 신청자가 카카오 로그인 후 기존 신청을 다시 확인해야 합니다.",
+      code: "applicant_account_required",
+    });
+  }
+
+  let center = null;
+  let centerCreated = false;
+  let membershipCreated = false;
+  try {
+    if (item.approved_center_id) {
+      const centers = await supabaseRequest("centers", {
+        query: `?select=id&id=eq.${encodeURIComponent(item.approved_center_id)}&limit=1`,
+      });
+      center = centers[0] || null;
+    }
+    if (!center) {
+      const centers = await supabaseRequest("centers", {
+        query: `?select=id&partner_application_id=eq.${encodeURIComponent(id)}&limit=1`,
+      });
+      center = centers[0] || null;
+    }
+    if (!center) {
+      const centers = await supabaseRequest("centers", {
+        method: "POST",
+        body: {
+          partner_application_id: item.id,
+          name: item.center_name,
+          region: "other",
+          area: item.region,
+          address: item.address || item.road_address || item.region,
+          naver_map_url: item.naver_map_url,
+          lat: item.lat,
+          lng: item.lng,
+          lead: item.message || "센터의 프로그램과 운영 정보를 준비하고 있습니다.",
+          tags: [],
+          categories: [],
+          therapist: item.qualification_type === "physical_therapist"
+            ? `${item.applicant_name} 물리치료사`
+            : `${item.applicant_name} 센터장`,
+          manager_career: item.qualification_type === "physical_therapist"
+            ? "물리치료사 면허 확인"
+            : "체육학 관련 학위 확인",
+          price: "센터 문의",
+          conversion: "신규 등록 센터",
+          plan: "free",
+          phone: item.contact_phone,
+          website: item.website_url,
+          opening_hours: "운영시간을 등록해 주세요.",
+          booking_enabled: false,
+          status: "approved",
+        },
+      });
+      center = centers[0];
+      centerCreated = true;
+    }
+
+    const memberships = await supabaseRequest("center_memberships", {
+      query: `?select=id&center_id=eq.${encodeURIComponent(center.id)}&user_id=eq.${encodeURIComponent(item.applicant_auth_user_id)}&limit=1`,
+    });
+    if (memberships[0]) {
+      await supabaseRequest("center_memberships", {
+        method: "PATCH",
+        query: `?id=eq.${encodeURIComponent(memberships[0].id)}`,
+        body: {
+          email: item.contact_email,
+          role: "owner",
+          status: "active",
+          accepted_at: new Date().toISOString(),
+          revoked_at: null,
+          revoked_by_user_id: null,
+          updated_at: new Date().toISOString(),
+        },
+      });
+    } else {
+      await supabaseRequest("center_memberships", {
+        method: "POST",
+        body: {
+          center_id: center.id,
+          user_id: item.applicant_auth_user_id,
+          email: item.contact_email,
+          role: "owner",
+          status: "active",
+          accepted_at: new Date().toISOString(),
+        },
+      });
+      membershipCreated = true;
+    }
+
+    const now = new Date().toISOString();
+    await supabaseRequest("partner_applications", {
+      method: "PATCH",
+      query: `?id=eq.${encodeURIComponent(item.id)}`,
+      body: {
+        status: "converted",
+        approved_center_id: center.id,
+        approved_at: now,
+        admin_note: adminNote,
+        last_contacted_at: now,
+        updated_at: now,
+      },
+    });
+    await supabaseRequest("partner_registration_invitations", {
+      method: "PATCH",
+      query: `?partner_application_id=eq.${encodeURIComponent(item.id)}&status=eq.pending`,
+      body: { status: "revoked", revoked_at: now, updated_at: now },
+    }).catch(() => null);
+
+    await recordAuditLog(req, {
+      actorUserId: admin.userId,
+      actorRole: admin.role || "admin",
+      centerId: center.id,
+      action: "partner_application.approve",
+      targetType: "partner_application",
+      targetId: item.id,
+      metadata: { centerCreated, membershipCreated, applicantUserId: item.applicant_auth_user_id },
+    });
+    return sendJson(res, 200, {
+      ok: true,
+      status: "converted",
+      centerId: center.id,
+      ownerAccessActivated: true,
+    });
+  } catch (error) {
+    if (membershipCreated && center?.id) {
+      await supabaseRequest("center_memberships", {
+        method: "DELETE",
+        query: `?center_id=eq.${encodeURIComponent(center.id)}&user_id=eq.${encodeURIComponent(item.applicant_auth_user_id)}`,
+      }).catch(() => null);
+    }
+    if (centerCreated && center?.id) {
+      await supabaseRequest("centers", {
+        method: "DELETE",
+        query: `?id=eq.${encodeURIComponent(center.id)}`,
+      }).catch(() => null);
+    }
+    throw error;
+  }
+}
+
+async function updateApplication(req, res) {
   const body = bodyFromRequest(req);
+  const action = text(body.action, 30);
+  const roles = action === "approve" ? ["super_admin", "admin"] : ["super_admin", "admin", "support"];
+  const admin = await requireAdminRole(req, res, roles);
+  if (!admin) return;
+  if (action === "approve") return approveApplication(req, res, admin, body);
   const id = text(body.id || req.query?.id, 80);
   const status = text(body.status, 30);
   const adminNote = text(body.adminNote, 2_000) || null;
