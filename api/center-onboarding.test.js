@@ -198,6 +198,76 @@ async function testCenterApplicationRequiresAuthenticatedAccount() {
   assert.equal(res.body.error, "로그인이 필요합니다.");
 }
 
+async function testPartnerInvitationIsBoundAndConsumed() {
+  process.env.PARTNER_INVITE_ENFORCEMENT = "enabled";
+  let insertedApplication;
+  let invitationPatch;
+  let partnerPatch;
+  global.fetch = async function (url, init = {}) {
+    const parsed = new URL(url);
+    const method = init.method || "GET";
+    if (parsed.pathname === "/auth/v1/user") {
+      return jsonResponse({ id: "auth-user-1", email: "owner@example.com" });
+    }
+    const table = parsed.pathname.split("/").pop();
+    if (table === "registration_sessions" && method === "GET") {
+      return jsonResponse([{
+        id: "registration-session-1",
+        ip_hash: privacyHash("unknown", "registration-ip"),
+        upload_paths: ["registration/registration-session-1/license.png"],
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        consumed_at: null,
+      }]);
+    }
+    if (table === "registration_sessions" && method === "PATCH") return jsonResponse(null, 204);
+    if (table === "partner_registration_invitations" && method === "GET") {
+      return jsonResponse([{
+        id: "partner-invite-1",
+        partner_application_id: "partner-application-1",
+        email: "owner@example.com",
+        status: "pending",
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      }]);
+    }
+    if (table === "partner_registration_invitations" && method === "PATCH") {
+      invitationPatch = JSON.parse(init.body);
+      return jsonResponse(null, 204);
+    }
+    if (table === "partner_applications" && method === "GET") {
+      return jsonResponse([{
+        id: "partner-application-1",
+        contact_email: "owner@example.com",
+        status: "invited",
+      }]);
+    }
+    if (table === "partner_applications" && method === "PATCH") {
+      partnerPatch = JSON.parse(init.body);
+      return jsonResponse(null, 204);
+    }
+    if (table === "center_applications" && method === "GET") return jsonResponse([]);
+    if (table === "center_applications" && method === "POST") {
+      insertedApplication = JSON.parse(init.body);
+      return jsonResponse([{ id: "center-application-1" }], 201);
+    }
+    if (table === "audit_logs" && method === "POST") return jsonResponse([{ id: "audit-invite-1" }], 201);
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+
+  const req = applicationRequest();
+  req.body.partnerInviteToken = "one-time-partner-token";
+  const res = responseRecorder();
+  try {
+    await centerApplications(req, res);
+  } finally {
+    process.env.PARTNER_INVITE_ENFORCEMENT = "disabled";
+  }
+  assert.equal(res.statusCode, 202);
+  assert.equal(insertedApplication.partner_application_id, "partner-application-1");
+  assert.equal(partnerPatch.status, "converted");
+  assert.equal(invitationPatch.status, "used");
+  assert.equal(invitationPatch.used_by_user_id, "auth-user-1");
+}
+
 async function testApprovalCreatesOwnerMembership() {
   let membershipBody;
   let centerBody;
@@ -312,6 +382,7 @@ async function testSocialSessionCreatesOwnerDashboardSession() {
     await testCenterApplicationRequiresAuthenticatedAccount();
     await testSportsScienceCenterApplicationUsesDegreeCertificateAndLegacyScheduleFallback();
     await testTherapistCenterApplicationUsesAuthenticatedSocialAccount();
+    await testPartnerInvitationIsBoundAndConsumed();
     await testApprovalCreatesOwnerMembership();
     await testSocialSessionCreatesOwnerDashboardSession();
     console.log("Center onboarding tests passed");

@@ -13,9 +13,12 @@ module.exports = async function handler(req, res) {
   const admin = await requireAdminRole(req, res, ["super_admin", "admin", "support", "analyst"]);
   if (!admin) return;
   try {
-    const [applications, partnerApplications, centerRows, events, ownerAccounts, ownerMemberships, reviews] = await Promise.all([
+    const [applications, partnerApplications, partnerInvitations, centerRows, events, ownerAccounts, ownerMemberships, reviews] = await Promise.all([
       supabaseRequest("center_applications", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("partner_applications", { query: "?select=*&order=created_at.desc&limit=500" }).catch(() => []),
+      supabaseRequest("partner_registration_invitations", {
+        query: "?select=id,partner_application_id,email,status,expires_at,sent_at,email_delivery_status,email_error,used_at,revoked_at,created_at&order=created_at.desc&limit=1000",
+      }).catch(() => []),
       supabaseRequest("centers", { query: "?select=*&order=created_at.desc" }),
       supabaseRequest("events", { query: "?select=*&order=created_at.desc&limit=1000" }),
       supabaseRequest("center_owner_accounts", {
@@ -116,32 +119,49 @@ module.exports = async function handler(req, res) {
         pendingReviews: reviews.filter((item) => item.status === "pending").length,
       },
       centerApplications: admin.role === "analyst" ? [] : applicationItems,
-      partnerApplications: admin.role === "analyst" ? [] : partnerApplications.map((item) => ({
-        id: item.id,
-        applicantName: item.applicant_name,
-        centerName: item.center_name || "센터명 미정",
-        centerStage: item.center_stage,
-        qualificationType: item.qualification_type,
-        region: item.region,
-        address: item.address || item.road_address || "",
-        roadAddress: item.road_address || "",
-        jibunAddress: item.jibun_address || "",
-        lat: item.lat,
-        lng: item.lng,
-        naverPlaceId: item.naver_place_id || "",
-        naverMapUrl: item.naver_map_url || "",
-        contactEmail: item.contact_email,
-        contactPhone: item.contact_phone,
-        websiteUrl: item.website_url || "",
-        interests: item.interests || [],
-        message: item.message || "",
-        status: item.status,
-        adminNote: item.admin_note || "",
-        source: item.source,
-        lastContactedAt: item.last_contacted_at,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-      })),
+      partnerApplications: admin.role === "analyst" ? [] : partnerApplications.map((item) => {
+        const invitation = partnerInvitations.find((candidate) => candidate.partner_application_id === item.id);
+        const invitationStatus = invitation?.status === "pending" && new Date(invitation.expires_at).getTime() <= Date.now()
+          ? "expired"
+          : invitation?.status;
+        return ({
+          id: item.id,
+          applicantName: item.applicant_name,
+          centerName: item.center_name || "센터명 미정",
+          centerStage: item.center_stage,
+          qualificationType: item.qualification_type,
+          region: item.region,
+          address: item.address || item.road_address || "",
+          roadAddress: item.road_address || "",
+          jibunAddress: item.jibun_address || "",
+          lat: item.lat,
+          lng: item.lng,
+          naverPlaceId: item.naver_place_id || "",
+          naverMapUrl: item.naver_map_url || "",
+          contactEmail: item.contact_email,
+          contactPhone: item.contact_phone,
+          websiteUrl: item.website_url || "",
+          interests: item.interests || [],
+          message: item.message || "",
+          status: item.status,
+          adminNote: item.admin_note || "",
+          source: item.source,
+          lastContactedAt: item.last_contacted_at,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          registrationInvitation: invitation ? {
+            id: invitation.id,
+            status: invitationStatus,
+            expiresAt: invitation.expires_at,
+            sentAt: invitation.sent_at,
+            emailStatus: invitation.email_delivery_status,
+            emailError: invitation.email_error || "",
+            usedAt: invitation.used_at,
+            revokedAt: invitation.revoked_at,
+            createdAt: invitation.created_at,
+          } : null,
+        });
+      }),
       centers: admin.role === "analyst"
         ? centers.map(({ ownerAccount, registrationEmail, ...center }) => center)
         : centers,

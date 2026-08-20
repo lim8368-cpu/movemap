@@ -1,62 +1,53 @@
 const crypto = require("crypto");
+const { supabaseRequest } = require("./_shared");
 
 const INVITE_TTL_SECONDS = 14 * 24 * 60 * 60;
 
-function inviteSecret() {
-  return String(process.env.PARTNER_INVITE_SECRET || process.env.ADMIN_SESSION_SECRET || "");
-}
-
 function partnerInviteConfigured() {
-  return process.env.PARTNER_INVITE_ENFORCEMENT !== "disabled" && Boolean(inviteSecret());
+  return process.env.PARTNER_INVITE_ENFORCEMENT !== "disabled";
 }
 
-function encode(value) {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
-}
-
-function sign(encodedPayload) {
-  return crypto.createHmac("sha256", inviteSecret()).update(encodedPayload).digest("base64url");
+function partnerInviteTokenHash(token) {
+  return crypto.createHash("sha256").update(String(token || "")).digest("base64url");
 }
 
 function issuePartnerRegistrationInvite(application, nowSeconds = Math.floor(Date.now() / 1000)) {
-  if (!inviteSecret()) throw new Error("PARTNER_INVITE_SECRET is not configured");
-  const payload = {
-    applicationId: String(application.id || ""),
-    email: String(application.contact_email || application.contactEmail || "").trim().toLowerCase(),
-    exp: nowSeconds + INVITE_TTL_SECONDS,
-  };
-  if (!payload.applicationId || !payload.email) throw new Error("Partner application is incomplete");
-  const encoded = encode(payload);
+  const applicationId = String(application.id || "");
+  const email = String(application.contact_email || application.contactEmail || "").trim().toLowerCase();
+  if (!applicationId || !email) throw new Error("Partner application is incomplete");
+  const token = crypto.randomBytes(32).toString("base64url");
   return {
-    token: `${encoded}.${sign(encoded)}`,
-    expiresAt: new Date(payload.exp * 1000).toISOString(),
+    token,
+    tokenHash: partnerInviteTokenHash(token),
+    applicationId,
+    email,
+    expiresAt: new Date((nowSeconds + INVITE_TTL_SECONDS) * 1000).toISOString(),
   };
 }
 
-function verifyPartnerRegistrationInvite(token, nowSeconds = Math.floor(Date.now() / 1000)) {
-  if (!inviteSecret()) return null;
-  const [encoded, signature, ...rest] = String(token || "").split(".");
-  if (!encoded || !signature || rest.length) return null;
-  const expected = sign(encoded);
-  const actualBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
-    if (!payload.applicationId || !payload.email || Number(payload.exp) <= nowSeconds) return null;
-    return {
-      applicationId: String(payload.applicationId),
-      email: String(payload.email).trim().toLowerCase(),
-      expiresAt: new Date(Number(payload.exp) * 1000).toISOString(),
-    };
-  } catch {
-    return null;
-  }
+async function findActivePartnerRegistrationInvitation(token) {
+  if (!partnerInviteConfigured() || !token) return null;
+  const rows = await supabaseRequest("partner_registration_invitations", {
+    query: `?select=*&token_hash=eq.${encodeURIComponent(partnerInviteTokenHash(token))}&status=eq.pending&limit=1`,
+  });
+  const invitation = rows[0];
+  if (!invitation) return null;
+  if (new Date(invitation.expires_at).getTime() > Date.now()) return invitation;
+  await supabaseRequest("partner_registration_invitations", {
+    method: "PATCH",
+    query: `?id=eq.${encodeURIComponent(invitation.id)}&status=eq.pending`,
+    body: {
+      status: "expired",
+      updated_at: new Date().toISOString(),
+    },
+  }).catch(() => null);
+  return null;
 }
 
 module.exports = {
   INVITE_TTL_SECONDS,
+  findActivePartnerRegistrationInvitation,
   issuePartnerRegistrationInvite,
   partnerInviteConfigured,
-  verifyPartnerRegistrationInvite,
+  partnerInviteTokenHash,
 };

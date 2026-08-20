@@ -21,8 +21,8 @@ const {
 } = require("./_booking");
 const { normalizeCenterCategories } = require("./_center-categories");
 const {
+  findActivePartnerRegistrationInvitation,
   partnerInviteConfigured,
-  verifyPartnerRegistrationInvite,
 } = require("./_partner-registration-invite");
 
 function readJsonBody(req) {
@@ -110,7 +110,7 @@ module.exports = async function handler(req, res) {
     let partnerInvite = null;
     let partnerApplication = null;
     if (partnerInviteConfigured()) {
-      partnerInvite = verifyPartnerRegistrationInvite(body.partnerInviteToken);
+      partnerInvite = await findActivePartnerRegistrationInvitation(body.partnerInviteToken);
       if (!partnerInvite) {
         sendJson(res, 403, {
           error: "정식 센터 등록은 서류 검토 후 받은 전용 링크에서만 진행할 수 있습니다.",
@@ -118,8 +118,16 @@ module.exports = async function handler(req, res) {
         });
         return;
       }
+      const authenticatedEmail = String(auth.user.email || "").trim().toLowerCase();
+      if (!authenticatedEmail || authenticatedEmail !== String(partnerInvite.email || "").toLowerCase()) {
+        sendJson(res, 403, {
+          error: "파트너 신청에 사용한 이메일 계정으로 로그인해 주세요.",
+          code: "partner_invite_account_mismatch",
+        });
+        return;
+      }
       const partnerApplications = await supabaseRequest("partner_applications", {
-        query: `?select=id,contact_email,status&id=eq.${encodeURIComponent(partnerInvite.applicationId)}&contact_email=eq.${encodeURIComponent(partnerInvite.email)}&limit=1`,
+        query: `?select=id,contact_email,status&id=eq.${encodeURIComponent(partnerInvite.partner_application_id)}&contact_email=eq.${encodeURIComponent(partnerInvite.email)}&status=eq.invited&limit=1`,
       });
       partnerApplication = partnerApplications[0];
       if (!partnerApplication || ["closed", "converted"].includes(partnerApplication.status)) {
@@ -248,6 +256,7 @@ module.exports = async function handler(req, res) {
         owner_password_scrypt: null,
         applicant_auth_user_id: auth.user.id,
         registration_session_id: secureSession.id,
+        partner_application_id: partnerApplication?.id || null,
         area: body.area.trim(),
         address: body.address.trim(),
         naver_map_url: body.naverMapUrl || null,
@@ -287,10 +296,21 @@ module.exports = async function handler(req, res) {
     }
     await consumeRegistrationSession(secureSession.id);
     if (partnerApplication) {
+      const convertedAt = new Date().toISOString();
       await supabaseRequest("partner_applications", {
         method: "PATCH",
         query: `?id=eq.${encodeURIComponent(partnerApplication.id)}`,
-        body: { status: "converted", updated_at: new Date().toISOString() },
+        body: { status: "converted", updated_at: convertedAt },
+      });
+      await supabaseRequest("partner_registration_invitations", {
+        method: "PATCH",
+        query: `?id=eq.${encodeURIComponent(partnerInvite.id)}&status=eq.pending`,
+        body: {
+          status: "used",
+          used_by_user_id: auth.user.id,
+          used_at: convertedAt,
+          updated_at: convertedAt,
+        },
       });
     }
     await recordAuditLog(req, {

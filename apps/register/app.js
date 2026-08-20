@@ -867,6 +867,13 @@ async function initRegistrationPage() {
     }
     const profileData = await response.json().catch(function () { return {}; });
     if (!response.ok) throw new Error(profileData.error || "계정 정보를 불러오지 못했습니다.");
+    const invitedEmail = String(partnerInvite?.application?.contactEmail || "").trim().toLowerCase();
+    const signedInEmail = String(profileData.user?.email || "").trim().toLowerCase();
+    if (!signedInEmail || signedInEmail !== invitedEmail) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      showLoginGate("파트너 신청에 사용한 " + invitedEmail + " 계정으로 로그인해 주세요.");
+      return;
+    }
     revealRegistration(profileData);
   } catch (error) {
     showLoginGate(error.message || "로그인 상태를 확인하지 못했습니다.");

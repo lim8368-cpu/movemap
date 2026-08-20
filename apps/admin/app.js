@@ -454,6 +454,35 @@ function partnerInterestLabel(value) {
   })[value] || value;
 }
 
+function partnerInvitationStatusLabel(status) {
+  return ({
+    pending: "사용 대기",
+    used: "등록 완료",
+    revoked: "취소됨",
+    expired: "만료됨",
+  })[status] || "발급 전";
+}
+
+function partnerInvitationEmailLabel(status) {
+  return ({
+    sent: "이메일 발송 완료",
+    queued: "이메일 발송 중",
+    failed: "이메일 발송 실패 · 링크를 직접 전달해 주세요",
+    not_configured: "자동 메일 미설정 · 링크를 직접 전달해 주세요",
+  })[status] || "이메일 발송 정보 없음";
+}
+
+function partnerInvitationSummary(invitation) {
+  if (!invitation) return "";
+  const canRevoke = invitation.status === "pending";
+  return '<div class="partner-invite-status ' + escapeHtml(invitation.status) + '"><div><strong>' +
+    escapeHtml(partnerInvitationStatusLabel(invitation.status)) + '</strong><small>' +
+    escapeHtml(formatDate(invitation.expiresAt, true)) + '까지 유효</small><small>' +
+    escapeHtml(partnerInvitationEmailLabel(invitation.emailStatus)) + '</small></div>' +
+    (canRevoke ? '<button type="button" data-revoke-partner-invite="' + escapeHtml(invitation.id) + '">초대 취소</button>' : "") +
+    '</div><p class="partner-invite-privacy">보안을 위해 링크 원문은 저장하지 않습니다. 다시 전달하려면 새 링크를 발급해 주세요.</p>';
+}
+
 function partnerMatchesFilter(item) {
   if (partnerApplicationFilter === "new") return item.status === "received";
   if (partnerApplicationFilter === "active") {
@@ -494,6 +523,8 @@ function renderPartnerApplications() {
       return '<option value="' + status + '"' + (item.status === status ? " selected" : "") + ">" + escapeHtml(statusLabel(status)) + "</option>";
     }).join("");
     const canInvite = ["qualified", "invited"].includes(item.status);
+    const activeInvitation = item.registrationInvitation?.status === "pending" ? item.registrationInvitation : null;
+    const inviteButtonLabel = activeInvitation ? "새 링크 재발급" : "정식 등록 초대 링크 발급";
     return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
       '운영 센터</p><h3>' + escapeHtml(item.centerName) +
       '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
@@ -510,8 +541,11 @@ function renderPartnerApplications() {
       escapeHtml(item.id) + '">' + statusOptions + '</select></label><label>운영 메모<textarea data-partner-note="' +
       escapeHtml(item.id) + '" rows="4" maxlength="2000" placeholder="통화 내용, 다음 연락 일정 등">' +
       escapeHtml(item.adminNote || "") + '</textarea></label><button type="button" data-save-partner="' +
-      escapeHtml(item.id) + '">상태와 메모 저장</button><div class="partner-invite-action"><p>서류 검토가 끝난 센터에만 정식 등록 링크를 발급하세요. 링크는 14일 동안 유효합니다.</p><button type="button" data-create-partner-invite="' +
-      escapeHtml(item.id) + '"' + (canInvite ? "" : ' disabled title="처리 상태를 정식 등록 후보로 저장한 뒤 발급할 수 있습니다."') + '>정식 등록 초대 링크 발급</button><div data-partner-invite-result="' +
+      escapeHtml(item.id) + '">상태와 메모 저장</button><div class="partner-invite-action"><p>서류 검토가 끝난 센터에만 정식 등록 링크를 발급하세요. 새 링크를 발급하면 기존 링크는 즉시 취소되며, 새 링크는 14일 동안 한 번만 사용할 수 있습니다.</p>' +
+      partnerInvitationSummary(item.registrationInvitation) + '<button type="button" data-create-partner-invite="' +
+      escapeHtml(item.id) + '" data-has-active-invite="' + (activeInvitation ? "true" : "false") + '"' +
+      (canInvite ? "" : ' disabled title="처리 상태를 정식 등록 후보로 저장한 뒤 발급할 수 있습니다."') + '>' +
+      escapeHtml(inviteButtonLabel) + '</button><div data-partner-invite-result="' +
       escapeHtml(item.id) + '" hidden></div></div></div></article>';
   }).join("");
 }
@@ -559,6 +593,7 @@ async function copyInviteLink(value) {
 async function createPartnerInvite(id) {
   const button = document.querySelector('[data-create-partner-invite="' + CSS.escape(id) + '"]');
   const resultBox = document.querySelector('[data-partner-invite-result="' + CSS.escape(id) + '"]');
+  if (button.dataset.hasActiveInvite === "true" && !window.confirm("새 링크를 발급하면 기존 링크는 즉시 사용할 수 없게 됩니다. 재발급할까요?")) return;
   button.disabled = true;
   button.textContent = "링크 발급 중";
   try {
@@ -570,16 +605,52 @@ async function createPartnerInvite(id) {
     const result = await response.json().catch(function () { return {}; });
     if (!response.ok) throw new Error(result.error || "초대 링크를 발급하지 못했습니다.");
     resultBox.hidden = false;
+    const deliveryCopy = result.emailSent
+      ? "신청 이메일로 자동 발송했습니다."
+      : result.emailStatus === "failed"
+        ? "이메일 발송에 실패했습니다. 아래 링크를 직접 전달해 주세요."
+        : "자동 메일이 아직 설정되지 않았습니다. 아래 링크를 직접 전달해 주세요.";
     resultBox.innerHTML = '<label>정식 등록 링크<input readonly value="' + escapeHtml(result.inviteUrl) + '" /></label><small>' +
-      escapeHtml(formatDate(result.expiresAt, true)) + '까지 유효</small>';
+      escapeHtml(formatDate(result.expiresAt, true)) + '까지 유효 · 1회 사용</small><small class="invite-delivery-copy">' +
+      escapeHtml(deliveryCopy) + '</small>';
     resultBox.querySelector("input").addEventListener("click", function (event) { event.currentTarget.select(); });
     const copied = await copyInviteLink(result.inviteUrl);
-    button.textContent = copied ? "링크 복사 완료" : "링크가 발급되었습니다";
-    showToast(copied ? "정식 등록 초대 링크를 복사했습니다." : "정식 등록 초대 링크를 발급했습니다.");
+    button.dataset.hasActiveInvite = "true";
+    button.disabled = false;
+    button.textContent = "새 링크 재발급";
+    showToast(result.emailSent
+      ? "정식 등록 링크를 이메일로 보내고 클립보드에도 복사했습니다."
+      : copied ? "정식 등록 초대 링크를 복사했습니다." : "정식 등록 초대 링크를 발급했습니다.");
   } catch (error) {
     showToast(error.message, true);
     button.disabled = false;
     button.textContent = "정식 등록 초대 링크 발급";
+  }
+}
+
+async function revokePartnerInvite(invitationId) {
+  if (!window.confirm("이 초대 링크를 취소할까요? 취소하면 센터장은 즉시 링크를 사용할 수 없습니다.")) return;
+  const button = document.querySelector('[data-revoke-partner-invite="' + CSS.escape(invitationId) + '"]');
+  if (button) {
+    button.disabled = true;
+    button.textContent = "취소 중";
+  }
+  try {
+    const response = await fetch(API_BASE + "/api/partner-registration-invites", {
+      method: "DELETE",
+      headers: adminHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ id: invitationId }),
+    });
+    const result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || "초대 링크를 취소하지 못했습니다.");
+    await loadStats(false);
+    showToast("정식 등록 초대 링크를 취소했습니다.");
+  } catch (error) {
+    showToast(error.message, true);
+    if (button) {
+      button.disabled = false;
+      button.textContent = "초대 취소";
+    }
   }
 }
 
@@ -1112,8 +1183,10 @@ document.querySelector("#partnerApplicationSearch").addEventListener("input", re
 document.querySelector("#partnerApplications").addEventListener("click", function (event) {
   const saveButton = event.target.closest("[data-save-partner]");
   const inviteButton = event.target.closest("[data-create-partner-invite]");
+  const revokeInviteButton = event.target.closest("[data-revoke-partner-invite]");
   if (saveButton) updatePartnerApplication(saveButton.dataset.savePartner);
   if (inviteButton) createPartnerInvite(inviteButton.dataset.createPartnerInvite);
+  if (revokeInviteButton) revokePartnerInvite(revokeInviteButton.dataset.revokePartnerInvite);
 });
 
 document.querySelector("#centerApplications").addEventListener("click", function (event) {
