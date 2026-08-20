@@ -23,7 +23,7 @@ async function centerAccessForUser(userId) {
   return {
     hasActiveMembership: memberships.length > 0,
     memberships,
-    latestApplication: latestApplication === partnerApplication ? {
+    latestApplication: partnerApplication && latestApplication === partnerApplication ? {
       ...partnerApplication,
       rejection_reason: partnerApplication.status === "closed" ? partnerApplication.admin_note : null,
       application_type: "partner",
