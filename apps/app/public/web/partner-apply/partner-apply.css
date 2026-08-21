@@ -127,7 +127,6 @@
 .partner-social:hover{filter:brightness(.96)}
 .partner-social:active{transform:scale(.99)}
 .partner-social:focus-visible{outline:3px solid rgba(21,129,135,.24);outline-offset:2px}
-.partner-social[data-ready="false"]{filter:saturate(.72);opacity:.68}
 .partner-auth-gate>small{margin-top:13px;color:#81847e;font-size:10px;line-height:1.5}
 .partner-account-panel{margin:30px 42px 0;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #dfe0dc;border-radius:10px;background:#f7f7f5}
 .partner-account-panel div{min-width:0}
