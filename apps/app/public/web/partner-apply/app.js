@@ -22,7 +22,7 @@
   const turnstileChallenge = document.getElementById("turnstileChallenge");
   const companyWebsite = document.getElementById("companyWebsite");
   const partnerAuthGate = document.getElementById("partnerAuthGate");
-  const partnerKakaoLogin = document.getElementById("partnerKakaoLogin");
+  const partnerAuthButtons = [...document.querySelectorAll("[data-partner-auth-provider]")];
   const partnerAuthStatus = document.getElementById("partnerAuthStatus");
   const partnerAccountPanel = document.getElementById("partnerAccountPanel");
   const partnerAccountName = document.getElementById("partnerAccountName");
@@ -57,6 +57,20 @@
     } catch {
       authConfig = { supabaseUrl: "", supabaseAnonKey: "", providers: {} };
     }
+    partnerAuthButtons.forEach((button) => {
+      const provider = button.dataset.partnerAuthProvider;
+      const ready = Boolean(authConfig.providers?.[provider]);
+      button.dataset.ready = String(ready);
+      button.title = ready ? "" : `${providerName(provider)} 로그인 인증키 연결이 필요합니다.`;
+      button.setAttribute("aria-describedby", "partnerAuthStatus");
+    });
+  }
+
+  function providerName(provider) {
+    if (provider === "kakao") return "카카오";
+    if (provider === "naver") return "네이버";
+    if (provider === "apple") return "Apple";
+    return "소셜";
   }
 
   async function refreshSession(current) {
@@ -113,7 +127,7 @@
     }
     if (!session?.access_token || response.status === 401) {
       localStorage.removeItem(AUTH_STORAGE_KEY);
-      showAuthGate("로그인 시간이 만료되었습니다. 카카오로 다시 로그인해 주세요.");
+      showAuthGate("로그인 시간이 만료되었습니다. 다시 로그인해 주세요.");
       return false;
     }
     if (!response.ok) {
@@ -123,7 +137,7 @@
     const data = await response.json();
     const nickname = String(data.profile?.nickname || "").trim();
     const email = String(data.user?.email || "").trim();
-    partnerAccountName.textContent = nickname || "DAIL 카카오 계정";
+    partnerAccountName.textContent = nickname || `DAIL ${providerName(data.user?.provider)} 계정`;
     partnerAccountEmail.textContent = email || "로그인 계정 연결 완료";
     if (!applicantName.value && nickname.length >= 2) applicantName.value = nickname;
     if (!contactEmail.value && email) contactEmail.value = email;
@@ -554,13 +568,16 @@
     centerName.focus({ preventScroll: true });
   });
 
-  partnerKakaoLogin.addEventListener("click", () => {
-    if (authConfig.providers?.kakao === false) {
-      partnerAuthStatus.textContent = "카카오 로그인을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.";
-      return;
-    }
-    sessionStorage.setItem(AUTH_RETURN_KEY, "/partner-apply/");
-    location.href = "/api/auth/start?provider=kakao";
+  partnerAuthButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const provider = button.dataset.partnerAuthProvider;
+      if (button.dataset.ready !== "true") {
+        partnerAuthStatus.textContent = `${providerName(provider)} 로그인은 인증키 연결 후 바로 사용할 수 있습니다.`;
+        return;
+      }
+      sessionStorage.setItem(AUTH_RETURN_KEY, "/partner-apply/");
+      location.href = `/api/auth/start?provider=${encodeURIComponent(provider)}`;
+    });
   });
 
   updateMessageCount();

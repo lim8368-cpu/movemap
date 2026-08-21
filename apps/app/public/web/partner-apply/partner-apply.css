@@ -115,9 +115,19 @@
 .partner-auth-gate>p{margin:18px 0 0;color:var(--partner-teal-dark);font-size:10px;font-weight:850;letter-spacing:.08em}
 .partner-auth-gate h3{margin:8px 0 0;color:#111;font-size:22px;line-height:1.35;letter-spacing:-.035em}
 .partner-auth-gate>span{max-width:510px;margin-top:10px;color:#6a6d68;font-size:12px;line-height:1.7;word-break:keep-all}
-.partner-auth-gate>button{min-width:250px;height:52px;margin-top:24px;padding:0 22px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;background:#fee500;color:#171300;font-size:13px;font-weight:850;cursor:pointer}
-.partner-auth-gate>button .auth-provider-icon{width:24px;height:24px;display:block;object-fit:contain}
-.partner-auth-gate>button:hover,.partner-auth-gate>button:focus-visible{outline:0;background:#f4dc00}
+.partner-social-buttons{width:min(420px,100%);margin-top:24px;display:grid;gap:10px}
+.partner-social{width:100%;height:52px;padding:0 18px;display:grid;grid-template-columns:30px 1fr 30px;align-items:center;border:1px solid transparent;border-radius:10px;font:inherit;font-size:13px;font-weight:850;cursor:pointer;transition:filter .16s ease,transform .16s ease}
+.partner-social b{display:grid;place-items:center}
+.partner-social span{grid-column:2}
+.partner-social.kakao{border-color:#fee500;background:#fee500;color:#171300}
+.partner-social.naver{border-color:#03a94d;background:#03a94d;color:#fff}
+.partner-social.apple{border-color:#000;background:#000;color:#fff}
+.partner-social .auth-provider-icon{width:24px;height:24px;display:block;object-fit:contain}
+.partner-social .auth-provider-icon.apple-icon{width:52px;height:52px}
+.partner-social:hover{filter:brightness(.96)}
+.partner-social:active{transform:scale(.99)}
+.partner-social:focus-visible{outline:3px solid rgba(21,129,135,.24);outline-offset:2px}
+.partner-social[data-ready="false"]{filter:saturate(.72);opacity:.68}
 .partner-auth-gate>small{margin-top:13px;color:#81847e;font-size:10px;line-height:1.5}
 .partner-account-panel{margin:30px 42px 0;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #dfe0dc;border-radius:10px;background:#f7f7f5}
 .partner-account-panel div{min-width:0}
@@ -258,7 +268,7 @@
   .partner-form-card .form-heading{padding-right:20px;padding-left:20px}
   .partner-auth-gate{margin-right:20px;margin-left:20px;padding-right:18px;padding-left:18px}
   .partner-account-panel{margin-right:20px;margin-left:20px;padding-right:14px;padding-left:14px}
-  .partner-auth-gate>button{width:100%;min-width:0}
+  .partner-social-buttons{width:100%}
   .partner-form-card form{padding-right:20px;padding-left:20px}
   .partner-address-field{padding:0}
   .partner-steps li,
