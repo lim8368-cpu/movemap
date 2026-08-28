@@ -27,6 +27,7 @@ let currentBookings = [];
 let bookingFilter = "upcoming";
 let bookingWeekStart = "";
 let bookingDateSelection = "";
+let bookingCalendarMonth = "";
 let selectedBookingId = "";
 let currentClients = [];
 let clientFilter = "active";
@@ -182,13 +183,11 @@ function activateDashboardView(view, { updateUrl = true, replaceUrl = false, scr
 function setOwnerMenuCollapsed(collapsed) {
   const shell = document.querySelector(".dashboard-shell");
   const toggle = document.querySelector("#ownerMenuToggle");
+  const reveal = document.querySelector("#ownerMenuReveal");
   shell.classList.toggle("menu-collapsed", collapsed);
   toggle.setAttribute("aria-expanded", String(!collapsed));
-  toggle.setAttribute("aria-label", collapsed ? "센터 관리 메뉴 펼치기" : "센터 관리 메뉴 접기");
-  document.querySelectorAll(".section-nav-links [data-dashboard-view]").forEach((link) => {
-    if (collapsed) link.title = link.textContent.trim();
-    else link.removeAttribute("title");
-  });
+  reveal.setAttribute("aria-hidden", String(!collapsed));
+  reveal.tabIndex = collapsed ? 0 : -1;
 }
 
 function timeOptions(selected) {
@@ -296,6 +295,55 @@ function minutesFromClock(value) {
   return hour * 60 + minute;
 }
 
+function bookingMonthStart(date) {
+  const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(String(date || "")) ? date : currentBookingDate();
+  return `${safeDate.slice(0, 7)}-01`;
+}
+
+function shiftBookingMonth(date, amount) {
+  const safeDate = bookingMonthStart(date);
+  const year = Number(safeDate.slice(0, 4));
+  const month = Number(safeDate.slice(5, 7)) - 1 + amount;
+  const marker = new Date(Date.UTC(year, month, 1, 3));
+  return `${marker.getUTCFullYear()}-${String(marker.getUTCMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function renderBookingDatePopover() {
+  const popover = document.querySelector("#bookingDatePopover");
+  if (popover.hidden) return;
+  if (!bookingCalendarMonth) bookingCalendarMonth = bookingMonthStart(bookingDateSelection || currentBookingDate());
+  const monthStart = bookingMonthStart(bookingCalendarMonth);
+  const marker = new Date(`${monthStart}T12:00:00+09:00`);
+  const mondayOffset = (marker.getUTCDay() + 6) % 7;
+  const gridStart = addCalendarDays(monthStart, -mondayOffset);
+  const currentDate = currentBookingDate();
+  const selectedDate = bookingDateSelection || currentDate;
+  const currentWeekStart = bookingWeekStart || startOfBookingWeek(selectedDate);
+  const currentWeekEnd = addCalendarDays(currentWeekStart, 6);
+  document.querySelector("#bookingMonthLabel").textContent = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+  }).format(marker);
+  document.querySelector("#bookingMonthGrid").innerHTML = Array.from({ length: 42 }, (_, index) => {
+    const date = addCalendarDays(gridStart, index);
+    const outside = date.slice(0, 7) !== monthStart.slice(0, 7);
+    const selected = date === selectedDate;
+    const inWeek = date >= currentWeekStart && date <= currentWeekEnd;
+    return `<button type="button" role="gridcell" data-booking-date-choice="${date}" class="${outside ? "outside" : ""} ${selected ? "selected" : ""} ${date === currentDate ? "today" : ""} ${inWeek ? "in-week" : ""}" aria-selected="${selected}"><span>${Number(date.slice(-2))}</span></button>`;
+  }).join("");
+}
+
+function setBookingDatePopover(open) {
+  const popover = document.querySelector("#bookingDatePopover");
+  const trigger = document.querySelector("#bookingDatePickerButton");
+  popover.hidden = !open;
+  trigger.setAttribute("aria-expanded", String(open));
+  if (open) {
+    bookingCalendarMonth = bookingMonthStart(bookingDateSelection || currentBookingDate());
+    renderBookingDatePopover();
+  }
+}
+
 function renderBookingCalendar() {
   if (!bookingWeekStart) bookingWeekStart = startOfBookingWeek(currentBookingDate());
   const dates = Array.from({ length: 7 }, (_, index) => addCalendarDays(bookingWeekStart, index));
@@ -317,35 +365,41 @@ function renderBookingCalendar() {
   const firstHour = Math.max(6, Math.min(8, ...allTimes.map((minutes) => Math.floor(minutes / 60))));
   const lastHour = Math.min(24, Math.max(22, ...allTimes.map((minutes) => Math.ceil(minutes / 60))));
   const hourCount = Math.max(8, lastHour - firstHour);
-  const hourHeight = 46;
-  const calendarHeight = hourCount * hourHeight;
+  const trackMinutes = hourCount * 60;
   const dayNames = ["월", "화", "수", "목", "금", "토", "일"];
   const labelFormat = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" });
   document.querySelector("#bookingWeekLabel").textContent = `${labelFormat.format(new Date(`${bookingWeekStart}T12:00:00+09:00`))} – ${labelFormat.format(new Date(`${lastDate}T12:00:00+09:00`))}`;
-  document.querySelector("#bookingDatePicker").value = bookingDateSelection || (currentDate >= bookingWeekStart && currentDate <= lastDate ? currentDate : bookingWeekStart);
-  const timeLabels = Array.from({ length: hourCount + 1 }, (_, index) =>
-    `<span style="top:${index * hourHeight}px">${String(firstHour + index).padStart(2, "0")}:00</span>`
-  ).join("");
+  if (!bookingDateSelection) bookingDateSelection = currentDate >= bookingWeekStart && currentDate <= lastDate ? currentDate : bookingWeekStart;
+  const timeLabels = Array.from({ length: hourCount + 1 }, (_, index) => {
+    const edgeClass = index === 0 ? "is-first" : index === hourCount ? "is-last" : "";
+    return `<span class="${edgeClass}" style="left:${index / hourCount * 100}%">${String(firstHour + index).padStart(2, "0")}:00</span>`;
+  }).join("");
   const dayColumns = dates.map((date, dayIndex) => {
-    const dayBookings = visible.filter((booking) => bookingDateTime(booking.start_at).date === date);
+    const dayBookings = visible
+      .filter((booking) => bookingDateTime(booking.start_at).date === date)
+      .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+    const laneEnds = [];
     const blocks = dayBookings.map((booking) => {
       const start = bookingDateTime(booking.start_at);
       const startMinutes = minutesFromClock(start.time);
       const endMinutes = booking.end_at
         ? minutesFromClock(bookingDateTime(booking.end_at).time)
         : startMinutes + currentSlotMinutes;
-      const top = Math.max(0, (startMinutes - firstHour * 60) / 60 * hourHeight);
-      const height = Math.max(34, (Math.max(currentSlotMinutes, endMinutes - startMinutes) / 60) * hourHeight - 3);
+      const clampedStart = Math.max(firstHour * 60, Math.min(lastHour * 60, startMinutes));
+      const clampedEnd = Math.max(clampedStart + 15, Math.min(lastHour * 60, endMinutes));
+      let lane = laneEnds.findIndex((laneEnd) => laneEnd <= clampedStart);
+      if (lane < 0) lane = laneEnds.length;
+      laneEnds[lane] = clampedEnd;
+      const left = (clampedStart - firstHour * 60) / trackMinutes * 100;
+      const width = Math.max(3.25, (clampedEnd - clampedStart) / trackMinutes * 100);
       const selected = booking.id === selectedBookingId;
-      return `<button class="calendar-booking status-${bookingCalendarStatusClass(booking.status)} ${selected ? "selected" : ""}" type="button" data-calendar-booking="${escapeHtml(booking.id)}" style="top:${top}px;height:${height}px" aria-label="${escapeHtml(start.time)} ${escapeHtml(booking.customer_name)} ${escapeHtml(BOOKING_STATUS_LABELS[booking.status] || booking.status)}"><time>${escapeHtml(start.time)}</time><b>${escapeHtml(booking.customer_name)}</b><small>${escapeHtml(booking.pain_area || "예약")}</small></button>`;
+      return `<button class="schedule-booking status-${bookingCalendarStatusClass(booking.status)} ${selected ? "selected" : ""}" type="button" data-calendar-booking="${escapeHtml(booking.id)}" style="left:${left}%;width:${width}%;top:${8 + lane * 36}px" aria-label="${escapeHtml(start.time)} ${escapeHtml(booking.customer_name)} ${escapeHtml(BOOKING_STATUS_LABELS[booking.status] || booking.status)}"><time>${escapeHtml(start.time)}</time><b>${escapeHtml(booking.customer_name)}</b><small>${escapeHtml(booking.pain_area || "예약")}</small></button>`;
     }).join("");
-    return `<div class="calendar-day-column ${date === currentDate ? "is-today" : ""}" data-calendar-date="${date}" style="height:${calendarHeight}px">${blocks}</div>`;
+    const rowHeight = Math.max(58, laneEnds.length * 36 + 16);
+    return `<div class="schedule-day-row ${date === currentDate ? "is-today" : ""}" data-calendar-date="${date}"><div class="schedule-day-label"><span>${dayNames[dayIndex]}</span><strong>${Number(date.slice(-2))}</strong><small>${date.slice(5, 7)}월</small></div><div class="schedule-day-track" style="--hour-count:${hourCount};height:${rowHeight}px">${blocks}</div></div>`;
   }).join("");
-  const dayHeaders = dates.map((date, index) => {
-    const day = Number(date.slice(-2));
-    return `<div class="calendar-day-head ${date === currentDate ? "is-today" : ""}"><span>${dayNames[index]}</span><strong>${day}</strong></div>`;
-  }).join("");
-  document.querySelector("#bookingCalendar").innerHTML = `<div class="booking-calendar-scroll"><div class="booking-calendar-inner"><div class="calendar-head"><div class="calendar-time-head">시간</div>${dayHeaders}</div><div class="calendar-body" style="height:${calendarHeight}px"><div class="calendar-time-rail">${timeLabels}</div>${dayColumns}</div></div></div>${visible.length ? "" : '<div class="calendar-empty-note">이 주에 해당하는 예약이 없습니다.</div>'}`;
+  document.querySelector("#bookingCalendar").innerHTML = `<div class="horizontal-schedule-scroll"><div class="horizontal-schedule-inner"><div class="schedule-time-header"><div class="schedule-date-head">날짜</div><div class="schedule-time-scale">${timeLabels}</div></div>${dayColumns}</div></div>${visible.length ? "" : '<div class="schedule-empty-note">이 주에 해당하는 예약이 없습니다.</div>'}`;
+  renderBookingDatePopover();
 }
 
 function renderWeeklySchedule() {
@@ -810,6 +864,7 @@ function clearOwnerSensitiveState() {
   bookingFilter = "upcoming";
   bookingWeekStart = startOfBookingWeek(currentBookingDate());
   bookingDateSelection = currentBookingDate();
+  bookingCalendarMonth = bookingMonthStart(bookingDateSelection);
   selectedBookingId = "";
   latestInvitationLinks = {};
   document.querySelector("#bookingCount").textContent = "예정 예약 0건";
@@ -1264,9 +1319,9 @@ document.querySelector(".section-nav-links").addEventListener("click", (event) =
 });
 
 document.querySelector("#ownerMenuToggle").addEventListener("click", () => {
-  const shell = document.querySelector(".dashboard-shell");
-  setOwnerMenuCollapsed(!shell.classList.contains("menu-collapsed"));
+  setOwnerMenuCollapsed(true);
 });
+document.querySelector("#ownerMenuReveal").addEventListener("click", () => setOwnerMenuCollapsed(false));
 
 document.querySelector(".overview-actions").addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
@@ -1448,12 +1503,29 @@ document.querySelectorAll("[data-booking-week]").forEach((button) => {
   });
 });
 
-document.querySelector("#bookingDatePicker").addEventListener("change", (event) => {
-  if (!event.target.value) return;
-  bookingDateSelection = event.target.value;
+document.querySelector("#bookingDatePickerButton").addEventListener("click", () => {
+  setBookingDatePopover(document.querySelector("#bookingDatePopover").hidden);
+});
+
+document.querySelector("#bookingDatePopover").addEventListener("click", (event) => {
+  const monthButton = event.target.closest("[data-booking-month]");
+  if (monthButton) {
+    bookingCalendarMonth = shiftBookingMonth(bookingCalendarMonth, monthButton.dataset.bookingMonth === "prev" ? -1 : 1);
+    renderBookingDatePopover();
+    return;
+  }
+  const dateButton = event.target.closest("[data-booking-date-choice]");
+  if (!dateButton) return;
+  bookingDateSelection = dateButton.dataset.bookingDateChoice;
   bookingWeekStart = startOfBookingWeek(bookingDateSelection);
   selectedBookingId = "";
+  setBookingDatePopover(false);
   renderOwnerBookings();
+});
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".booking-date-control")) return;
+  setBookingDatePopover(false);
 });
 
 document.querySelector("#bookingCalendar").addEventListener("click", (event) => {
@@ -1629,7 +1701,12 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !document.querySelector("#clientModal").hidden) closeClientEditor();
+  if (event.key !== "Escape") return;
+  if (!document.querySelector("#clientModal").hidden) closeClientEditor();
+  else if (!document.querySelector("#bookingDatePopover").hidden) {
+    setBookingDatePopover(false);
+    document.querySelector("#bookingDatePickerButton").focus();
+  }
 });
 
 initializeOwnerAuth();
