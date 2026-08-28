@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-redesign" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-calendar-wide" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
 </head>
 <body>
@@ -44,7 +44,7 @@
 
       <div class="dashboard-shell">
         <nav class="section-nav" aria-label="센터 관리 메뉴">
-          <div class="section-nav-title"><small>MANAGEMENT</small><strong>센터 관리 메뉴</strong></div>
+          <div class="section-nav-title"><div><small>MANAGEMENT</small><strong>센터 관리 메뉴</strong></div><button id="ownerMenuToggle" type="button" aria-label="센터 관리 메뉴 접기" aria-expanded="true"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg></button></div>
           <div class="section-nav-links">
             <a href="#overview" class="active icon-label" data-dashboard-view="overview"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg><span>운영 요약</span></a>
             <a href="#bookings" class="icon-label" data-dashboard-view="bookings"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg><span>예약 관리</span></a>
@@ -81,7 +81,7 @@
       <section id="bookingsSection" class="workspace booking-workspace dashboard-view" data-dashboard-panel="bookings" hidden>
         <div class="section-heading workspace-heading"><div><p class="eyebrow">BOOKING CALENDAR</p><h2>예약 관리</h2><p>주간 일정에서 예약 시간을 빠르게 확인하고, 예약을 눌러 상세 정보를 관리하세요.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
         <div class="booking-commandbar">
-          <div class="booking-week-nav" role="group" aria-label="주간 이동"><button type="button" data-booking-week="prev" aria-label="이전 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg></button><button type="button" class="today" data-booking-week="today">오늘</button><button type="button" data-booking-week="next" aria-label="다음 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button><strong id="bookingWeekLabel">이번 주</strong></div>
+          <div class="booking-week-nav" role="group" aria-label="주간 이동"><button type="button" data-booking-week="prev" aria-label="이전 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg></button><button type="button" class="today" data-booking-week="today">오늘</button><button type="button" data-booking-week="next" aria-label="다음 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button><label class="booking-date-picker"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg><strong id="bookingWeekLabel">이번 주</strong><input id="bookingDatePicker" type="date" aria-label="캘린더에서 날짜 선택" /></label></div>
           <div class="booking-toolbar" role="group" aria-label="예약 상태 필터"><button type="button" class="active" data-booking-filter="upcoming">예정</button><button type="button" data-booking-filter="all">전체</button><button type="button" data-booking-filter="completed">완료</button><button type="button" data-booking-filter="cancelled">취소</button></div>
         </div>
         <div class="booking-calendar-card"><div class="booking-calendar-legend"><span><i class="pending"></i>확인 대기</span><span><i class="confirmed"></i>예약 확정</span><span><i class="completed"></i>이용 완료</span><span><i class="cancelled"></i>취소·노쇼</span></div><div id="bookingCalendar" class="booking-calendar"><p class="empty">예약 일정을 불러오는 중입니다.</p></div></div>
@@ -158,6 +158,6 @@
       </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260828-owner-redesign"></script>
+  <script src="/center-dashboard/app.js?v=20260828-owner-calendar-wide"></script>
 </body>
 </html>

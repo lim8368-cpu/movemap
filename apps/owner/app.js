@@ -26,6 +26,7 @@ let currentPhotoItems = [];
 let currentBookings = [];
 let bookingFilter = "upcoming";
 let bookingWeekStart = "";
+let bookingDateSelection = "";
 let selectedBookingId = "";
 let currentClients = [];
 let clientFilter = "active";
@@ -170,11 +171,24 @@ function activateDashboardView(view, { updateUrl = true, replaceUrl = false, scr
   if (nextView === "clients" && currentCenterId && clientsLoadedCenterId !== currentCenterId) {
     loadClients().catch(() => {});
   }
+  if (viewChanged) setOwnerMenuCollapsed(nextView === "bookings");
   if (scroll && !dashboard.hidden) {
     const top = Math.max(0, dashboard.getBoundingClientRect().top + window.scrollY - 14);
     window.scrollTo({ top, behavior: "auto" });
   }
   return true;
+}
+
+function setOwnerMenuCollapsed(collapsed) {
+  const shell = document.querySelector(".dashboard-shell");
+  const toggle = document.querySelector("#ownerMenuToggle");
+  shell.classList.toggle("menu-collapsed", collapsed);
+  toggle.setAttribute("aria-expanded", String(!collapsed));
+  toggle.setAttribute("aria-label", collapsed ? "센터 관리 메뉴 펼치기" : "센터 관리 메뉴 접기");
+  document.querySelectorAll(".section-nav-links [data-dashboard-view]").forEach((link) => {
+    if (collapsed) link.title = link.textContent.trim();
+    else link.removeAttribute("title");
+  });
 }
 
 function timeOptions(selected) {
@@ -303,11 +317,12 @@ function renderBookingCalendar() {
   const firstHour = Math.max(6, Math.min(8, ...allTimes.map((minutes) => Math.floor(minutes / 60))));
   const lastHour = Math.min(24, Math.max(22, ...allTimes.map((minutes) => Math.ceil(minutes / 60))));
   const hourCount = Math.max(8, lastHour - firstHour);
-  const hourHeight = 58;
+  const hourHeight = 46;
   const calendarHeight = hourCount * hourHeight;
   const dayNames = ["월", "화", "수", "목", "금", "토", "일"];
   const labelFormat = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" });
   document.querySelector("#bookingWeekLabel").textContent = `${labelFormat.format(new Date(`${bookingWeekStart}T12:00:00+09:00`))} – ${labelFormat.format(new Date(`${lastDate}T12:00:00+09:00`))}`;
+  document.querySelector("#bookingDatePicker").value = bookingDateSelection || (currentDate >= bookingWeekStart && currentDate <= lastDate ? currentDate : bookingWeekStart);
   const timeLabels = Array.from({ length: hourCount + 1 }, (_, index) =>
     `<span style="top:${index * hourHeight}px">${String(firstHour + index).padStart(2, "0")}:00</span>`
   ).join("");
@@ -794,6 +809,7 @@ function clearOwnerSensitiveState() {
   currentBookings = [];
   bookingFilter = "upcoming";
   bookingWeekStart = startOfBookingWeek(currentBookingDate());
+  bookingDateSelection = currentBookingDate();
   selectedBookingId = "";
   latestInvitationLinks = {};
   document.querySelector("#bookingCount").textContent = "예정 예약 0건";
@@ -1247,6 +1263,11 @@ document.querySelector(".section-nav-links").addEventListener("click", (event) =
   requestAnimationFrame(() => link.blur());
 });
 
+document.querySelector("#ownerMenuToggle").addEventListener("click", () => {
+  const shell = document.querySelector(".dashboard-shell");
+  setOwnerMenuCollapsed(!shell.classList.contains("menu-collapsed"));
+});
+
 document.querySelector(".overview-actions").addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
   if (!button) return;
@@ -1415,12 +1436,24 @@ document.querySelectorAll("[data-booking-filter]").forEach((button) => {
 document.querySelectorAll("[data-booking-week]").forEach((button) => {
   button.addEventListener("click", () => {
     const direction = button.dataset.bookingWeek;
-    bookingWeekStart = direction === "today"
-      ? startOfBookingWeek(currentBookingDate())
-      : addCalendarDays(bookingWeekStart || startOfBookingWeek(currentBookingDate()), direction === "prev" ? -7 : 7);
+    if (direction === "today") {
+      bookingDateSelection = currentBookingDate();
+      bookingWeekStart = startOfBookingWeek(bookingDateSelection);
+    } else {
+      bookingWeekStart = addCalendarDays(bookingWeekStart || startOfBookingWeek(currentBookingDate()), direction === "prev" ? -7 : 7);
+      bookingDateSelection = bookingWeekStart;
+    }
     selectedBookingId = "";
     renderOwnerBookings();
   });
+});
+
+document.querySelector("#bookingDatePicker").addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  bookingDateSelection = event.target.value;
+  bookingWeekStart = startOfBookingWeek(bookingDateSelection);
+  selectedBookingId = "";
+  renderOwnerBookings();
 });
 
 document.querySelector("#bookingCalendar").addEventListener("click", (event) => {
