@@ -527,11 +527,18 @@ function renderPartnerApplications() {
     const accountState = item.applicantAuthUserId
       ? '<span class="partner-account-state connected">DAIL 계정 연결 완료</span>'
       : '<span class="partner-account-state required">카카오 계정 연결 필요</span>';
-    const approvalAction = item.status === "converted"
+    const approvalComplete = item.status === "converted" && Boolean(item.approvedCenterId);
+    const approvalAction = approvalComplete
       ? '<div class="partner-direct-approval complete"><strong>센터 등록 완료</strong><p>신청자의 DAIL 계정에 센터장 권한이 연결되었습니다.</p>' +
         (item.approvedCenterId ? '<a href="#centerDirectorySection">센터 목록에서 확인</a>' : "") + '</div>'
-      : '<div class="partner-direct-approval"><strong>검토 완료 후 바로 등록</strong><p>승인하면 이 신청 정보로 센터가 생성되고, 신청자의 카카오 계정에 센터장 권한이 즉시 연결됩니다.</p><button type="button" data-approve-partner="' +
-        escapeHtml(item.id) + '"' + (item.applicantAuthUserId ? "" : ' disabled title="신청자가 카카오 로그인으로 계정을 연결해야 합니다."') + '>센터 등록 승인</button></div>';
+      : '<div class="partner-direct-approval' + (item.status === "converted" ? ' needs-repair' : '') + '"><strong>' +
+        (item.status === "converted" ? '센터장 권한 연결 필요' : '검토 완료 후 바로 등록') + '</strong><p>' +
+        (item.status === "converted"
+          ? '처리 상태만 완료로 저장되어 실제 센터와 계정 연결이 빠졌습니다. 아래 버튼으로 안전하게 복구하세요.'
+          : '승인하면 이 신청 정보로 센터가 생성되고, 신청자의 카카오 계정에 센터장 권한이 즉시 연결됩니다.') +
+        '</p><button type="button" data-approve-partner="' + escapeHtml(item.id) + '"' +
+        (item.applicantAuthUserId ? "" : ' disabled title="신청자가 카카오 로그인으로 계정을 연결해야 합니다."') + '>' +
+        (item.status === "converted" ? '센터·권한 연결 복구' : '센터 등록 승인') + '</button></div>';
     return '<article class="partner-application-item"><div class="partner-application-summary"><header><div><p>' +
       '운영 센터</p><h3>' + escapeHtml(item.centerName) +
       '</h3></div><span class="status-badge ' + escapeHtml(item.status) + '">' + escapeHtml(statusLabel(item.status)) +
@@ -555,9 +562,10 @@ function renderPartnerApplications() {
 async function approvePartnerApplication(id) {
   if (!window.confirm("이 신청 정보로 센터를 등록하고 신청자 계정에 센터장 권한을 연결할까요?")) return;
   const button = document.querySelector('[data-approve-partner="' + CSS.escape(id) + '"]');
+  const repairing = button.textContent.includes("복구");
   const adminNote = document.querySelector('[data-partner-note="' + CSS.escape(id) + '"]')?.value.trim() || "";
   button.disabled = true;
-  button.textContent = "센터 등록 중";
+  button.textContent = repairing ? "연결 복구 중" : "센터 등록 중";
   try {
     const response = await fetch(API_BASE + "/api/partner-applications", {
       method: "PATCH",
@@ -571,7 +579,7 @@ async function approvePartnerApplication(id) {
   } catch (error) {
     showToast(error.message, true);
     button.disabled = false;
-    button.textContent = "센터 등록 승인";
+    button.textContent = repairing ? "센터·권한 연결 복구" : "센터 등록 승인";
   }
 }
 

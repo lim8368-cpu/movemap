@@ -274,12 +274,31 @@ async function testAdminApprovalCreatesCenterAndOwnerMembership() {
   assert.equal(updatedApplication.approved_center_id, "center-1");
 }
 
+async function testConvertedStatusCannotBeSetWithoutApprovalAction() {
+  global.fetch = async function () {
+    throw new Error("Manual converted status must not reach storage");
+  };
+  const req = {
+    method: "PATCH",
+    url: "/api/partner-applications",
+    query: {},
+    headers: { authorization: `Bearer ${signAdminSession({ role: "super_admin" })}` },
+    body: { id: "partner-1", status: "converted", adminNote: "검토 완료" },
+  };
+  const res = responseRecorder();
+  await partnerApplications(req, res);
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.code, "partner_approval_action_required");
+}
+
 (async () => {
   await testValidApplicationIsStored();
   await testInvalidApplicationIsRejected();
   await testHoneypotIsAcceptedWithoutStorage();
   await testUnverifiedLocationIsRejected();
   await testUnsupportedQualificationIsRejected();
+  await testConvertedStatusCannotBeSetWithoutApprovalAction();
   await testAdminApprovalCreatesCenterAndOwnerMembership();
   console.log("partner application tests passed");
 })().catch((error) => {

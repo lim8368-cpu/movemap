@@ -208,6 +208,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--teal); box-shado
 .partner-direct-approval>button:disabled{cursor:not-allowed!important;border-color:#d4dade!important;background:#e9edef!important;color:#8b959c!important;opacity:1!important}
 .partner-direct-approval.complete{border-color:#bedfd2;background:#f2faf6}
 .partner-direct-approval.complete>a{display:inline-flex;margin-top:2px;color:#176c53;font-size:10px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.partner-direct-approval.needs-repair{border-color:#e9c78a;background:#fff9ef}
+.partner-direct-approval.needs-repair>strong{color:#8a5300}
 
 .directory-tools { display: grid; grid-template-columns: 1fr 180px 150px; gap: 10px; margin-top: 20px; }
 .search-field { position: relative; display: block; }

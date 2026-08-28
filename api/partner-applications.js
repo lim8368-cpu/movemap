@@ -390,6 +390,12 @@ async function updateApplication(req, res) {
   if (!id || !STATUSES.has(status)) {
     return sendJson(res, 400, { error: "사전 신청 ID와 처리 상태를 확인해 주세요." });
   }
+  if (status === "converted") {
+    return sendJson(res, 409, {
+      error: "센터 등록 완료 상태는 ‘센터 등록 승인’ 버튼으로만 처리할 수 있습니다.",
+      code: "partner_approval_action_required",
+    });
+  }
 
   const now = new Date().toISOString();
   await supabaseRequest("partner_applications", {
