@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260821-owner-workspaces" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-redesign" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
 </head>
 <body>
@@ -58,6 +58,10 @@
 
         <div class="dashboard-panels">
       <section id="overview" class="dashboard-view" data-dashboard-panel="overview">
+        <div class="overview-intro">
+          <div><p class="eyebrow">TODAY AT A GLANCE</p><h2>센터 운영을 한눈에 확인하세요</h2><p>예약부터 이용자 반응까지, 지금 확인할 항목만 모았습니다.</p></div>
+          <span class="overview-live"><i></i> 실시간 운영 현황</span>
+        </div>
         <div class="overview-grid">
         <div class="performance panel"><div class="section-heading"><div><p class="eyebrow">DISCOVERY PERFORMANCE</p><h2>이용자가 센터를 확인한 흐름</h2><p>DAIL 지도에서 발생한 누적 활동입니다.</p></div><span class="period">전체 기간</span></div>
           <div class="funnel">
@@ -66,7 +70,7 @@
             <article class="accent-metric"><span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#percent"></use></svg></span><div><small>조회 대비 상담 클릭</small><strong id="contactRate">0%</strong><p>상세 조회 중 상담 버튼을 누른 비율</p></div></article>
           </div>
         </div>
-        <aside class="profile-health panel"><p class="eyebrow">PROFILE HEALTH</p><div class="completion-head"><div><h2>프로필 완성도</h2><p>상담 전에 필요한 정보를 점검하세요.</p></div><strong id="completionValue">0%</strong></div><div class="progress"><span id="completionBar"></span></div><div id="checklist" class="checklist"></div><button type="button" class="text-button icon-label" data-jump-profile>미완성 정보 채우기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></aside>
+        <aside class="overview-actions panel"><p class="eyebrow">QUICK ACTIONS</p><h2>자주 쓰는 관리</h2><p>센터 운영 중 가장 많이 사용하는 메뉴로 바로 이동하세요.</p><div><button type="button" data-overview-jump="bookings"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg></span><b>예약 확인</b><small>오늘과 이번 주 일정 보기</small></button><button type="button" data-overview-jump="clients"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><b>고객 등록</b><small>새 고객 한 명 추가하기</small></button><button type="button" data-overview-jump="profile"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#building"></use></svg></span><b>센터 정보</b><small>운영시간과 소개 수정하기</small></button></div></aside>
         </div>
 
         <div class="insight-row">
@@ -75,8 +79,13 @@
       </section>
 
       <section id="bookingsSection" class="workspace booking-workspace dashboard-view" data-dashboard-panel="bookings" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">BOOKING DESK</p><h2>예약과 이용자 정보</h2><p>예약 시간, 이름, 전화번호와 불편 부위를 확인하고 일정 및 상태를 변경합니다.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
-        <div class="booking-toolbar" role="group" aria-label="예약 상태 필터"><button type="button" class="active" data-booking-filter="upcoming">예정 예약</button><button type="button" data-booking-filter="all">전체</button><button type="button" data-booking-filter="completed">완료</button><button type="button" data-booking-filter="cancelled">취소</button></div>
+        <div class="section-heading workspace-heading"><div><p class="eyebrow">BOOKING CALENDAR</p><h2>예약 관리</h2><p>주간 일정에서 예약 시간을 빠르게 확인하고, 예약을 눌러 상세 정보를 관리하세요.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
+        <div class="booking-commandbar">
+          <div class="booking-week-nav" role="group" aria-label="주간 이동"><button type="button" data-booking-week="prev" aria-label="이전 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg></button><button type="button" class="today" data-booking-week="today">오늘</button><button type="button" data-booking-week="next" aria-label="다음 주"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button><strong id="bookingWeekLabel">이번 주</strong></div>
+          <div class="booking-toolbar" role="group" aria-label="예약 상태 필터"><button type="button" class="active" data-booking-filter="upcoming">예정</button><button type="button" data-booking-filter="all">전체</button><button type="button" data-booking-filter="completed">완료</button><button type="button" data-booking-filter="cancelled">취소</button></div>
+        </div>
+        <div class="booking-calendar-card"><div class="booking-calendar-legend"><span><i class="pending"></i>확인 대기</span><span><i class="confirmed"></i>예약 확정</span><span><i class="completed"></i>이용 완료</span><span><i class="cancelled"></i>취소·노쇼</span></div><div id="bookingCalendar" class="booking-calendar"><p class="empty">예약 일정을 불러오는 중입니다.</p></div></div>
+        <div class="booking-list-heading"><div><strong>예약 상세</strong><span>캘린더의 예약을 누르면 아래에서 바로 확인할 수 있습니다.</span></div></div>
         <div id="ownerBookingList" class="owner-booking-list"><p class="empty">예약을 불러오는 중입니다.</p></div>
         <p class="privacy-notice"><b>개인정보 보호</b> 이름·전화번호·불편 부위는 예약 준비에만 사용하고, 센터 운영 권한이 있는 구성원에게만 표시하세요.</p>
       </section>
@@ -92,19 +101,21 @@
             <div class="client-filters" role="group" aria-label="고객 상태 필터"><button type="button" class="active" aria-pressed="true" data-client-filter="active">이용 중</button><button type="button" aria-pressed="false" data-client-filter="archived">보관됨</button><button type="button" aria-pressed="false" data-client-filter="all">전체</button></div>
             <div id="clientList" class="client-list"><p class="empty">고객 명단을 불러오는 중입니다.</p></div>
           </div>
-          <aside class="client-editor">
+        </div>
+        <div id="clientModal" class="client-modal" hidden aria-hidden="true">
+          <button class="client-modal-backdrop" type="button" data-client-modal-close aria-label="고객 정보 창 닫기"></button>
+          <aside class="client-editor" role="dialog" aria-modal="true" aria-labelledby="clientEditorTitle">
             <div id="clientEmptyState" class="client-empty-state" tabindex="-1"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><strong>고객을 선택해 주세요</strong><p>왼쪽 명단에서 고객을 선택하거나 새 고객을 한 명씩 등록할 수 있습니다.</p><button id="clientDetailRetry" type="button" hidden>다시 시도</button></div>
             <form id="clientForm" autocomplete="off" hidden>
               <div class="client-editor-head"><div><small id="clientEditorEyebrow">NEW CLIENT</small><h3 id="clientEditorTitle" tabindex="-1">새 고객 등록</h3></div><button id="closeClientEditor" type="button" aria-label="고객 정보 닫기"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#x"></use></svg></button></div>
               <div class="client-form-grid">
                 <label>이름<input name="fullName" required maxlength="50" autocomplete="off" placeholder="홍길동" /></label>
                 <label>전화번호<input name="phone" type="tel" required maxlength="20" inputmode="tel" autocomplete="off" placeholder="010-0000-0000" /></label>
-                <label class="wide">이메일<input name="email" type="email" maxlength="254" autocomplete="off" placeholder="선택 입력" /></label>
                 <label class="wide">주요 불편 분야<input name="primaryConcern" maxlength="160" autocomplete="off" placeholder="예: 허리·골반, 스포츠 복귀" /></label>
                 <label class="wide">이용 목표<textarea name="goal" rows="3" maxlength="500" autocomplete="off" placeholder="센터 이용을 통해 원하는 목표를 적어주세요."></textarea></label>
                 <label class="wide">관리 메모<textarea name="notes" rows="5" maxlength="1000" autocomplete="off" placeholder="센터 운영에 필요한 내용만 기록해 주세요."></textarea><small>진단명이나 상세 의료기록은 입력하지 마세요.</small></label>
               </div>
-              <label id="clientConsentRow" class="client-consent"><input name="consentConfirmed" type="checkbox" /><span><b>개인정보 저장 동의를 확인했습니다.</b><small>이름·전화번호·이메일·주요 불편 분야·이용 목표·관리 메모를 연락과 일정 관리 목적으로 저장한다는 점을 안내한 뒤 등록해 주세요.</small></span></label>
+              <label id="clientConsentRow" class="client-consent"><input name="consentConfirmed" type="checkbox" /><span><b>개인정보 저장 동의를 확인했습니다.</b><small>이름·전화번호·주요 불편 분야·이용 목표·관리 메모를 연락과 일정 관리 목적으로 저장한다는 점을 안내한 뒤 등록해 주세요.</small></span></label>
               <p id="clientFormMessage" class="client-form-message" aria-live="polite"></p>
               <div class="client-form-actions"><button id="archiveClientButton" class="client-archive-button" type="button" hidden>보관하기</button><button class="primary-button" type="submit">고객 정보 저장</button></div>
             </form>
@@ -147,6 +158,6 @@
       </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260821-owner-workspaces"></script>
+  <script src="/center-dashboard/app.js?v=20260828-owner-redesign"></script>
 </body>
 </html>
