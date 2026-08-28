@@ -323,6 +323,17 @@ function setOverviewComparison(selector, current, previous) {
   element.textContent = `이전 30일보다 ${percentage}% ${difference > 0 ? "증가" : "감소"}`;
 }
 
+function setOverviewComparisonBars(name, current, previous) {
+  const chart = document.querySelector(`[data-comparison-bars="${name}"]`);
+  if (!chart) return;
+  const currentValue = Math.max(0, Number(current || 0));
+  const previousValue = Math.max(0, Number(previous || 0));
+  const maximum = Math.max(currentValue, previousValue, 1);
+  const width = (value) => value ? Math.max(8, Math.round(value / maximum * 100)) : 0;
+  chart.style.setProperty("--previous-width", `${width(previousValue)}%`);
+  chart.style.setProperty("--current-width", `${width(currentValue)}%`);
+}
+
 function renderOverview() {
   const data = currentOverviewData;
   if (!data) return;
@@ -414,6 +425,8 @@ function renderOverview() {
   document.querySelector("#last30ContactRate").textContent = `${Number(data.totals.last30ContactRate || 0)}%`;
   setOverviewComparison("#viewsComparison", data.totals.last30Views, data.totals.previous30Views);
   setOverviewComparison("#contactsComparison", data.totals.last30Contacts, data.totals.previous30Contacts);
+  setOverviewComparisonBars("views", data.totals.last30Views, data.totals.previous30Views);
+  setOverviewComparisonBars("contacts", data.totals.last30Contacts, data.totals.previous30Contacts);
   document.querySelector("#reviews").textContent = `${Number(data.totals.reviews || 0).toLocaleString()}건`;
   document.querySelector("#rating").textContent = data.totals.ratingAverage ? `${data.totals.ratingAverage} / 5` : "-";
 }
