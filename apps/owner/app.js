@@ -37,6 +37,7 @@ let clientListSequence = 0;
 let clientDetailSequence = 0;
 let clientMutationSequence = 0;
 let activeDashboardView = "overview";
+let ownerMenuAutoCloseTimer = 0;
 let currentSchedule = {};
 let currentSlotMinutes = 60;
 let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
@@ -188,6 +189,17 @@ function setOwnerMenuCollapsed(collapsed) {
   toggle.setAttribute("aria-expanded", String(!collapsed));
   reveal.setAttribute("aria-hidden", String(!collapsed));
   reveal.tabIndex = collapsed ? 0 : -1;
+}
+
+function clearOwnerMenuAutoClose() {
+  window.clearTimeout(ownerMenuAutoCloseTimer);
+  ownerMenuAutoCloseTimer = 0;
+}
+
+function scheduleOwnerMenuAutoClose(delay = 320) {
+  clearOwnerMenuAutoClose();
+  if (activeDashboardView !== "bookings") return;
+  ownerMenuAutoCloseTimer = window.setTimeout(() => setOwnerMenuCollapsed(true), delay);
 }
 
 function timeOptions(selected) {
@@ -1319,9 +1331,22 @@ document.querySelector(".section-nav-links").addEventListener("click", (event) =
 });
 
 document.querySelector("#ownerMenuToggle").addEventListener("click", () => {
+  clearOwnerMenuAutoClose();
   setOwnerMenuCollapsed(true);
 });
-document.querySelector("#ownerMenuReveal").addEventListener("click", () => setOwnerMenuCollapsed(false));
+document.querySelector("#ownerMenuReveal").addEventListener("click", () => {
+  setOwnerMenuCollapsed(false);
+  scheduleOwnerMenuAutoClose(2600);
+});
+document.querySelector(".section-nav").addEventListener("pointerenter", clearOwnerMenuAutoClose);
+document.querySelector(".section-nav").addEventListener("pointerleave", () => scheduleOwnerMenuAutoClose());
+document.addEventListener("pointerdown", (event) => {
+  if (activeDashboardView !== "bookings") return;
+  const shell = document.querySelector(".dashboard-shell");
+  if (shell.classList.contains("menu-collapsed")) return;
+  if (event.target.closest(".section-nav, #ownerMenuReveal")) return;
+  setOwnerMenuCollapsed(true);
+});
 
 document.querySelector(".overview-actions").addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
@@ -1706,6 +1731,8 @@ document.addEventListener("keydown", (event) => {
   else if (!document.querySelector("#bookingDatePopover").hidden) {
     setBookingDatePopover(false);
     document.querySelector("#bookingDatePickerButton").focus();
+  } else if (activeDashboardView === "bookings" && !document.querySelector(".dashboard-shell").classList.contains("menu-collapsed")) {
+    setOwnerMenuCollapsed(true);
   }
 });
 
