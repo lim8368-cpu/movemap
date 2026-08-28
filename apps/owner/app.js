@@ -361,7 +361,7 @@ function renderOverview() {
   document.querySelector("#overviewWeekBookingsMeta").textContent = `완료 ${completedThisWeek}건 · 남은 일정 ${weekBookings.filter((booking) => ["pending", "confirmed"].includes(booking.status) && new Date(booking.start_at).getTime() >= now).length}건`;
   document.querySelector("#overviewUpcomingBookings").textContent = `${upcomingBookings.length.toLocaleString()}건`;
   document.querySelector("#overviewNextBookingMeta").textContent = nextBooking
-    ? `다음 ${overviewDateText(bookingDateTime(nextBooking.start_at).date).replace(/요일$/, "")} ${bookingDateTime(nextBooking.start_at).time}`
+    ? `다음 일정 · ${overviewDateText(bookingDateTime(nextBooking.start_at).date)} ${bookingDateTime(nextBooking.start_at).time}`
     : "예정된 다음 예약이 없습니다";
 
   document.querySelector("#overviewTodayAgenda").innerHTML = todayBookings.length
