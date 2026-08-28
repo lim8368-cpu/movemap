@@ -25,9 +25,32 @@ let latestInvitationLinks = {};
 let currentPhotoItems = [];
 let currentBookings = [];
 let bookingFilter = "upcoming";
+let currentClients = [];
+let clientFilter = "active";
+let selectedClientId = "";
+let clientsLoadedCenterId = "";
+let clientListSequence = 0;
+let clientDetailSequence = 0;
+let clientMutationSequence = 0;
+let activeDashboardView = "overview";
 let currentSchedule = {};
 let currentSlotMinutes = 60;
 let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
+
+const DASHBOARD_VIEWS = new Set(["overview", "bookings", "clients", "profile", "activity", "members"]);
+const DASHBOARD_HASH_ALIASES = {
+  overview: "overview",
+  bookings: "bookings",
+  bookingsSection: "bookings",
+  clients: "clients",
+  clientsSection: "clients",
+  profile: "profile",
+  activity: "activity",
+  activitySection: "activity",
+  reviewsSection: "activity",
+  members: "members",
+  membersSection: "members",
+};
 
 const DAY_ROWS = [
   ["monday", "월요일"],
@@ -90,6 +113,74 @@ const statusLabel = (status) => ({
   revoked: "권한 회수",
   invited: "초대 중",
 })[status] || status || "-";
+
+function formatPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.startsWith("02")) {
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  if (digits.length <= 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function canManageClientRecords() {
+  return ["owner", "manager"].includes(currentRole);
+}
+
+function preferredScrollBehavior() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
+function dashboardViewFromHash() {
+  const raw = window.location.hash.replace(/^#/, "");
+  return DASHBOARD_HASH_ALIASES[raw] || "overview";
+}
+
+function updateDashboardViewUrl(view, replace = false) {
+  const url = `${window.location.pathname}${window.location.search}#${view}`;
+  history[replace ? "replaceState" : "pushState"](null, "", url);
+}
+
+function activateDashboardView(view, { updateUrl = true, replaceUrl = false, scroll = true } = {}) {
+  const requestedView = DASHBOARD_VIEWS.has(view) ? view : "overview";
+  const nextView = requestedView === "clients" && currentRole && !canManageClientRecords()
+    ? "overview"
+    : requestedView;
+  const viewChanged = nextView !== activeDashboardView;
+  activeDashboardView = nextView;
+  document.querySelectorAll("[data-dashboard-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.dashboardPanel !== nextView;
+  });
+  document.querySelectorAll("[data-dashboard-view]").forEach((link) => {
+    const active = link.dataset.dashboardView === nextView;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  document.querySelector("#dashboardMobileMenu").value = nextView;
+  if (updateUrl && (viewChanged || replaceUrl)) updateDashboardViewUrl(nextView, replaceUrl);
+  if (nextView === "clients" && currentCenterId && clientsLoadedCenterId !== currentCenterId) {
+    loadClients().catch(() => {});
+  }
+  if (scroll && !dashboard.hidden) {
+    const top = Math.max(0, dashboard.getBoundingClientRect().top + window.scrollY - 14);
+    window.scrollTo({ top, behavior: "auto" });
+    if (viewChanged) {
+      const heading = document.querySelector(`[data-dashboard-panel="${nextView}"] h2`);
+      if (heading) {
+        heading.tabIndex = -1;
+        requestAnimationFrame(() => heading.focus({ preventScroll: true }));
+      }
+    }
+  }
+  return true;
+}
 
 function timeOptions(selected) {
   const options = [];
@@ -241,6 +332,10 @@ function removeTag(index) {
 }
 
 function showLogin(message = ownerOnboardingMessage) {
+  currentEmail = "";
+  currentCenterId = "";
+  currentRole = "";
+  clearOwnerSensitiveState();
   invitePanel.hidden = true;
   loginPanel.hidden = false;
   dashboard.hidden = true;
@@ -383,6 +478,7 @@ function profileStatus(center) {
 
 function setFormAccess(role) {
   const readOnly = role === "viewer";
+  const canManageClients = canManageClientRecords();
   centerForm.querySelectorAll("input, textarea, select, button").forEach((element) => {
     if (element.type === "hidden") return;
     element.disabled = readOnly;
@@ -393,6 +489,12 @@ function setFormAccess(role) {
   if (readOnly) {
     document.querySelector("#changeStatus").textContent = "조회 전용 권한입니다";
   }
+  document.querySelector("#newClientButton").hidden = !canManageClients;
+  const clientsLink = document.querySelector('[data-dashboard-view="clients"]');
+  const clientsOption = document.querySelector('#dashboardMobileMenu option[value="clients"]');
+  clientsLink.hidden = !canManageClients;
+  clientsOption.hidden = !canManageClients;
+  clientsOption.disabled = !canManageClients;
 }
 
 function renderCenterSwitcher(centers) {
@@ -406,6 +508,10 @@ function renderCenterSwitcher(centers) {
 }
 
 function fillDashboard(data) {
+  const centerChanged = Boolean(currentCenterId && currentCenterId !== data.center.id);
+  if (centerChanged) {
+    clearOwnerSensitiveState();
+  }
   currentEmail = data.account?.email || currentEmail;
   currentCenterId = data.center.id;
   currentRole = data.account?.role || currentRole;
@@ -458,6 +564,13 @@ function fillDashboard(data) {
     `<article><strong>${escapeHtml(item.nickname)}</strong><span class="stars">${ratingIcons(item.rating)}</span><p>${escapeHtml(item.content)}</p><span>${formatDate(item.createdAt)}</span></article>`
   ).join("") || '<p class="empty">아직 승인된 후기가 없습니다.</p>';
   setDirtyState(false);
+  const requestedView = dashboardViewFromHash();
+  const allowedView = requestedView === "clients" && !canManageClientRecords() ? "overview" : requestedView;
+  activateDashboardView(allowedView, {
+    updateUrl: allowedView !== requestedView,
+    replaceUrl: true,
+    scroll: false,
+  });
 }
 
 async function loadDashboard(centerId = currentCenterId, allowSocialSession = true) {
@@ -506,8 +619,10 @@ function renderMembers(data) {
 }
 
 async function loadMembers() {
-  const response = await fetch(`/api/center-members?centerId=${encodeURIComponent(currentCenterId)}`);
+  const requestedCenterId = currentCenterId;
+  const response = await fetch(`/api/center-members?centerId=${encodeURIComponent(requestedCenterId)}`);
   const data = await response.json().catch(() => ({}));
+  if (requestedCenterId !== currentCenterId) return;
   if (!response.ok) {
     document.querySelector("#memberList").innerHTML =
       `<p class="empty">${escapeHtml(data.error || "구성원 정보를 불러오지 못했습니다.")}</p>`;
@@ -575,8 +690,10 @@ function renderOwnerBookings() {
 }
 
 async function loadBookings() {
-  const response = await fetch(`/api/owner-bookings?centerId=${encodeURIComponent(currentCenterId)}`);
+  const requestedCenterId = currentCenterId;
+  const response = await fetch(`/api/owner-bookings?centerId=${encodeURIComponent(requestedCenterId)}`);
   const data = await response.json().catch(() => ({}));
+  if (requestedCenterId !== currentCenterId) return;
   if (!response.ok) {
     document.querySelector("#ownerBookingList").innerHTML =
       `<p class="empty">${escapeHtml(data.error || "예약 정보를 불러오지 못했습니다.")}</p>`;
@@ -584,6 +701,359 @@ async function loadBookings() {
   }
   currentBookings = data.bookings || [];
   renderOwnerBookings();
+}
+
+function clearClientState() {
+  clientListSequence += 1;
+  clientDetailSequence += 1;
+  clientMutationSequence += 1;
+  currentClients = [];
+  clientFilter = "active";
+  selectedClientId = "";
+  clientsLoadedCenterId = "";
+  const form = document.querySelector("#clientForm");
+  form.reset();
+  form.querySelectorAll("input, textarea, button").forEach((element) => { element.disabled = false; });
+  form.querySelector('button[type="submit"]').hidden = false;
+  form.hidden = true;
+  document.querySelector("#clientEmptyState").hidden = false;
+  document.querySelector(".client-editor").classList.remove("is-open");
+  document.querySelector("#clientEditorEyebrow").textContent = "NEW CLIENT";
+  document.querySelector("#clientEditorTitle").textContent = "새 고객 등록";
+  document.querySelector("#clientFormMessage").textContent = "";
+  document.querySelector("#archiveClientButton").hidden = true;
+  document.querySelector("#clientConsentRow").hidden = false;
+  document.querySelector("#clientSearch").value = "";
+  renderClients();
+}
+
+function clearOwnerSensitiveState() {
+  clearClientState();
+  currentBookings = [];
+  bookingFilter = "upcoming";
+  latestInvitationLinks = {};
+  document.querySelector("#bookingCount").textContent = "예정 예약 0건";
+  document.querySelector("#ownerBookingList").innerHTML = '<p class="empty">예약 정보를 불러오는 중입니다.</p>';
+  document.querySelector("#memberInviteEmail").value = "";
+  document.querySelector("#memberList").innerHTML = '<p class="empty">구성원 정보를 불러오는 중입니다.</p>';
+  document.querySelector("#invitationList").innerHTML = '<p class="empty">초대 정보를 불러오는 중입니다.</p>';
+}
+
+function visibleClients() {
+  const query = document.querySelector("#clientSearch").value.trim().toLowerCase();
+  const queryDigits = query.replace(/\D/g, "");
+  return currentClients.filter((client) => {
+    if (clientFilter !== "all" && (client.status || "active") !== clientFilter) return false;
+    if (!query) return true;
+    const text = [client.full_name, client.phone]
+      .map((value) => String(value || "").toLowerCase()).join(" ");
+    const phoneDigits = String(client.phone || "").replace(/\D/g, "");
+    return text.includes(query) || Boolean(queryDigits && phoneDigits.includes(queryDigits));
+  });
+}
+
+function renderClients() {
+  const activeCount = currentClients.filter((client) => (client.status || "active") === "active").length;
+  document.querySelector("#clientCount").textContent = `활성 고객 ${activeCount}명`;
+  document.querySelectorAll("[data-client-filter]").forEach((button) => {
+    const active = button.dataset.clientFilter === clientFilter;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const clients = visibleClients();
+  document.querySelector("#clientList").innerHTML = clients.length
+    ? clients.map((client) => `<button class="client-list-item ${client.id === selectedClientId ? "selected" : ""}" type="button" data-client-id="${escapeHtml(client.id)}" ${client.id === selectedClientId ? 'aria-current="true"' : ""}>
+        <span class="client-avatar" aria-hidden="true">${escapeHtml(String(client.full_name || "?").trim().slice(0, 1) || "?")}</span>
+        <span class="client-list-copy"><strong>${escapeHtml(client.full_name)}</strong><small>${escapeHtml(formatPhone(client.phone))}</small></span>
+        <span class="client-list-meta"><i class="client-status status-${escapeHtml(client.status || "active")}">${(client.status || "active") === "archived" ? "보관됨" : "이용 중"}</i><small>${formatDate(client.updated_at || client.created_at, false)}</small></span>
+      </button>`).join("")
+    : `<div class="client-list-empty"><span>${uiIcon("search")}</span><strong>${currentClients.length ? "검색 결과가 없습니다" : "등록된 고객이 없습니다"}</strong><p>${currentClients.length ? "검색어나 상태 조건을 바꿔보세요." : "고객 등록을 눌러 한 명씩 명단을 만들어 보세요."}</p></div>`;
+}
+
+function setClientFormOpen(open) {
+  document.querySelector("#clientForm").hidden = !open;
+  document.querySelector("#clientEmptyState").hidden = open;
+  document.querySelector(".client-editor").classList.toggle("is-open", open);
+}
+
+function revealClientEditor(focusTarget) {
+  if (window.matchMedia("(max-width: 1000px)").matches) {
+    document.querySelector(".client-editor").scrollIntoView({ block: "start", behavior: preferredScrollBehavior() });
+  }
+  requestAnimationFrame(() => focusTarget?.focus({ preventScroll: true }));
+}
+
+function showClientDetailState(title, message, { retry = false } = {}) {
+  const emptyState = document.querySelector("#clientEmptyState");
+  const form = document.querySelector("#clientForm");
+  form.reset();
+  form.hidden = true;
+  document.querySelector("#clientEditorTitle").textContent = "고객 정보";
+  document.querySelector("#clientFormMessage").textContent = "";
+  emptyState.hidden = false;
+  emptyState.querySelector("strong").textContent = title;
+  emptyState.querySelector("p").textContent = message;
+  document.querySelector("#clientDetailRetry").hidden = !retry;
+  document.querySelector(".client-editor").classList.add("is-open");
+  revealClientEditor(emptyState);
+}
+
+function fillClientEditor(client = null) {
+  const creating = !client;
+  const canManage = canManageClientRecords();
+  if (creating && !canManage) return;
+  const form = document.querySelector("#clientForm");
+  form.reset();
+  form.elements.fullName.value = client?.full_name || "";
+  form.elements.phone.value = formatPhone(client?.phone || "");
+  form.elements.email.value = client?.email || "";
+  form.elements.primaryConcern.value = client?.primary_concern || "";
+  form.elements.goal.value = client?.goal || "";
+  form.elements.notes.value = client?.notes || "";
+  document.querySelector("#clientEditorEyebrow").textContent = creating ? "NEW CLIENT" : "CLIENT PROFILE";
+  document.querySelector("#clientEditorTitle").textContent = creating ? "새 고객 등록" : client.full_name;
+  document.querySelector("#clientConsentRow").hidden = !creating;
+  form.elements.consentConfirmed.required = creating;
+  const archiveButton = document.querySelector("#archiveClientButton");
+  archiveButton.hidden = creating || !canManage;
+  archiveButton.textContent = client?.status === "archived" ? "다시 이용 중으로" : "보관하기";
+  archiveButton.classList.toggle("restore", client?.status === "archived");
+  form.querySelectorAll("input, textarea, button").forEach((element) => {
+    if (element.id === "closeClientEditor") return;
+    element.disabled = !canManage;
+  });
+  form.querySelector('button[type="submit"]').hidden = !canManage;
+  document.querySelector("#clientFormMessage").textContent = "";
+  document.querySelector("#clientDetailRetry").hidden = true;
+  setClientFormOpen(true);
+  renderClients();
+  revealClientEditor(document.querySelector("#clientEditorTitle"));
+}
+
+async function openClientEditor(clientId = "", providedDetail = null) {
+  const detailSequence = ++clientDetailSequence;
+  if (!clientId) {
+    selectedClientId = "";
+    fillClientEditor();
+    return;
+  }
+  const summary = currentClients.find((item) => item.id === clientId);
+  if (!summary) return;
+  selectedClientId = clientId;
+  renderClients();
+  if (providedDetail?.id === clientId) {
+    fillClientEditor(providedDetail);
+    return;
+  }
+  const requestedCenterId = currentCenterId;
+  showClientDetailState("고객 정보를 불러오는 중입니다", "상세 정보는 고객을 선택할 때만 안전하게 불러옵니다.");
+  let response;
+  try {
+    response = await fetch(`/api/center-clients?centerId=${encodeURIComponent(requestedCenterId)}&clientId=${encodeURIComponent(clientId)}`);
+  } catch {
+    if (detailSequence !== clientDetailSequence || requestedCenterId !== currentCenterId || selectedClientId !== clientId) return;
+    showClientDetailState("서버에 연결하지 못했습니다", "네트워크 상태를 확인한 뒤 다시 시도해 주세요.", { retry: true });
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (detailSequence !== clientDetailSequence || requestedCenterId !== currentCenterId || selectedClientId !== clientId) return;
+  if (response.status === 401 || response.status === 403) {
+    return showLogin(data.error || "고객 정보를 확인할 권한이 없거나 로그인 시간이 만료되었습니다.");
+  }
+  if (!response.ok || !data.client) {
+    showClientDetailState("고객 정보를 불러오지 못했습니다", data.error || "잠시 후 다시 시도해 주세요.", { retry: true });
+    return;
+  }
+  fillClientEditor(data.client);
+}
+
+function closeClientEditor() {
+  clientDetailSequence += 1;
+  const previousClientId = selectedClientId;
+  selectedClientId = "";
+  document.querySelector("#clientForm").reset();
+  document.querySelector("#clientDetailRetry").hidden = true;
+  document.querySelector("#clientEditorTitle").textContent = "새 고객 등록";
+  setClientFormOpen(false);
+  renderClients();
+  const returnTarget = previousClientId
+    ? document.querySelector(`[data-client-id="${CSS.escape(previousClientId)}"]`)
+    : document.querySelector("#newClientButton");
+  if (window.matchMedia("(max-width: 1000px)").matches) {
+    document.querySelector(".client-directory").scrollIntoView({ block: "start", behavior: preferredScrollBehavior() });
+  }
+  requestAnimationFrame(() => returnTarget?.focus({ preventScroll: true }));
+}
+
+function clientRequestBody() {
+  const form = document.querySelector("#clientForm");
+  return {
+    centerId: currentCenterId,
+    fullName: form.elements.fullName.value.trim(),
+    phone: formatPhone(form.elements.phone.value),
+    email: form.elements.email.value.trim(),
+    primaryConcern: form.elements.primaryConcern.value.trim(),
+    goal: form.elements.goal.value.trim(),
+    notes: form.elements.notes.value.trim(),
+    consentConfirmed: form.elements.consentConfirmed.checked,
+  };
+}
+
+function mergeClientResponse(data) {
+  if (Array.isArray(data.clients)) {
+    currentClients = data.clients;
+    return;
+  }
+  if (!data.client) return;
+  const summary = {
+    id: data.client.id,
+    full_name: data.client.full_name,
+    phone: data.client.phone,
+    status: data.client.status,
+    created_at: data.client.created_at,
+    updated_at: data.client.updated_at,
+    archived_at: data.client.archived_at,
+  };
+  const index = currentClients.findIndex((client) => client.id === data.client.id);
+  if (index >= 0) currentClients.splice(index, 1, summary);
+  else currentClients.unshift(summary);
+}
+
+async function loadClients(force = false) {
+  if (!currentCenterId) return;
+  if (!force && clientsLoadedCenterId === currentCenterId) {
+    renderClients();
+    return;
+  }
+  const listSequence = ++clientListSequence;
+  const requestedCenterId = currentCenterId;
+  const list = document.querySelector("#clientList");
+  list.innerHTML = '<p class="empty">고객 명단을 불러오는 중입니다.</p>';
+  let response;
+  try {
+    response = await fetch(`/api/center-clients?centerId=${encodeURIComponent(requestedCenterId)}`);
+  } catch {
+    if (listSequence !== clientListSequence || requestedCenterId !== currentCenterId) return;
+    clientsLoadedCenterId = "";
+    list.innerHTML = `<div class="client-list-empty error"><span>${uiIcon("circle-alert")}</span><strong>서버에 연결하지 못했습니다</strong><p>네트워크 상태를 확인한 뒤 다시 시도해 주세요.</p><button type="button" data-client-retry>다시 시도</button></div>`;
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (listSequence !== clientListSequence || requestedCenterId !== currentCenterId) return;
+  if (response.status === 401 || response.status === 403) {
+    return showLogin(data.error || "고객 명단을 확인할 권한이 없거나 로그인 시간이 만료되었습니다.");
+  }
+  if (!response.ok) {
+    clientsLoadedCenterId = "";
+    list.innerHTML = `<div class="client-list-empty error"><span>${uiIcon("circle-alert")}</span><strong>고객 명단을 불러오지 못했습니다</strong><p>${escapeHtml(data.error || "잠시 후 다시 시도해 주세요.")}</p><button type="button" data-client-retry>다시 시도</button></div>`;
+    return;
+  }
+  currentClients = data.clients || [];
+  clientsLoadedCenterId = requestedCenterId;
+  if (selectedClientId && !currentClients.some((client) => client.id === selectedClientId)) closeClientEditor();
+  else renderClients();
+}
+
+async function saveClient() {
+  const form = document.querySelector("#clientForm");
+  const button = form.querySelector('button[type="submit"]');
+  const message = document.querySelector("#clientFormMessage");
+  const requestedCenterId = currentCenterId;
+  const requestedClientId = selectedClientId;
+  const creating = !selectedClientId;
+  const body = clientRequestBody();
+  if (creating && !body.consentConfirmed) {
+    message.textContent = "고객에게 개인정보 저장 목적을 안내하고 동의를 확인해 주세요.";
+    return;
+  }
+  if (!body.fullName || !body.phone) {
+    message.textContent = "이름과 전화번호를 입력해 주세요.";
+    return;
+  }
+  if (!creating) {
+    const client = currentClients.find((item) => item.id === selectedClientId);
+    body.clientId = selectedClientId;
+    body.status = client?.status || "active";
+  }
+  const mutationSequence = ++clientMutationSequence;
+  button.disabled = true;
+  message.textContent = "저장 중…";
+  let response;
+  try {
+    response = await fetch("/api/center-clients", {
+      method: creating ? "POST" : "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    if (mutationSequence !== clientMutationSequence || requestedCenterId !== currentCenterId) return;
+    button.disabled = false;
+    message.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (mutationSequence !== clientMutationSequence || requestedCenterId !== currentCenterId) return;
+  button.disabled = false;
+  if (response.status === 401 || response.status === 403) {
+    return showLogin(data.error || "고객 정보를 관리할 권한이 없거나 로그인 시간이 만료되었습니다.");
+  }
+  if (!response.ok) {
+    message.textContent = data.error || "고객 정보를 저장하지 못했습니다.";
+    return;
+  }
+  mergeClientResponse(data);
+  const shouldReopenSavedClient = creating || selectedClientId === requestedClientId;
+  if (shouldReopenSavedClient) selectedClientId = data.client?.id || selectedClientId;
+  clientsLoadedCenterId = currentCenterId;
+  clientFilter = "active";
+  renderClients();
+  if (shouldReopenSavedClient) {
+    openClientEditor(selectedClientId, data.client);
+    document.querySelector("#clientFormMessage").textContent = creating ? "고객을 등록했습니다." : "고객 정보를 저장했습니다.";
+  }
+}
+
+async function toggleClientArchive() {
+  const client = currentClients.find((item) => item.id === selectedClientId);
+  if (!client) return;
+  const requestedCenterId = currentCenterId;
+  const nextStatus = client.status === "archived" ? "active" : "archived";
+  if (nextStatus === "archived" && !window.confirm("이 고객을 보관할까요? 보관된 고객은 명단에서 다시 확인할 수 있습니다.")) return;
+  const mutationSequence = ++clientMutationSequence;
+  const button = document.querySelector("#archiveClientButton");
+  const message = document.querySelector("#clientFormMessage");
+  button.disabled = true;
+  message.textContent = nextStatus === "archived" ? "보관 중…" : "복원 중…";
+  let response;
+  try {
+    response = await fetch("/api/center-clients", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ centerId: requestedCenterId, clientId: client.id, status: nextStatus }),
+    });
+  } catch {
+    if (mutationSequence !== clientMutationSequence || requestedCenterId !== currentCenterId) return;
+    button.disabled = false;
+    message.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (mutationSequence !== clientMutationSequence || requestedCenterId !== currentCenterId) return;
+  button.disabled = false;
+  if (response.status === 401 || response.status === 403) {
+    return showLogin(data.error || "고객 정보를 관리할 권한이 없거나 로그인 시간이 만료되었습니다.");
+  }
+  if (!response.ok) {
+    message.textContent = data.error || "고객 상태를 변경하지 못했습니다.";
+    return;
+  }
+  mergeClientResponse(data);
+  clientFilter = nextStatus === "archived" ? "archived" : "active";
+  renderClients();
+  if (selectedClientId === client.id) {
+    openClientEditor(client.id, data.client);
+    document.querySelector("#clientFormMessage").textContent = nextStatus === "archived" ? "고객을 보관했습니다." : "고객을 다시 이용 중으로 표시했습니다.";
+  }
 }
 
 async function updateBooking(card) {
@@ -702,6 +1172,52 @@ function setDirtyState(dirty) {
     ? "조회 전용 권한입니다"
     : dirty ? "저장하지 않은 변경사항이 있습니다" : "저장된 정보입니다";
 }
+
+document.querySelector(".section-nav-links").addEventListener("click", (event) => {
+  const link = event.target.closest("[data-dashboard-view]");
+  if (!link) return;
+  event.preventDefault();
+  activateDashboardView(link.dataset.dashboardView);
+});
+
+document.querySelector("#dashboardMobileMenu").addEventListener("change", (event) => {
+  activateDashboardView(event.target.value);
+});
+
+window.addEventListener("popstate", () => {
+  activateDashboardView(dashboardViewFromHash(), { updateUrl: false });
+});
+
+document.querySelectorAll("[data-client-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    clientFilter = button.dataset.clientFilter;
+    renderClients();
+  });
+});
+
+document.querySelector("#clientSearch").addEventListener("input", renderClients);
+document.querySelector("#newClientButton").addEventListener("click", () => openClientEditor());
+document.querySelector("#closeClientEditor").addEventListener("click", closeClientEditor);
+document.querySelector("#clientDetailRetry").addEventListener("click", () => {
+  if (selectedClientId) openClientEditor(selectedClientId);
+});
+document.querySelector("#clientList").addEventListener("click", async (event) => {
+  const retry = event.target.closest("[data-client-retry]");
+  if (retry) {
+    await loadClients(true);
+    return;
+  }
+  const item = event.target.closest("[data-client-id]");
+  if (item) openClientEditor(item.dataset.clientId);
+});
+document.querySelector('#clientForm [name="phone"]').addEventListener("input", (event) => {
+  event.target.value = formatPhone(event.target.value);
+});
+document.querySelector("#clientForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await saveClient();
+});
+document.querySelector("#archiveClientButton").addEventListener("click", toggleClientArchive);
 
 document.querySelectorAll("[data-owner-auth-provider]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -877,7 +1393,10 @@ document.querySelector("#centerSwitcher").addEventListener("change", async (even
     event.target.value = currentCenterId;
     return;
   }
-  await loadDashboard(event.target.value);
+  const nextCenterId = event.target.value;
+  clearOwnerSensitiveState();
+  currentCenterId = nextCenterId;
+  await loadDashboard(nextCenterId);
 });
 
 document.querySelector("#memberInviteForm").addEventListener("submit", async (event) => {
@@ -929,9 +1448,11 @@ document.querySelector("#invitationList").addEventListener("click", async (event
 });
 
 document.querySelectorAll("[data-jump-profile]").forEach((button) =>
-  button.addEventListener("click", () => document.querySelector("#profile").scrollIntoView({ behavior: "smooth" }))
+  button.addEventListener("click", () => activateDashboardView("profile"))
 );
 logoutButton.addEventListener("click", async () => {
+  currentCenterId = "";
+  clearOwnerSensitiveState();
   await fetch("/api/owner-logout", { method: "POST" });
   const session = storedAuthSession();
   const auth = publicConfig.auth || {};

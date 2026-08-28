@@ -11,8 +11,10 @@ const {
   supabaseRequest,
 } = require("../api/_shared");
 const { ownerSessionFromRequest } = require("../api/_owner-auth");
+const { validateClientDataConfig } = require("../api/_sensitive-data");
 
 const runtimeEnvironment = validateRuntimeEnvironment();
+if (runtimeEnvironment.appEnv !== "development") validateClientDataConfig();
 
 process.on("unhandledRejection", (reason) => {
   const error = reason instanceof Error ? reason : new Error(String(reason || "Unhandled rejection"));
@@ -52,6 +54,7 @@ const apiRoutes = new Map([
   ["/api/bookings", require("../api/bookings")],
   ["/api/center-applications", require("../api/center-applications")],
   ["/api/center-invitations", require("../api/center-invitations")],
+  ["/api/center-clients", require("../api/center-clients")],
   ["/api/center-members", require("../api/center-members")],
   ["/api/centers", require("../api/centers")],
   ["/api/collaboration-inquiries", require("../api/collaboration-inquiries")],

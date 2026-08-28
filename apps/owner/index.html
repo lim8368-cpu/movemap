@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260820-auth-icons-2" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260821-owner-workspaces" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
 </head>
 <body>
@@ -42,9 +42,23 @@
     <section id="dashboard" class="dashboard" hidden>
       <div class="welcome"><div><p class="eyebrow">PARTNER OVERVIEW</p><h1 id="centerHeading">센터 운영 현황</h1><p><span class="status-dot"></span> 지도에 정상 노출 중 · <span id="updatedAt">최근 수정 -</span></p><label id="centerSwitcherWrap" class="center-switcher" hidden>관리 지점<select id="centerSwitcher"></select></label></div><div class="welcome-actions"><a class="secondary-button icon-label" href="/#search" target="_blank">공개 페이지 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a><button class="primary-button" type="button" data-jump-profile>센터 정보 수정</button></div></div>
 
-      <nav class="section-nav" aria-label="대시보드 메뉴"><a href="#overview" class="active">운영 요약</a><a href="#bookingsSection">예약 관리</a><a href="#profile">센터 정보</a><a href="#membersSection">구성원·권한</a><a href="#reviewsSection">후기</a></nav>
+      <div class="dashboard-shell">
+        <nav class="section-nav" aria-label="센터 관리 메뉴">
+          <div class="section-nav-title"><small>MANAGEMENT</small><strong>센터 관리 메뉴</strong></div>
+          <div class="section-nav-links">
+            <a href="#overview" class="active icon-label" data-dashboard-view="overview"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg><span>운영 요약</span></a>
+            <a href="#bookings" class="icon-label" data-dashboard-view="bookings"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg><span>예약 관리</span></a>
+            <a href="#clients" class="icon-label" data-dashboard-view="clients"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg><span>고객 관리</span></a>
+            <a href="#profile" class="icon-label" data-dashboard-view="profile"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#building"></use></svg><span>센터 정보</span></a>
+            <a href="#activity" class="icon-label" data-dashboard-view="activity"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg><span>활동·후기</span></a>
+            <a href="#members" class="icon-label" data-dashboard-view="members"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#lock"></use></svg><span>구성원·권한</span></a>
+          </div>
+          <label class="section-nav-mobile">관리 메뉴<select id="dashboardMobileMenu"><option value="overview">운영 요약</option><option value="bookings">예약 관리</option><option value="clients">고객 관리</option><option value="profile">센터 정보</option><option value="activity">활동·후기</option><option value="members">구성원·권한</option></select></label>
+        </nav>
 
-      <section id="overview" class="overview-grid">
+        <div class="dashboard-panels">
+      <section id="overview" class="dashboard-view" data-dashboard-panel="overview">
+        <div class="overview-grid">
         <div class="performance panel"><div class="section-heading"><div><p class="eyebrow">DISCOVERY PERFORMANCE</p><h2>이용자가 센터를 확인한 흐름</h2><p>DAIL 지도에서 발생한 누적 활동입니다.</p></div><span class="period">전체 기간</span></div>
           <div class="funnel">
             <article><span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#mouse-pointer-click"></use></svg></span><div><small>센터 상세 조회</small><strong id="views">0</strong><p>최근 30일 <b id="last30Views">0</b>회</p></div></article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></i>
@@ -53,20 +67,53 @@
           </div>
         </div>
         <aside class="profile-health panel"><p class="eyebrow">PROFILE HEALTH</p><div class="completion-head"><div><h2>프로필 완성도</h2><p>상담 전에 필요한 정보를 점검하세요.</p></div><strong id="completionValue">0%</strong></div><div class="progress"><span id="completionBar"></span></div><div id="checklist" class="checklist"></div><button type="button" class="text-button icon-label" data-jump-profile>미완성 정보 채우기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></aside>
-      </section>
+        </div>
 
-      <section class="insight-row">
+        <div class="insight-row">
         <article class="mini-card"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#star"></use></svg></span><div><small>평균 평점</small><strong id="rating">-</strong><p>승인된 후기 기준</p></div></article><article class="mini-card"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></span><div><small>등록 후기</small><strong id="reviews">0</strong><p>최근 후기는 아래에서 확인</p></div></article><article class="guidance"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#info"></use></svg></span><p><b>좋은 센터 프로필의 기본</b> 운영시간, 전문 분야, 가격 안내를 구체적으로 적으면 이용자가 문의 전에 필요한 정보를 확인할 수 있습니다.</p></article>
+        </div>
       </section>
 
-      <section id="bookingsSection" class="workspace booking-workspace">
+      <section id="bookingsSection" class="workspace booking-workspace dashboard-view" data-dashboard-panel="bookings" hidden>
         <div class="section-heading workspace-heading"><div><p class="eyebrow">BOOKING DESK</p><h2>예약과 이용자 정보</h2><p>예약 시간, 이름, 전화번호와 불편 부위를 확인하고 일정 및 상태를 변경합니다.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
         <div class="booking-toolbar" role="group" aria-label="예약 상태 필터"><button type="button" class="active" data-booking-filter="upcoming">예정 예약</button><button type="button" data-booking-filter="all">전체</button><button type="button" data-booking-filter="completed">완료</button><button type="button" data-booking-filter="cancelled">취소</button></div>
         <div id="ownerBookingList" class="owner-booking-list"><p class="empty">예약을 불러오는 중입니다.</p></div>
         <p class="privacy-notice"><b>개인정보 보호</b> 이름·전화번호·불편 부위는 예약 준비에만 사용하고, 센터 운영 권한이 있는 구성원에게만 표시하세요.</p>
       </section>
 
-      <section id="profile" class="workspace">
+      <section id="clientsSection" class="workspace clients-workspace dashboard-view" data-dashboard-panel="clients" hidden>
+        <div class="section-heading workspace-heading"><div><p class="eyebrow">CLIENT DIRECTORY</p><h2>고객 관리</h2><p>고객 명단을 한 명씩 등록하고 필요한 연락 정보와 이용 목적을 안전하게 관리합니다.</p></div><span id="clientCount" class="period">활성 고객 0명</span></div>
+        <div class="clients-grid">
+          <div class="client-directory">
+            <div class="client-toolbar">
+              <label class="client-search"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#search"></use></svg><input id="clientSearch" type="search" aria-label="고객 이름 또는 전화번호 검색" placeholder="이름 또는 전화번호 검색" autocomplete="off" /></label>
+              <button id="newClientButton" class="primary-button icon-label" type="button"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#plus"></use></svg>고객 등록</button>
+            </div>
+            <div class="client-filters" role="group" aria-label="고객 상태 필터"><button type="button" class="active" aria-pressed="true" data-client-filter="active">이용 중</button><button type="button" aria-pressed="false" data-client-filter="archived">보관됨</button><button type="button" aria-pressed="false" data-client-filter="all">전체</button></div>
+            <div id="clientList" class="client-list"><p class="empty">고객 명단을 불러오는 중입니다.</p></div>
+          </div>
+          <aside class="client-editor">
+            <div id="clientEmptyState" class="client-empty-state" tabindex="-1"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><strong>고객을 선택해 주세요</strong><p>왼쪽 명단에서 고객을 선택하거나 새 고객을 한 명씩 등록할 수 있습니다.</p><button id="clientDetailRetry" type="button" hidden>다시 시도</button></div>
+            <form id="clientForm" autocomplete="off" hidden>
+              <div class="client-editor-head"><div><small id="clientEditorEyebrow">NEW CLIENT</small><h3 id="clientEditorTitle" tabindex="-1">새 고객 등록</h3></div><button id="closeClientEditor" type="button" aria-label="고객 정보 닫기"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#x"></use></svg></button></div>
+              <div class="client-form-grid">
+                <label>이름<input name="fullName" required maxlength="50" autocomplete="off" placeholder="홍길동" /></label>
+                <label>전화번호<input name="phone" type="tel" required maxlength="20" inputmode="tel" autocomplete="off" placeholder="010-0000-0000" /></label>
+                <label class="wide">이메일<input name="email" type="email" maxlength="254" autocomplete="off" placeholder="선택 입력" /></label>
+                <label class="wide">주요 불편 분야<input name="primaryConcern" maxlength="160" autocomplete="off" placeholder="예: 허리·골반, 스포츠 복귀" /></label>
+                <label class="wide">이용 목표<textarea name="goal" rows="3" maxlength="500" autocomplete="off" placeholder="센터 이용을 통해 원하는 목표를 적어주세요."></textarea></label>
+                <label class="wide">관리 메모<textarea name="notes" rows="5" maxlength="1000" autocomplete="off" placeholder="센터 운영에 필요한 내용만 기록해 주세요."></textarea><small>진단명이나 상세 의료기록은 입력하지 마세요.</small></label>
+              </div>
+              <label id="clientConsentRow" class="client-consent"><input name="consentConfirmed" type="checkbox" /><span><b>개인정보 저장 동의를 확인했습니다.</b><small>이름·전화번호·이메일·주요 불편 분야·이용 목표·관리 메모를 연락과 일정 관리 목적으로 저장한다는 점을 안내한 뒤 등록해 주세요.</small></span></label>
+              <p id="clientFormMessage" class="client-form-message" aria-live="polite"></p>
+              <div class="client-form-actions"><button id="archiveClientButton" class="client-archive-button" type="button" hidden>보관하기</button><button class="primary-button" type="submit">고객 정보 저장</button></div>
+            </form>
+          </aside>
+        </div>
+        <p class="privacy-notice"><b>개인정보 보호</b> 이 명단은 연락과 일정 관리 용도입니다. 진단·치료 기록은 저장하지 말고, 이용이 끝난 고객은 보관 상태로 전환해 주세요.</p>
+      </section>
+
+      <section id="profile" class="workspace dashboard-view" data-dashboard-panel="profile" hidden>
         <div class="section-heading workspace-heading"><div><p class="eyebrow">CENTER PROFILE</p><h2>이용자에게 보이는 센터 정보</h2><p>저장한 내용은 DAIL 센터 상세 정보에 반영됩니다.</p></div><span id="saveStatus" class="save-status"></span></div>
         <div class="workspace-grid"><form id="centerForm" class="editor-stack">
           <fieldset><legend><span>01</span><div>기본 정보<small>센터를 찾고 연락하는 데 필요한 정보</small></div></legend><div class="field-grid"><label>센터명<input name="name" required maxlength="200" /></label><label>지역<input name="area" required maxlength="200" /></label><label class="wide">상세 주소<input name="address" required maxlength="200" /></label><label>대표 전화<input name="phone" maxlength="40" placeholder="02-000-0000" /></label><label>웹사이트<input name="website" maxlength="200" placeholder="https://" /></label></div></fieldset>
@@ -79,7 +126,7 @@
         <aside class="preview-column"><div class="preview-label"><span>PUBLIC PREVIEW</span><small>이용자 화면 미리보기</small></div><article class="profile-preview"><div class="preview-cover"><span>DAIL 등록 센터</span></div><div class="preview-body"><div class="preview-title"><div><h3 id="previewName">센터명</h3><p id="previewArea">지역</p></div><span>지도 노출 중</span></div><p id="previewLead">센터 소개를 입력하면 이곳에 표시됩니다.</p><div id="previewTags" class="preview-tags"></div><dl><div><dt>운영자</dt><dd id="previewTherapist">-</dd></div><div><dt>운영시간</dt><dd id="previewHours">-</dd></div><div><dt>이용 안내</dt><dd id="previewPrice">-</dd></div></dl><button type="button">센터에 문의하기</button></div></article><div class="preview-note"><b>표현 안내</b><p>의료기관으로 오해할 수 있는 치료·진단 표현이나 확인되지 않은 성과 수치는 사용할 수 없습니다.</p></div></aside></div>
       </section>
 
-      <section id="membersSection" class="workspace members-workspace">
+      <section id="membersSection" class="workspace members-workspace dashboard-view" data-dashboard-panel="members" hidden>
         <div class="section-heading workspace-heading"><div><p class="eyebrow">TEAM & ACCESS</p><h2>센터 구성원과 권한</h2><p>센터별로 소유자·매니저·직원·조회 전용 역할을 나누고 퇴사자 권한을 즉시 회수합니다.</p></div><span id="currentMemberRole" class="period">내 역할 -</span></div>
         <div class="members-grid">
           <div>
@@ -95,9 +142,11 @@
         </div>
       </section>
 
-      <section class="activity-grid"><div class="panel"><div class="section-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>최근 이용자 활동</h2></div></div><div id="eventList" class="activity-list"></div></div><div id="reviewsSection" class="panel"><div class="section-heading"><div><p class="eyebrow">CUSTOMER REVIEWS</p><h2>최근 후기</h2></div><span class="period">승인된 후기</span></div><div id="reviewList" class="review-list"></div></div></section>
+      <section id="activitySection" class="activity-grid dashboard-view" data-dashboard-panel="activity" hidden><div class="panel"><div class="section-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>최근 이용자 활동</h2></div></div><div id="eventList" class="activity-list"></div></div><div id="reviewsSection" class="panel"><div class="section-heading"><div><p class="eyebrow">CUSTOMER REVIEWS</p><h2>최근 후기</h2></div><span class="period">승인된 후기</span></div><div id="reviewList" class="review-list"></div></div></section>
+        </div>
+      </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260727-bookings"></script>
+  <script src="/center-dashboard/app.js?v=20260821-owner-workspaces"></script>
 </body>
 </html>

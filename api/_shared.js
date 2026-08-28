@@ -338,7 +338,7 @@ function safeLogMetadata(metadata) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
   const safe = {};
   for (const [key, rawValue] of Object.entries(metadata).slice(0, 20)) {
-    if (/password|token|secret|cookie|authorization|license|phone|email/i.test(key)) continue;
+    if (/password|token|secret|cookie|authorization|license|phone|email|name|note|memo|pain|diagnosis|birth|address/i.test(key)) continue;
     if (typeof rawValue === "number" || typeof rawValue === "boolean" || rawValue === null) {
       safe[key] = rawValue;
     } else {

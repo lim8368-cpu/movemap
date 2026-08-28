@@ -14,6 +14,6 @@
     "admin:credentials": "node scripts/generate-admin-credentials.js",
     "server:start": "node server/server.js",
     "server:start:production": "node server/production-server.js",
-    "server:test:security": "node server/security.test.js && node api/security.test.js && node api/place-search.test.js && node api/platform-security.test.js && node api/center-categories.test.js && node api/center-onboarding.test.js && node api/auth-isolation.test.js && node api/bookings.test.js && node api/favorites.test.js && node api/collaboration-inquiries.test.js && node api/partner-applications.test.js && node api/partner-registration-invites.test.js && node server/environment.test.js"
+    "server:test:security": "node server/security.test.js && node api/security.test.js && node api/_sensitive-data.test.js && node api/place-search.test.js && node api/platform-security.test.js && node api/center-clients.test.js && node api/center-categories.test.js && node api/center-onboarding.test.js && node api/auth-isolation.test.js && node api/bookings.test.js && node api/favorites.test.js && node api/collaboration-inquiries.test.js && node api/partner-applications.test.js && node api/partner-registration-invites.test.js && node server/environment.test.js"
   }
 }
