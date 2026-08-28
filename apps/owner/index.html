@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-schedule-horizontal5" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-ops-dashboard1" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
 </head>
 <body>
@@ -59,23 +59,51 @@
 
         <div class="dashboard-panels">
       <section id="overview" class="dashboard-view" data-dashboard-panel="overview">
-        <div class="overview-intro">
-          <div><p class="eyebrow">TODAY AT A GLANCE</p><h2>센터 운영을 한눈에 확인하세요</h2><p>예약부터 이용자 반응까지, 지금 확인할 항목만 모았습니다.</p></div>
-          <span class="overview-live"><i></i> 실시간 운영 현황</span>
-        </div>
-        <div class="overview-grid">
-        <div class="performance panel"><div class="section-heading"><div><p class="eyebrow">DISCOVERY PERFORMANCE</p><h2>이용자가 센터를 확인한 흐름</h2><p>DAIL 지도에서 발생한 누적 활동입니다.</p></div><span class="period">전체 기간</span></div>
-          <div class="funnel">
-            <article><span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#mouse-pointer-click"></use></svg></span><div><small>센터 상세 조회</small><strong id="views">0</strong><p>최근 30일 <b id="last30Views">0</b>회</p></div></article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></i>
-            <article><span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#phone-call"></use></svg></span><div><small>상담 연결 클릭</small><strong id="contacts">0</strong><p>최근 30일 <b id="last30Contacts">0</b>회</p></div></article><i><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></i>
-            <article class="accent-metric"><span class="metric-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#percent"></use></svg></span><div><small>조회 대비 상담 클릭</small><strong id="contactRate">0%</strong><p>상세 조회 중 상담 버튼을 누른 비율</p></div></article>
-          </div>
-        </div>
-        <aside class="overview-actions panel"><p class="eyebrow">QUICK ACTIONS</p><h2>자주 쓰는 관리</h2><p>센터 운영 중 가장 많이 사용하는 메뉴로 바로 이동하세요.</p><div><button type="button" data-overview-jump="bookings"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg></span><b>예약 확인</b><small>오늘과 이번 주 일정 보기</small></button><button type="button" data-overview-jump="clients"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><b>고객 등록</b><small>새 고객 한 명 추가하기</small></button><button type="button" data-overview-jump="profile"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#building"></use></svg></span><b>센터 정보</b><small>운영시간과 소개 수정하기</small></button></div></aside>
+        <header class="overview-intro">
+          <div><p class="eyebrow">OPERATION OVERVIEW</p><h2>오늘 운영에 필요한 내용부터 확인하세요</h2><p id="overviewDateLabel">오늘의 예약과 확인할 일을 불러오는 중입니다.</p></div>
+          <span class="overview-live"><i></i> 운영 데이터 연결됨</span>
+        </header>
+
+        <section class="overview-kpis" aria-label="핵심 운영 지표">
+          <button type="button" class="overview-kpi is-primary" data-overview-jump="bookings">
+            <span>오늘 예약</span><strong id="overviewTodayBookings">0건</strong><small id="overviewTodayBookingsMeta">예약을 불러오는 중</small>
+          </button>
+          <button type="button" class="overview-kpi" data-overview-jump="bookings">
+            <span>확인 대기</span><strong id="overviewPendingBookings">0건</strong><small id="overviewPendingBookingsMeta">처리할 예약을 확인합니다</small>
+          </button>
+          <button type="button" class="overview-kpi" data-overview-jump="bookings">
+            <span>이번 주 예약</span><strong id="overviewWeekBookings">0건</strong><small id="overviewWeekBookingsMeta">월요일부터 일요일까지</small>
+          </button>
+          <button type="button" class="overview-kpi" data-overview-jump="bookings">
+            <span>예정 예약</span><strong id="overviewUpcomingBookings">0건</strong><small id="overviewNextBookingMeta">다음 예약을 불러오는 중</small>
+          </button>
+        </section>
+
+        <div class="overview-operations-grid">
+          <section class="overview-agenda panel">
+            <div class="section-heading"><div><p class="eyebrow">TODAY'S SCHEDULE</p><h2>오늘 예약</h2><p>시간 순서대로 표시합니다. 예약을 누르면 바로 관리할 수 있습니다.</p></div><button type="button" class="overview-text-action" data-overview-jump="bookings">전체 일정</button></div>
+            <div id="overviewTodayAgenda" class="overview-agenda-list"><p class="empty">오늘 예약을 불러오는 중입니다.</p></div>
+          </section>
+          <aside class="overview-tasks panel">
+            <div class="section-heading"><div><p class="eyebrow">TO DO</p><h2>지금 확인할 일</h2><p>운영에 필요한 항목만 우선순위대로 정리했습니다.</p></div></div>
+            <div id="overviewTaskList" class="overview-task-list"><p class="empty">확인할 항목을 정리하는 중입니다.</p></div>
+          </aside>
         </div>
 
-        <div class="insight-row">
-        <article class="mini-card"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#star"></use></svg></span><div><small>평균 평점</small><strong id="rating">-</strong><p>승인된 후기 기준</p></div></article><article class="mini-card"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></span><div><small>등록 후기</small><strong id="reviews">0</strong><p>최근 후기는 아래에서 확인</p></div></article><article class="guidance"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#info"></use></svg></span><p><b>좋은 센터 프로필의 기본</b> 운영시간, 전문 분야, 가격 안내를 구체적으로 적으면 이용자가 문의 전에 필요한 정보를 확인할 수 있습니다.</p></article>
+        <div class="overview-insights-grid">
+          <section class="overview-discovery panel">
+            <div class="section-heading"><div><p class="eyebrow">CENTER DISCOVERY</p><h2>최근 30일 센터 반응</h2><p>DAIL 지도와 센터 상세 페이지에서 발생한 활동입니다.</p></div><span class="period">이전 30일과 비교</span></div>
+            <div class="discovery-metrics">
+              <article><span>센터 상세 조회</span><strong id="last30Views">0회</strong><small id="viewsComparison">비교 데이터를 불러오는 중</small></article>
+              <article><span>상담 연결 클릭</span><strong id="last30Contacts">0회</strong><small id="contactsComparison">비교 데이터를 불러오는 중</small></article>
+              <article><span>조회 대비 상담 클릭</span><strong id="last30ContactRate">0%</strong><small>최근 30일 상세 조회 기준</small></article>
+            </div>
+          </section>
+          <aside class="overview-reputation panel">
+            <div class="section-heading"><div><p class="eyebrow">REVIEWS</p><h2>센터 후기</h2></div><button type="button" class="overview-text-action" data-overview-jump="activity">후기 보기</button></div>
+            <dl><div><dt>평균 평점</dt><dd id="rating">-</dd></div><div><dt>승인된 후기</dt><dd id="reviews">0건</dd></div></dl>
+            <p>운영시간·전문 분야·가격을 구체적으로 관리하면 이용자가 문의 전에 필요한 내용을 확인할 수 있습니다.</p>
+          </aside>
         </div>
       </section>
 
@@ -160,6 +188,6 @@
       </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260828-owner-schedule-horizontal5"></script>
+  <script src="/center-dashboard/app.js?v=20260828-owner-ops-dashboard1"></script>
 </body>
 </html>

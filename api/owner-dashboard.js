@@ -43,9 +43,16 @@ async function centerData(centerId) {
   const photoUrls = await Promise.all(paths.map((path) => createSignedStorageUrl(path)));
   const approvedReviews = reviews.filter((review) => review.status === "approved");
   const now = Date.now();
-  const last30Days = events.filter((event) => now - new Date(event.created_at).getTime() <= 30 * 24 * 60 * 60 * 1000);
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  const last30Days = events.filter((event) => now - new Date(event.created_at).getTime() <= thirtyDays);
+  const previous30Days = events.filter((event) => {
+    const age = now - new Date(event.created_at).getTime();
+    return age > thirtyDays && age <= thirtyDays * 2;
+  });
   const views = events.filter((event) => event.event_type === "view").length;
   const contactClicks = events.filter((event) => event.event_type === "contact").length;
+  const last30Views = last30Days.filter((event) => event.event_type === "view").length;
+  const last30Contacts = last30Days.filter((event) => event.event_type === "contact").length;
   const ratingAverage = approvedReviews.length
     ? approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / approvedReviews.length
     : 0;
@@ -62,8 +69,11 @@ async function centerData(centerId) {
       views,
       contactClicks,
       contactRate: views ? Number(((contactClicks / views) * 100).toFixed(1)) : 0,
-      last30Views: last30Days.filter((event) => event.event_type === "view").length,
-      last30Contacts: last30Days.filter((event) => event.event_type === "contact").length,
+      last30Views,
+      last30Contacts,
+      last30ContactRate: last30Views ? Number(((last30Contacts / last30Views) * 100).toFixed(1)) : 0,
+      previous30Views: previous30Days.filter((event) => event.event_type === "view").length,
+      previous30Contacts: previous30Days.filter((event) => event.event_type === "contact").length,
       reviews: approvedReviews.length,
       ratingAverage: Number(ratingAverage.toFixed(1)),
     },

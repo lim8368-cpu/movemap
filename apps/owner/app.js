@@ -24,6 +24,7 @@ let hasUnsavedChanges = false;
 let latestInvitationLinks = {};
 let currentPhotoItems = [];
 let currentBookings = [];
+let currentOverviewData = null;
 let bookingFilter = "upcoming";
 let bookingWeekStart = "";
 let bookingDateSelection = "";
@@ -295,6 +296,126 @@ function startOfBookingWeek(date) {
 
 function currentBookingDate() {
   return bookingDateTime(new Date()).date;
+}
+
+function overviewDateText(date = currentBookingDate()) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date(`${date}T12:00:00+09:00`));
+}
+
+function setOverviewComparison(selector, current, previous) {
+  const element = document.querySelector(selector);
+  const difference = Number(current || 0) - Number(previous || 0);
+  element.dataset.trend = difference > 0 ? "up" : difference < 0 ? "down" : "flat";
+  if (!difference) {
+    element.textContent = "이전 30일과 같음";
+    return;
+  }
+  if (!Number(previous || 0)) {
+    element.textContent = `이전 30일보다 ${Math.abs(difference).toLocaleString()}회 ${difference > 0 ? "많음" : "적음"}`;
+    return;
+  }
+  const percentage = Math.round(Math.abs(difference) / Number(previous) * 100);
+  element.textContent = `이전 30일보다 ${percentage}% ${difference > 0 ? "증가" : "감소"}`;
+}
+
+function renderOverview() {
+  const data = currentOverviewData;
+  if (!data) return;
+  const today = currentBookingDate();
+  const weekStart = startOfBookingWeek(today);
+  const weekEnd = addCalendarDays(weekStart, 6);
+  const now = Date.now();
+  const isActiveBooking = (booking) => !["cancelled", "no_show"].includes(booking.status);
+  const todayBookings = currentBookings
+    .filter((booking) => isActiveBooking(booking) && bookingDateTime(booking.start_at).date === today)
+    .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+  const pendingBookings = currentBookings.filter((booking) =>
+    booking.status === "pending" && new Date(booking.start_at).getTime() >= now
+  );
+  const weekBookings = currentBookings.filter((booking) => {
+    const date = bookingDateTime(booking.start_at).date;
+    return isActiveBooking(booking) && date >= weekStart && date <= weekEnd;
+  });
+  const upcomingBookings = currentBookings
+    .filter((booking) => ["pending", "confirmed"].includes(booking.status) && new Date(booking.start_at).getTime() >= now)
+    .sort((left, right) => new Date(left.start_at) - new Date(right.start_at));
+  const confirmedToday = todayBookings.filter((booking) => booking.status === "confirmed").length;
+  const completedThisWeek = weekBookings.filter((booking) => booking.status === "completed").length;
+  const nextBooking = upcomingBookings[0];
+
+  document.querySelector("#overviewDateLabel").textContent = `${overviewDateText(today)} · 예약과 확인할 일을 최신 상태로 보여드립니다.`;
+  document.querySelector("#overviewTodayBookings").textContent = `${todayBookings.length.toLocaleString()}건`;
+  document.querySelector("#overviewTodayBookingsMeta").textContent = todayBookings.length
+    ? `확정 ${confirmedToday}건 · 완료 ${todayBookings.filter((booking) => booking.status === "completed").length}건`
+    : "오늘 예정된 예약이 없습니다";
+  document.querySelector("#overviewPendingBookings").textContent = `${pendingBookings.length.toLocaleString()}건`;
+  document.querySelector("#overviewPendingBookingsMeta").textContent = pendingBookings.length
+    ? "예약 확정 또는 변경이 필요합니다"
+    : "지금 처리할 예약이 없습니다";
+  document.querySelector("#overviewWeekBookings").textContent = `${weekBookings.length.toLocaleString()}건`;
+  document.querySelector("#overviewWeekBookingsMeta").textContent = `완료 ${completedThisWeek}건 · 남은 일정 ${weekBookings.filter((booking) => ["pending", "confirmed"].includes(booking.status) && new Date(booking.start_at).getTime() >= now).length}건`;
+  document.querySelector("#overviewUpcomingBookings").textContent = `${upcomingBookings.length.toLocaleString()}건`;
+  document.querySelector("#overviewNextBookingMeta").textContent = nextBooking
+    ? `다음 ${overviewDateText(bookingDateTime(nextBooking.start_at).date).replace(/요일$/, "")} ${bookingDateTime(nextBooking.start_at).time}`
+    : "예정된 다음 예약이 없습니다";
+
+  document.querySelector("#overviewTodayAgenda").innerHTML = todayBookings.length
+    ? todayBookings.slice(0, 5).map((booking) => `<button type="button" data-overview-booking="${escapeHtml(booking.id)}">
+        <time>${escapeHtml(bookingDateTime(booking.start_at).time)}</time>
+        <span><b>${escapeHtml(booking.customer_name)}</b><small>${escapeHtml(booking.pain_area || "이용 목적 미입력")}</small></span>
+        <i class="status-${bookingCalendarStatusClass(booking.status)}">${escapeHtml(BOOKING_STATUS_LABELS[booking.status] || booking.status)}</i>
+      </button>`).join("")
+    : `<div class="overview-empty"><span>${uiIcon("calendar")}</span><div><b>오늘 예약이 없습니다</b><p>새 예약이 들어오면 시간 순서대로 이곳에 표시됩니다.</p></div></div>`;
+
+  const profileChecks = [
+    data.center.address,
+    data.center.phone,
+    data.center.openingHours,
+    data.center.tags?.length,
+    data.center.photoItems?.length,
+    data.center.lead,
+    data.center.price,
+  ];
+  const missingProfileCount = profileChecks.filter((value) => !value).length;
+  const tasks = [
+    {
+      view: "bookings",
+      tone: pendingBookings.length ? "attention" : "complete",
+      label: pendingBookings.length ? "우선" : "완료",
+      title: "예약 확인",
+      detail: pendingBookings.length ? `확인 대기 예약 ${pendingBookings.length}건을 처리해 주세요.` : "확인 대기 중인 예약이 없습니다.",
+    },
+    {
+      view: "profile",
+      tone: missingProfileCount ? "attention" : "complete",
+      label: missingProfileCount ? "확인" : "완료",
+      title: "센터 정보",
+      detail: missingProfileCount ? `공개 페이지의 필수 정보 ${missingProfileCount}개가 비어 있습니다.` : "이용자에게 필요한 기본 정보가 등록되어 있습니다.",
+    },
+    {
+      view: "activity",
+      tone: "neutral",
+      label: "후기",
+      title: "이용자 반응",
+      detail: data.totals.reviews ? `승인된 후기 ${data.totals.reviews}건과 최근 활동을 확인하세요.` : "아직 승인된 후기가 없습니다.",
+    },
+  ];
+  document.querySelector("#overviewTaskList").innerHTML = tasks.map((task) => `<button type="button" data-overview-jump="${task.view}">
+    <i class="${task.tone}">${task.label}</i><span><b>${task.title}</b><small>${task.detail}</small></span>${uiIcon("arrow-right")}
+  </button>`).join("");
+
+  document.querySelector("#last30Views").textContent = `${Number(data.totals.last30Views || 0).toLocaleString()}회`;
+  document.querySelector("#last30Contacts").textContent = `${Number(data.totals.last30Contacts || 0).toLocaleString()}회`;
+  document.querySelector("#last30ContactRate").textContent = `${Number(data.totals.last30ContactRate || 0)}%`;
+  setOverviewComparison("#viewsComparison", data.totals.last30Views, data.totals.previous30Views);
+  setOverviewComparison("#contactsComparison", data.totals.last30Contacts, data.totals.previous30Contacts);
+  document.querySelector("#reviews").textContent = `${Number(data.totals.reviews || 0).toLocaleString()}건`;
+  document.querySelector("#rating").textContent = data.totals.ratingAverage ? `${data.totals.ratingAverage} / 5` : "-";
 }
 
 function bookingCalendarStatusClass(status) {
@@ -652,19 +773,13 @@ function fillDashboard(data) {
   currentEmail = data.account?.email || currentEmail;
   currentCenterId = data.center.id;
   currentRole = data.account?.role || currentRole;
+  currentOverviewData = { center: data.center, totals: data.totals };
   invitePanel.hidden = true;
   loginPanel.hidden = true;
   dashboard.hidden = false;
   logoutButton.hidden = false;
   document.querySelector("#centerHeading").textContent = `${data.center.name} 운영 현황`;
   document.querySelector("#updatedAt").textContent = `최근 수정 ${formatDate(data.center.updatedAt, false)}`;
-  document.querySelector("#views").textContent = data.totals.views.toLocaleString();
-  document.querySelector("#contacts").textContent = data.totals.contactClicks.toLocaleString();
-  document.querySelector("#contactRate").textContent = `${data.totals.contactRate || 0}%`;
-  document.querySelector("#last30Views").textContent = (data.totals.last30Views || 0).toLocaleString();
-  document.querySelector("#last30Contacts").textContent = (data.totals.last30Contacts || 0).toLocaleString();
-  document.querySelector("#reviews").textContent = data.totals.reviews.toLocaleString();
-  document.querySelector("#rating").textContent = data.totals.ratingAverage ? `${data.totals.ratingAverage} / 5` : "-";
   const fields = {
     name: data.center.name,
     area: data.center.area,
@@ -693,6 +808,7 @@ function fillDashboard(data) {
   renderTags();
   updatePreview();
   renderCenterSwitcher(data.availableCenters || []);
+  renderOverview();
   document.querySelector("#eventList").innerHTML = data.recentEvents.map((item) =>
     `<article><strong>${item.type === "view" ? "센터 상세 조회" : "상담 연결 클릭"}</strong><span>${escapeHtml(item.source)} · ${formatDate(item.createdAt)}</span></article>`
   ).join("") || '<p class="empty">아직 기록된 이용자 활동이 없습니다.</p>';
@@ -840,6 +956,7 @@ async function loadBookings() {
   }
   currentBookings = data.bookings || [];
   renderOwnerBookings();
+  renderOverview();
 }
 
 function clearClientState() {
@@ -872,6 +989,7 @@ function clearClientState() {
 
 function clearOwnerSensitiveState() {
   clearClientState();
+  currentOverviewData = null;
   currentBookings = [];
   bookingFilter = "upcoming";
   bookingWeekStart = startOfBookingWeek(currentBookingDate());
@@ -1348,7 +1466,19 @@ document.addEventListener("pointerdown", (event) => {
   setOwnerMenuCollapsed(true);
 });
 
-document.querySelector(".overview-actions").addEventListener("click", (event) => {
+document.querySelector("#overview").addEventListener("click", (event) => {
+  const bookingButton = event.target.closest("[data-overview-booking]");
+  if (bookingButton) {
+    const booking = currentBookings.find((item) => item.id === bookingButton.dataset.overviewBooking);
+    if (!booking) return;
+    selectedBookingId = booking.id;
+    bookingFilter = "all";
+    bookingDateSelection = bookingDateTime(booking.start_at).date;
+    bookingWeekStart = startOfBookingWeek(bookingDateSelection);
+    renderOwnerBookings();
+    activateDashboardView("bookings");
+    return;
+  }
   const button = event.target.closest("[data-overview-jump]");
   if (!button) return;
   const view = button.dataset.overviewJump;
