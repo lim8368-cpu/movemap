@@ -551,6 +551,19 @@ body:has(#dashboard) :where(.primary-button, .approve-button) {
   color: var(--dail-paper-raised);
 }
 
+body:has(#dashboard .dashboard-shell) .overview-kpi.is-primary:hover {
+  border-color: var(--dail-teal);
+  background: var(--dail-teal);
+}
+
+body:has(#dashboard .dashboard-shell) .overview-kpi.is-primary > :where(span, strong) {
+  color: var(--dail-paper-raised);
+}
+
+body:has(#dashboard .dashboard-shell) .overview-kpi.is-primary > small {
+  color: var(--dail-on-dark-muted);
+}
+
 body:has(#dashboard .dashboard-shell) :where(.secondary-button, .overview-text-action),
 body:has(#dashboard) :where(.secondary-button, .text-link) {
   color: var(--dail-teal-strong);
