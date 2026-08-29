@@ -2119,11 +2119,20 @@ footer{padding-top:48px}
 .example-booking-note{margin:13px 0 15px!important;padding:11px 12px;border-left:3px solid #1d7277;background:#f4f8f8;color:#536171!important;font-size:12px!important;line-height:1.55!important}
 .example-booking-success{border-color:#d8e2e5!important;background:#f7f9fa!important}
 
-/* Store badges share one visual frame; the Google asset's built-in padding is cropped. */
-.store-button{position:relative!important;width:180px!important;height:60px!important;flex:0 0 180px!important;border-radius:9px!important}
-.store-button img{position:absolute!important;display:block!important;max-width:none!important;object-fit:contain!important}
-.store-button:first-child img{inset:0!important;width:180px!important;height:60px!important;margin:0!important}
-.store-button:nth-child(2) img{top:-9px!important;left:-11px!important;width:202px!important;height:78px!important;margin:0!important}
+/* Hallmark · component: store badges · genre: modern-minimal · theme: DAIL locked system
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass
+ */
+.store-buttons{align-items:center!important;gap:14px!important}
+.store-button{position:relative!important;width:190px!important;height:72px!important;flex:0 0 190px!important;padding:0!important;display:grid!important;place-items:center!important;overflow:visible!important;border-radius:10px!important;background:transparent!important;box-shadow:none!important}
+.store-button::before{content:"";display:block;width:100%;height:100%;background-position:center;background-repeat:no-repeat;background-size:contain}
+.store-button:first-child::before{width:180px;height:60px;background-image:url("/assets/app-store-badge.svg?v=20260829-local-store")}
+.store-button:nth-child(2)::before{width:190px;height:70px;background-image:url("/assets/google-play-badge-ko.png?v=20260829-local-store")}
+.store-button img{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;opacity:0!important}
+.store-button:hover,.store-button:focus-visible{background:transparent!important;box-shadow:none!important;transform:translateY(-2px)}
+.store-button:focus-visible{outline:3px solid var(--dail-teal-soft)!important;outline-offset:2px}
+.store-button:active{transform:translateY(0)}
+.store-button[aria-disabled="true"]{opacity:.86}
 .app-download-message:not(:empty){width:fit-content;margin-top:14px;padding:10px 13px;border:1px solid #d9e1e5;border-radius:10px;background:#fff;color:#425466;font-size:12px;font-weight:650}
 
 /* Center the complete phone lockup, then crop only the source image's white padding. */
@@ -2134,12 +2143,12 @@ footer{padding-top:48px}
 @media(max-width:760px){
   .center-card-media{height:92px}
   .center-card-body{padding:13px}
-  .store-button{width:164px!important;height:55px!important;flex-basis:164px!important}
-  .store-button:first-child img{width:164px!important;height:55px!important}
-  .store-button:nth-child(2) img{top:-8px!important;left:-10px!important;width:184px!important;height:71px!important}
+  .store-button{width:176px!important;height:66px!important;flex-basis:176px!important}
+  .store-button:first-child::before{width:164px;height:55px}
+  .store-button:nth-child(2)::before{width:176px;height:65px}
 }
 @media(max-width:390px){
-  .store-button{width:180px!important;height:60px!important;flex-basis:180px!important}
-  .store-button:first-child img{width:180px!important;height:60px!important}
-  .store-button:nth-child(2) img{top:-9px!important;left:-11px!important;width:202px!important;height:78px!important}
+  .store-button{width:190px!important;height:72px!important;flex-basis:190px!important}
+  .store-button:first-child::before{width:180px;height:60px}
+  .store-button:nth-child(2)::before{width:190px;height:70px}
 }

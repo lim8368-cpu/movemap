@@ -44,6 +44,8 @@ let assessmentMutationSequence = 0;
 let selectedAssessmentId = "";
 let workspaceAssessmentClientId = "";
 let assessmentDraftScores = { painVas: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
+let assessmentDraftRom = [];
+let assessmentDraftMmt = [];
 let activeDashboardView = "overview";
 let ownerMenuAutoCloseTimer = 0;
 let currentSchedule = {};
@@ -93,10 +95,16 @@ const BOOKING_STATUS_LABELS = {
   no_show: "노쇼",
 };
 const ASSESSMENT_SCORE_FIELDS = [
-  { key: "painVas", label: "통증 정도 (VAS)", low: "통증 없음", high: "매우 심함", direction: "lower" },
+  { key: "painVas", label: "통증 정도 (VAS)", low: "통증 없음", high: "매우 심함", direction: "lower", required: true },
   { key: "dailyFunction", label: "일상 기능", low: "매우 어려움", high: "충분히 가능", direction: "higher" },
   { key: "movementConfidence", label: "움직임 자신감", low: "자신 없음", high: "매우 자신 있음", direction: "higher" },
   { key: "balanceConfidence", label: "균형 자신감", low: "매우 불안함", high: "매우 안정적", direction: "higher" },
+];
+const ASSESSMENT_SIDE_OPTIONS = [
+  ["not_applicable", "해당 없음"],
+  ["left", "좌"],
+  ["right", "우"],
+  ["bilateral", "양측"],
 ];
 
 const ownerOnboardingMessage = invitationToken
@@ -1005,6 +1013,8 @@ function clearClientState() {
   selectedAssessmentId = "";
   workspaceAssessmentClientId = "";
   assessmentDraftScores = emptyAssessmentScores();
+  assessmentDraftRom = [];
+  assessmentDraftMmt = [];
   const form = document.querySelector("#clientForm");
   form.reset();
   form.querySelectorAll("input, textarea, button").forEach((element) => { element.disabled = false; });
@@ -1391,13 +1401,83 @@ function assessmentScoreValue(value) {
   return Number.isInteger(number) && number >= 0 && number <= 10 ? number : null;
 }
 
+function emptyRomMeasurement() {
+  return { joint: "", movement: "", side: "not_applicable", active: "", passive: "", reference: "", note: "" };
+}
+
+function emptyMmtMeasurement() {
+  return { movement: "", side: "not_applicable", grade: "", note: "" };
+}
+
+function assessmentSideOptions(selected) {
+  return ASSESSMENT_SIDE_OPTIONS.map(([value, label]) =>
+    `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`
+  ).join("");
+}
+
+function assessmentGradeOptions(selected) {
+  return '<option value="">선택</option>' + Array.from({ length: 6 }, (_, grade) =>
+    `<option value="${grade}" ${String(grade) === String(selected) ? "selected" : ""}>${grade}</option>`
+  ).join("");
+}
+
+function renderAssessmentMeasurementRows() {
+  document.querySelector("#assessmentRomRows").innerHTML = assessmentDraftRom.map((row, index) => `
+    <div class="measurement-row" data-rom-row="${index}">
+      <label><span>관절·부위</span><input data-rom-field="joint" maxlength="60" value="${escapeHtml(row.joint || "")}" placeholder="예: 무릎" /></label>
+      <label><span>동작</span><input data-rom-field="movement" maxlength="60" value="${escapeHtml(row.movement || "")}" placeholder="예: 굴곡" /></label>
+      <label><span>좌우</span><select data-rom-field="side">${assessmentSideOptions(row.side || "not_applicable")}</select></label>
+      <label><span>AROM</span><input data-rom-field="active" type="number" inputmode="numeric" min="-90" max="360" step="1" value="${escapeHtml(row.active ?? "")}" placeholder="°" /></label>
+      <label><span>PROM</span><input data-rom-field="passive" type="number" inputmode="numeric" min="-90" max="360" step="1" value="${escapeHtml(row.passive ?? "")}" placeholder="°" /></label>
+      <label><span>참고</span><input data-rom-field="reference" maxlength="40" value="${escapeHtml(row.reference || "")}" placeholder="예: 135°" /></label>
+      <label><span>비고</span><input data-rom-field="note" maxlength="160" value="${escapeHtml(row.note || "")}" placeholder="측정 메모" /></label>
+      <button type="button" data-remove-rom="${index}" aria-label="ROM ${index + 1}번 항목 삭제" ${assessmentDraftRom.length === 1 ? "disabled" : ""}>×</button>
+    </div>`).join("");
+
+  document.querySelector("#assessmentMmtRows").innerHTML = assessmentDraftMmt.map((row, index) => `
+    <div class="measurement-row" data-mmt-row="${index}">
+      <label><span>근육·동작</span><input data-mmt-field="movement" maxlength="80" value="${escapeHtml(row.movement || "")}" placeholder="예: 무릎 폄" /></label>
+      <label><span>좌우</span><select data-mmt-field="side">${assessmentSideOptions(row.side || "not_applicable")}</select></label>
+      <label><span>등급</span><select data-mmt-field="grade">${assessmentGradeOptions(row.grade)}</select></label>
+      <label><span>비고</span><input data-mmt-field="note" maxlength="160" value="${escapeHtml(row.note || "")}" placeholder="저항·보상 움직임" /></label>
+      <button type="button" data-remove-mmt="${index}" aria-label="MMT ${index + 1}번 항목 삭제" ${assessmentDraftMmt.length === 1 ? "disabled" : ""}>×</button>
+    </div>`).join("");
+}
+
+function readRomMeasurements() {
+  return [...document.querySelectorAll("[data-rom-row]")].map((row) => {
+    const value = (field) => row.querySelector(`[data-rom-field="${field}"]`).value.trim();
+    return {
+      joint: value("joint"),
+      movement: value("movement"),
+      side: value("side"),
+      active: value("active") === "" ? null : Number(value("active")),
+      passive: value("passive") === "" ? null : Number(value("passive")),
+      reference: value("reference"),
+      note: value("note"),
+    };
+  });
+}
+
+function readMmtMeasurements() {
+  return [...document.querySelectorAll("[data-mmt-row]")].map((row) => {
+    const value = (field) => row.querySelector(`[data-mmt-field="${field}"]`).value.trim();
+    return {
+      movement: value("movement"),
+      side: value("side"),
+      grade: value("grade") === "" ? null : Number(value("grade")),
+      note: value("note"),
+    };
+  });
+}
+
 function renderAssessmentScales() {
   document.querySelector("#assessmentScoreScales").innerHTML = ASSESSMENT_SCORE_FIELDS.map((field) => {
     const selected = assessmentScoreValue(assessmentDraftScores[field.key]);
     const options = Array.from({ length: 11 }, (_, value) =>
       `<button type="button" class="${selected === value ? "selected" : ""}" data-assessment-score-key="${field.key}" data-assessment-score-value="${value}" aria-pressed="${selected === value}">${value}</button>`
     ).join("");
-    return `<div class="assessment-scale"><div class="assessment-scale-head"><div><strong>${escapeHtml(field.label)}</strong><small>${escapeHtml(field.low)} → ${escapeHtml(field.high)}</small></div><span>${selected === null ? "미기록" : `${selected}점`}</span></div><div class="assessment-scale-options" role="group" aria-label="${escapeHtml(field.label)} 점수">${options}</div><button class="assessment-score-clear" type="button" data-assessment-score-clear="${field.key}" ${selected === null ? "disabled" : ""}>기록 안 함</button></div>`;
+    return `<div class="assessment-scale ${field.required ? "is-required" : ""}"><div class="assessment-scale-head"><div><strong>${escapeHtml(field.label)}${field.required ? ' <span class="required-mark">필수</span>' : ""}</strong><small>${escapeHtml(field.low)} → ${escapeHtml(field.high)}</small></div><span>${selected === null ? "미기록" : `${selected}점`}</span></div><div class="assessment-scale-options" role="group" aria-label="${escapeHtml(field.label)} 점수">${options}</div><button class="assessment-score-clear" type="button" data-assessment-score-clear="${field.key}" ${selected === null ? "disabled" : ""}>기록 안 함</button></div>`;
   }).join("");
 }
 
@@ -1509,16 +1589,21 @@ function openAssessmentEditor(assessment = null) {
   selectedAssessmentId = assessment?.id || "";
   const existing = selectedClientId ? (assessmentCache.get(selectedClientId) || []) : [];
   assessmentDraftScores = { ...emptyAssessmentScores(), ...(assessment?.scores || {}) };
-  document.querySelector("#assessmentEditorTitle").textContent = assessment ? "방문 평가 수정" : "새 방문 평가";
+  assessmentDraftRom = assessment?.rom?.length ? assessment.rom.map((row) => ({ ...row })) : [emptyRomMeasurement()];
+  assessmentDraftMmt = assessment?.mmt?.length ? assessment.mmt.map((row) => ({ ...row })) : [emptyMmtMeasurement()];
+  document.querySelector("#assessmentEditorTitle").textContent = assessment ? "기능 평가 수정" : "새 기능 평가";
   document.querySelector("#assessmentDate").value = assessment?.assessed_on || currentBookingDate();
   document.querySelector("#assessmentVisitKind").value = assessment?.visit_kind || (existing.length ? "follow_up" : "initial");
-  document.querySelector("#assessmentMainConcern").value = assessment?.main_concern || "";
-  document.querySelector("#assessmentNotes").value = assessment?.notes || "";
-  document.querySelector("#assessmentNextPlan").value = assessment?.next_plan || "";
+  document.querySelector("#assessmentSoapSubjective").value = assessment?.soap?.subjective || assessment?.main_concern || "";
+  document.querySelector("#assessmentSoapObjective").value = assessment?.soap?.objective || "";
+  document.querySelector("#assessmentSoapAssessment").value = assessment?.soap?.assessment || assessment?.notes || "";
+  document.querySelector("#assessmentSoapPlan").value = assessment?.soap?.plan || assessment?.next_plan || "";
   document.querySelector("#assessmentConsent").checked = false;
   document.querySelector("#assessmentConsentRow").hidden = Boolean(assessment);
+  document.querySelector("#printAssessmentButton").disabled = !assessment;
   document.querySelector("#assessmentFormMessage").textContent = "";
   renderAssessmentScales();
+  renderAssessmentMeasurementRows();
   const editor = document.querySelector("#assessmentEditor");
   editor.hidden = false;
   requestAnimationFrame(() => editor.scrollIntoView({ block: "start", behavior: preferredScrollBehavior() }));
@@ -1528,8 +1613,28 @@ async function saveAssessment() {
   if (!selectedClientId) return;
   const scores = Object.fromEntries(ASSESSMENT_SCORE_FIELDS.map((field) => [field.key, assessmentScoreValue(assessmentDraftScores[field.key])]));
   const message = document.querySelector("#assessmentFormMessage");
-  if (Object.values(scores).every((value) => value === null)) {
-    message.textContent = "평가 점수를 하나 이상 선택해 주세요.";
+  if (scores.painVas === null) {
+    message.textContent = "통증 정도(VAS)를 선택해 주세요.";
+    return;
+  }
+  const rom = readRomMeasurements();
+  const mmt = readMmtMeasurements();
+  if (!rom.length || rom.some((row) => !row.joint || !row.movement || (row.active === null && row.passive === null))) {
+    message.textContent = "ROM 항목의 관절·부위, 동작, AROM 또는 PROM을 확인해 주세요.";
+    return;
+  }
+  if (!mmt.length || mmt.some((row) => !row.movement || row.grade === null)) {
+    message.textContent = "MMT 항목의 근육·동작과 등급을 확인해 주세요.";
+    return;
+  }
+  const soap = {
+    subjective: document.querySelector("#assessmentSoapSubjective").value.trim(),
+    objective: document.querySelector("#assessmentSoapObjective").value.trim(),
+    assessment: document.querySelector("#assessmentSoapAssessment").value.trim(),
+    plan: document.querySelector("#assessmentSoapPlan").value.trim(),
+  };
+  if (Object.values(soap).some((value) => !value)) {
+    message.textContent = "SOAP의 S·O·A·P 내용을 모두 입력해 주세요.";
     return;
   }
   if (!selectedAssessmentId && !document.querySelector("#assessmentConsent").checked) {
@@ -1556,9 +1661,9 @@ async function saveAssessment() {
         visitKind: document.querySelector("#assessmentVisitKind").value,
         templateKey: "dail_visit_v1",
         scores,
-        mainConcern: document.querySelector("#assessmentMainConcern").value.trim(),
-        notes: document.querySelector("#assessmentNotes").value.trim(),
-        nextPlan: document.querySelector("#assessmentNextPlan").value.trim(),
+        rom,
+        mmt,
+        soap,
         consentConfirmed: document.querySelector("#assessmentConsent").checked,
       }),
     });
@@ -1584,9 +1689,54 @@ async function saveAssessment() {
   assessmentCache.set(requestedClientId, assessments);
   selectedAssessmentId = data.assessment.id;
   renderSelectedClientAssessments();
-  document.querySelector("#assessmentEditorTitle").textContent = "방문 평가 수정";
+  assessmentDraftRom = data.assessment.rom?.map((row) => ({ ...row })) || rom;
+  assessmentDraftMmt = data.assessment.mmt?.map((row) => ({ ...row })) || mmt;
+  document.querySelector("#assessmentEditorTitle").textContent = "기능 평가 수정";
   document.querySelector("#assessmentConsentRow").hidden = true;
-  message.textContent = requestedAssessmentId ? "평가 기록을 수정했습니다." : "새 방문 평가를 저장했습니다.";
+  document.querySelector("#printAssessmentButton").disabled = false;
+  message.textContent = requestedAssessmentId ? "평가 기록을 수정했습니다." : "새 기능 평가를 저장했습니다.";
+}
+
+function printSelectedAssessment() {
+  const assessment = (assessmentCache.get(selectedClientId) || []).find((item) => item.id === selectedAssessmentId);
+  const client = currentClients.find((item) => item.id === selectedClientId);
+  const center = currentOverviewData?.center;
+  if (!assessment || !client || !center) {
+    document.querySelector("#assessmentFormMessage").textContent = "저장된 평가와 고객 정보를 확인한 뒤 다시 시도해 주세요.";
+    return;
+  }
+  const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const storageKey = `dail_assessment_print:${token}`;
+  const payload = {
+    version: "dail_function_soap_v1",
+    generatedAt: new Date().toISOString(),
+    center: {
+      name: center.name || "DAIL 등록 센터",
+      address: center.address || "",
+      phone: center.phone || "",
+      manager: center.therapist || "",
+    },
+    client: {
+      name: client.full_name || "",
+      phone: formatPhone(client.phone),
+      primaryConcern: client.primary_concern || "",
+      goal: client.goal || "",
+    },
+    assessment,
+  };
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch {
+    document.querySelector("#assessmentFormMessage").textContent = "인쇄용 평가 정보를 준비하지 못했습니다.";
+    return;
+  }
+  const reportWindow = window.open(`/center-dashboard/assessment-report.html?print=${encodeURIComponent(token)}`, "_blank");
+  if (!reportWindow) {
+    sessionStorage.removeItem(storageKey);
+    document.querySelector("#assessmentFormMessage").textContent = "팝업이 차단되었습니다. Safari 주소창의 팝업 허용 후 다시 눌러 주세요.";
+    return;
+  }
+  window.setTimeout(() => sessionStorage.removeItem(storageKey), 30_000);
 }
 
 async function openClientAssessment(clientId, { startNew = false, assessmentId = "" } = {}) {
@@ -1816,7 +1966,42 @@ document.querySelector("#assessmentScoreScales").addEventListener("click", (even
     renderAssessmentScales();
   }
 });
+document.querySelector("#addRomRowButton").addEventListener("click", () => {
+  assessmentDraftRom = readRomMeasurements();
+  if (assessmentDraftRom.length >= 12) {
+    document.querySelector("#assessmentFormMessage").textContent = "ROM은 최대 12개까지 기록할 수 있습니다.";
+    return;
+  }
+  assessmentDraftRom.push(emptyRomMeasurement());
+  renderAssessmentMeasurementRows();
+});
+document.querySelector("#assessmentRomRows").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-rom]");
+  if (!button) return;
+  assessmentDraftRom = readRomMeasurements();
+  assessmentDraftRom.splice(Number(button.dataset.removeRom), 1);
+  if (!assessmentDraftRom.length) assessmentDraftRom.push(emptyRomMeasurement());
+  renderAssessmentMeasurementRows();
+});
+document.querySelector("#addMmtRowButton").addEventListener("click", () => {
+  assessmentDraftMmt = readMmtMeasurements();
+  if (assessmentDraftMmt.length >= 12) {
+    document.querySelector("#assessmentFormMessage").textContent = "MMT는 최대 12개까지 기록할 수 있습니다.";
+    return;
+  }
+  assessmentDraftMmt.push(emptyMmtMeasurement());
+  renderAssessmentMeasurementRows();
+});
+document.querySelector("#assessmentMmtRows").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-mmt]");
+  if (!button) return;
+  assessmentDraftMmt = readMmtMeasurements();
+  assessmentDraftMmt.splice(Number(button.dataset.removeMmt), 1);
+  if (!assessmentDraftMmt.length) assessmentDraftMmt.push(emptyMmtMeasurement());
+  renderAssessmentMeasurementRows();
+});
 document.querySelector("#saveAssessmentButton").addEventListener("click", saveAssessment);
+document.querySelector("#printAssessmentButton").addEventListener("click", printSelectedAssessment);
 document.querySelector("#clientAssessmentHistory").addEventListener("click", (event) => {
   const record = event.target.closest("[data-assessment-open]");
   if (!record) return;

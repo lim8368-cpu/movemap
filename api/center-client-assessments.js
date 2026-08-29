@@ -30,6 +30,9 @@ const SCORE_FIELDS = {
   balanceConfidence: "균형 자신감",
 };
 
+const ASSESSMENT_SIDES = new Set(["left", "right", "bilateral", "not_applicable"]);
+const MAX_MEASUREMENT_ROWS = 12;
+
 function bodyValue(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") {
@@ -79,6 +82,96 @@ function scoreValue(value, label) {
   return score;
 }
 
+function requiredText(value, maxLength, label) {
+  const cleaned = cleanText(value, maxLength, label);
+  if (!cleaned) {
+    throw Object.assign(new Error(`${label}을(를) 입력해 주세요.`), { statusCode: 400 });
+  }
+  return cleaned;
+}
+
+function sideValue(value, label) {
+  const side = String(value || "not_applicable");
+  if (!ASSESSMENT_SIDES.has(side)) {
+    throw Object.assign(new Error(`${label}의 좌우 구분을 확인해 주세요.`), { statusCode: 400 });
+  }
+  return side;
+}
+
+function degreeValue(value, label) {
+  if (value === "" || value === null || value === undefined) return null;
+  const degree = Number(value);
+  if (!Number.isInteger(degree) || degree < -90 || degree > 360) {
+    throw Object.assign(new Error(`${label}은(는) -90도에서 360도 사이의 정수로 입력해 주세요.`), { statusCode: 400 });
+  }
+  return degree;
+}
+
+function normalizedRom(value) {
+  if (!Array.isArray(value)) {
+    throw Object.assign(new Error("ROM 측정값을 입력해 주세요."), { statusCode: 400 });
+  }
+  if (value.length > MAX_MEASUREMENT_ROWS) {
+    throw Object.assign(new Error(`ROM은 최대 ${MAX_MEASUREMENT_ROWS}개까지 기록할 수 있습니다.`), { statusCode: 400 });
+  }
+  const rows = value.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw Object.assign(new Error(`ROM ${index + 1}번 항목을 확인해 주세요.`), { statusCode: 400 });
+    }
+    const joint = requiredText(item.joint, 60, `ROM ${index + 1}번 관절·부위`);
+    const movement = requiredText(item.movement, 60, `ROM ${index + 1}번 동작`);
+    const active = degreeValue(item.active, `ROM ${index + 1}번 AROM`);
+    const passive = degreeValue(item.passive, `ROM ${index + 1}번 PROM`);
+    if (active === null && passive === null) {
+      throw Object.assign(new Error(`ROM ${index + 1}번 항목의 AROM 또는 PROM을 입력해 주세요.`), { statusCode: 400 });
+    }
+    return {
+      joint,
+      movement,
+      side: sideValue(item.side, `ROM ${index + 1}번 항목`),
+      active,
+      passive,
+      reference: cleanText(item.reference, 40, `ROM ${index + 1}번 참고 범위`),
+      note: cleanText(item.note, 160, `ROM ${index + 1}번 비고`),
+    };
+  });
+  if (!rows.length) {
+    throw Object.assign(new Error("ROM 측정값을 하나 이상 입력해 주세요."), { statusCode: 400 });
+  }
+  return rows;
+}
+
+function normalizedMmt(value) {
+  if (!Array.isArray(value)) {
+    throw Object.assign(new Error("MMT 측정값을 입력해 주세요."), { statusCode: 400 });
+  }
+  if (value.length > MAX_MEASUREMENT_ROWS) {
+    throw Object.assign(new Error(`MMT는 최대 ${MAX_MEASUREMENT_ROWS}개까지 기록할 수 있습니다.`), { statusCode: 400 });
+  }
+  const rows = value.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw Object.assign(new Error(`MMT ${index + 1}번 항목을 확인해 주세요.`), { statusCode: 400 });
+    }
+    if (item.grade === "" || item.grade === null || item.grade === undefined) {
+      throw Object.assign(new Error(`MMT ${index + 1}번 등급을 입력해 주세요.`), { statusCode: 400 });
+    }
+    const grade = Number(item.grade);
+    if (!Number.isInteger(grade) || grade < 0 || grade > 5) {
+      throw Object.assign(new Error(`MMT ${index + 1}번 등급은 0에서 5 사이의 정수로 입력해 주세요.`), { statusCode: 400 });
+    }
+    return {
+      movement: requiredText(item.movement, 80, `MMT ${index + 1}번 근육·동작`),
+      side: sideValue(item.side, `MMT ${index + 1}번 항목`),
+      grade,
+      note: cleanText(item.note, 160, `MMT ${index + 1}번 비고`),
+    };
+  });
+  if (!rows.length) {
+    throw Object.assign(new Error("MMT 측정값을 하나 이상 입력해 주세요."), { statusCode: 400 });
+  }
+  return rows;
+}
+
 function normalizedInput(body) {
   const assessedOn = String(body.assessedOn || "");
   if (!validAssessmentDate(assessedOn)) {
@@ -97,13 +190,25 @@ function normalizedInput(body) {
     key,
     scoreValue(sourceScores[key], label),
   ]));
-  if (Object.values(scores).every((value) => value === null)) {
-    throw Object.assign(new Error("평가 점수를 하나 이상 입력해 주세요."), { statusCode: 400 });
+  if (scores.painVas === null) {
+    throw Object.assign(new Error("통증 정도(VAS)를 입력해 주세요."), { statusCode: 400 });
   }
+  const sourceSoap = body.soap && typeof body.soap === "object" && !Array.isArray(body.soap) ? body.soap : {};
+  const soap = {
+    subjective: requiredText(sourceSoap.subjective ?? body.mainConcern, 1600, "SOAP 주관적 정보(S)"),
+    objective: requiredText(sourceSoap.objective ?? body.notes, 2000, "SOAP 객관적 정보(O)"),
+    assessment: requiredText(sourceSoap.assessment ?? body.notes, 2000, "SOAP 평가(A)"),
+    plan: requiredText(sourceSoap.plan ?? body.nextPlan, 1600, "SOAP 계획(P)"),
+  };
+  const rom = normalizedRom(body.rom);
+  const mmt = normalizedMmt(body.mmt);
   const narrative = {
-    mainConcern: cleanText(body.mainConcern, 300, "주요 변화"),
-    notes: cleanText(body.notes, 1200, "평가 메모"),
-    nextPlan: cleanText(body.nextPlan, 600, "다음 방문 계획"),
+    mainConcern: soap.subjective,
+    notes: soap.assessment,
+    nextPlan: soap.plan,
+    soap,
+    rom,
+    mmt,
   };
   return { assessedOn, visitKind, templateKey, scores, narrative };
 }
@@ -128,6 +233,15 @@ function decryptRow(row) {
   const context = (field) => ({ centerId: row.center_id, clientId: row.id, field });
   const scores = parseEncryptedJson(row.scores_encrypted, context("assessment_scores"));
   const narrative = parseEncryptedJson(row.narrative_encrypted, context("assessment_narrative"));
+  const sourceSoap = narrative.soap && typeof narrative.soap === "object" && !Array.isArray(narrative.soap)
+    ? narrative.soap
+    : {};
+  const soap = {
+    subjective: sourceSoap.subjective || narrative.mainConcern || "",
+    objective: sourceSoap.objective || narrative.notes || "",
+    assessment: sourceSoap.assessment || narrative.notes || "",
+    plan: sourceSoap.plan || narrative.nextPlan || "",
+  };
   return {
     id: row.id,
     client_id: row.client_id,
@@ -135,9 +249,12 @@ function decryptRow(row) {
     visit_kind: row.visit_kind,
     template_key: row.template_key,
     scores,
-    main_concern: narrative.mainConcern || "",
-    notes: narrative.notes || "",
-    next_plan: narrative.nextPlan || "",
+    rom: Array.isArray(narrative.rom) ? narrative.rom : [],
+    mmt: Array.isArray(narrative.mmt) ? narrative.mmt : [],
+    soap,
+    main_concern: soap.subjective,
+    notes: soap.assessment,
+    next_plan: soap.plan,
     sensitive_data_consent_at: row.sensitive_data_consent_at,
     created_at: row.created_at,
     updated_at: row.updated_at,

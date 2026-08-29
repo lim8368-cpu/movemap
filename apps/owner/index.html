@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260829-owner-assessments1" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260829-owner-soap1" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="/assets/dail-design-system.css?v=20260829-hallmark5" />
 </head>
@@ -157,13 +157,15 @@
                 <div class="assessment-panel-head"><div><strong>방문별 평가 기록</strong><small>평가할 때마다 새 기록으로 저장되어 이전 점수와 함께 남습니다.</small></div><button id="newAssessmentButton" class="primary-button icon-label" type="button"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#plus"></use></svg>새 평가</button></div>
                 <div id="clientAssessmentHistory" class="assessment-history"><p class="empty">평가 기록을 불러오는 중입니다.</p></div>
                 <div id="assessmentEditor" class="assessment-editor" hidden>
-                  <div class="assessment-editor-title"><div><small>DAIL VISIT ASSESSMENT V1</small><strong id="assessmentEditorTitle">새 방문 평가</strong></div><button id="cancelAssessmentButton" type="button">닫기</button></div>
+                  <div class="assessment-editor-title"><div><small>DAIL FUNCTION ASSESSMENT · SOAP V1</small><strong id="assessmentEditorTitle">새 기능 평가</strong></div><button id="cancelAssessmentButton" type="button">닫기</button></div>
                   <div class="assessment-meta-grid"><label>평가 날짜<input id="assessmentDate" type="date" /></label><label>방문 구분<select id="assessmentVisitKind"><option value="initial">첫 방문</option><option value="follow_up" selected>재방문</option><option value="discharge">마지막 방문</option></select></label></div>
-                  <div id="assessmentScoreScales" class="assessment-score-scales"></div>
-                  <div class="assessment-narrative-grid"><label>오늘 확인한 주요 변화<textarea id="assessmentMainConcern" rows="2" maxlength="300" placeholder="이전 방문과 비교해 달라진 점을 기록하세요."></textarea></label><label>평가 메모<textarea id="assessmentNotes" rows="3" maxlength="1200" placeholder="측정 상황과 관찰 내용을 간단히 기록하세요."></textarea></label><label>다음 방문 계획<textarea id="assessmentNextPlan" rows="2" maxlength="600" placeholder="다음 방문에서 다시 확인할 내용을 기록하세요."></textarea></label></div>
+                  <section class="assessment-form-section"><div class="assessment-form-section-head"><div><span>01</span><strong>통증과 기능 지표</strong><small>VAS는 필수이며, 나머지는 비교에 필요한 항목만 기록합니다.</small></div></div><div id="assessmentScoreScales" class="assessment-score-scales"></div></section>
+                  <section class="assessment-form-section"><div class="assessment-form-section-head"><div><span>02</span><strong>관절가동범위 · ROM</strong><small>측정한 관절과 동작별 AROM·PROM을 기록합니다.</small></div><button id="addRomRowButton" type="button">ROM 항목 추가</button></div><div class="assessment-table-scroll"><div class="assessment-measurement-table rom-table"><div class="measurement-row measurement-head" aria-hidden="true"><span>관절·부위</span><span>동작</span><span>좌우</span><span>AROM</span><span>PROM</span><span>참고</span><span>비고</span><span></span></div><div id="assessmentRomRows"></div></div></div></section>
+                  <section class="assessment-form-section"><div class="assessment-form-section-head"><div><span>03</span><strong>도수근력검사 · MMT</strong><small>근육 또는 기능 동작별 등급을 0–5로 기록합니다.</small></div><button id="addMmtRowButton" type="button">MMT 항목 추가</button></div><div class="assessment-table-scroll"><div class="assessment-measurement-table mmt-table"><div class="measurement-row measurement-head" aria-hidden="true"><span>근육·동작</span><span>좌우</span><span>등급</span><span>비고</span><span></span></div><div id="assessmentMmtRows"></div></div></div></section>
+                  <section class="assessment-form-section soap-section"><div class="assessment-form-section-head"><div><span>04</span><strong>SOAP 기록</strong><small>이용자가 말한 내용, 객관적 관찰, 평가, 다음 계획을 구분합니다.</small></div></div><div class="assessment-soap-grid"><label><b><i>S</i> 주관적 정보</b><small>이용자가 표현한 불편과 변화</small><textarea id="assessmentSoapSubjective" rows="3" maxlength="1600" placeholder="예: 계단을 내려갈 때 오른쪽 무릎 앞쪽 불편이 6/10 정도라고 표현함."></textarea></label><label><b><i>O</i> 객관적 정보</b><small>관찰·측정 환경과 수행 양상</small><textarea id="assessmentSoapObjective" rows="3" maxlength="2000" placeholder="예: 보행 시 우측 지지 시간이 짧고, ROM·MMT는 위 측정값과 같음."></textarea></label><label><b><i>A</i> 평가</b><small>측정 결과를 바탕으로 정리한 기능적 해석</small><textarea id="assessmentSoapAssessment" rows="3" maxlength="2000" placeholder="예: 무릎 굴곡 범위와 폄 근력 저하가 계단 동작에 영향을 주는 것으로 관찰됨."></textarea></label><label><b><i>P</i> 계획</b><small>운동 방향과 다음 방문 확인 항목</small><textarea id="assessmentSoapPlan" rows="3" maxlength="1600" placeholder="예: 무릎 폄 근력과 계단 조절 운동을 진행하고 다음 방문에 VAS·ROM을 재평가함."></textarea></label></div></section>
                   <label id="assessmentConsentRow" class="client-consent"><input id="assessmentConsent" type="checkbox" /><span><b>민감정보 기록 동의를 확인했습니다.</b><small>점수와 서술형 평가 내용이 센터 관리 목적으로 암호화 저장된다는 점을 이용자에게 안내해 주세요.</small></span></label>
                   <p id="assessmentFormMessage" class="client-form-message" aria-live="polite"></p>
-                  <div class="assessment-form-actions"><button id="saveAssessmentButton" class="primary-button" type="button">평가 기록 저장</button></div>
+                  <div class="assessment-form-actions"><button id="printAssessmentButton" class="secondary-button" type="button" disabled>PDF·인쇄</button><button id="saveAssessmentButton" class="primary-button" type="button">평가 기록 저장</button></div>
                 </div>
               </section>
             </form>
@@ -175,7 +177,7 @@
       <section id="assessmentsSection" class="workspace assessments-workspace dashboard-view" data-dashboard-panel="assessments" hidden>
         <div class="section-heading workspace-heading"><div><h2>이용자 평가</h2><p>한 사람의 방문 기록을 시간순으로 쌓아 변화 흐름을 확인합니다.</p></div><span class="period">방문별 반복 기록</span></div>
         <div class="assessment-tools-grid">
-          <article class="assessment-tool-card is-active"><span>사용 가능</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></div><h3>DAIL 방문 평가 v1</h3><p>통증 정도(VAS), 일상 기능, 움직임 자신감, 균형 자신감을 0–10점으로 기록합니다.</p><div><i>VAS</i><i>일상 기능</i><i>움직임</i><i>균형</i></div></article>
+          <article class="assessment-tool-card is-active"><span>사용 가능</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></div><h3>DAIL 기능평가 · SOAP v1</h3><p>VAS·ROM·MMT와 SOAP 기록을 방문마다 저장하고, 이용자 설명용 평가지로 바로 인쇄합니다.</p><div><i>VAS</i><i>ROM</i><i>MMT</i><i>SOAP</i><i>PDF·인쇄</i></div></article>
           <article class="assessment-tool-card is-planned" aria-disabled="true"><span>양식 준비 중</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></div><h3>표준 균형 평가</h3><p>Balance Scale의 적용 범위와 양식을 확정한 뒤 버전이 표시되도록 추가할 예정입니다.</p><div><i>버전 관리</i><i>점수 추이</i></div></article>
         </div>
         <section class="assessment-client-workspace">
@@ -220,6 +222,6 @@
       </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260829-owner-assessments2"></script>
+  <script src="/center-dashboard/app.js?v=20260829-owner-soap1"></script>
 </body>
 </html>

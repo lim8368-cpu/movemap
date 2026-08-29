@@ -128,23 +128,42 @@ async function call(req) {
   }));
   assert.equal(badScore.statusCode, 400);
 
+  const missingMeasurements = await call(request({
+    method: "POST",
+    body: {
+      assessedOn: "2026-08-28",
+      scores: { painVas: 5 },
+      soap: { subjective: "허리 불편", objective: "보행 관찰", assessment: "기능 제한", plan: "재평가" },
+      consentConfirmed: true,
+    },
+  }));
+  assert.equal(missingMeasurements.statusCode, 400);
+
   const created = await call(request({
     method: "POST",
     body: {
       assessedOn: "2026-08-28",
       visitKind: "follow_up",
       scores: { painVas: 6, dailyFunction: 4, movementConfidence: 3, balanceConfidence: null },
-      mainConcern: "계단에서 통증 증가",
-      notes: "VAS 재평가",
-      nextPlan: "다음 방문에 균형 항목 추가",
+      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 115, passive: 125, reference: "135", note: "말기 범위 불편" }],
+      mmt: [{ movement: "무릎 폄", side: "right", grade: 4, note: "저항 시 흔들림" }],
+      soap: {
+        subjective: "계단에서 통증 증가",
+        objective: "우측 무릎 굴곡 범위 감소",
+        assessment: "VAS 재평가",
+        plan: "다음 방문에 균형 항목 추가",
+      },
       consentConfirmed: true,
     },
   }));
   assert.equal(created.statusCode, 201);
   assert.equal(created.body.assessment.scores.painVas, 6);
   assert.equal(created.body.assessment.main_concern, "계단에서 통증 증가");
+  assert.equal(created.body.assessment.rom[0].active, 115);
+  assert.equal(created.body.assessment.mmt[0].grade, 4);
+  assert.equal(created.body.assessment.soap.objective, "우측 무릎 굴곡 범위 감소");
   const storedText = JSON.stringify(assessments[0]);
-  for (const plaintext of ["계단에서 통증 증가", "VAS 재평가", "다음 방문에 균형 항목 추가"]) {
+  for (const plaintext of ["계단에서 통증 증가", "우측 무릎 굴곡 범위 감소", "VAS 재평가", "다음 방문에 균형 항목 추가", "무릎 폄"]) {
     assert.equal(storedText.includes(plaintext), false);
   }
 
@@ -160,9 +179,14 @@ async function call(req) {
       assessedOn: "2026-08-28",
       visitKind: "discharge",
       scores: { painVas: 2, dailyFunction: 8 },
-      mainConcern: "일상 활동 개선",
-      notes: "",
-      nextPlan: "자율 관리",
+      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 130, passive: 135, reference: "135", note: "" }],
+      mmt: [{ movement: "무릎 폄", side: "right", grade: 5, note: "" }],
+      soap: {
+        subjective: "일상 활동 개선",
+        objective: "계단 오르기 독립 수행",
+        assessment: "목표 범위에 도달",
+        plan: "자율 관리",
+      },
     },
   }));
   assert.equal(updated.statusCode, 200);
