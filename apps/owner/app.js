@@ -1386,6 +1386,7 @@ function assessmentVisitLabel(value) {
 }
 
 function assessmentScoreValue(value) {
+  if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= 10 ? number : null;
 }
