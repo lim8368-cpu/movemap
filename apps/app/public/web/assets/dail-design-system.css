@@ -1,0 +1,603 @@
+/*
+ Hallmark · genre: modern-minimal
+ Macrostructure: asymmetric editorial marketing + compact workbench dashboards
+ Design system: /design.md
+ Designed as an app, not a document.
+ Pre-emit critique: one semantic palette, one header model, no nested-card or decorative-orb patterns.
+*/
+
+:root {
+  --dail-paper: #f3f6f5;
+  --dail-paper-raised: #f8faf9;
+  --dail-surface: #fcfdfc;
+  --dail-surface-soft: #eaf1ef;
+  --dail-ink: #14222b;
+  --dail-ink-secondary: #42545b;
+  --dail-ink-muted: #5b6a69;
+  --dail-rule: #d9e3e0;
+  --dail-navy: #0f1c2e;
+  --dail-navy-raised: #182c3d;
+  --dail-teal: #158187;
+  --dail-teal-strong: #106165;
+  --dail-teal-soft: #dcebea;
+  --dail-success: #4f8a68;
+  --dail-warning: #b98539;
+  --dail-error: #b85f58;
+  --dail-focus: #2f8f92;
+  --dail-on-dark: #eef4f2;
+  --dail-on-dark-muted: #b8c8c7;
+
+  --dail-space-1: 4px;
+  --dail-space-2: 8px;
+  --dail-space-3: 12px;
+  --dail-space-4: 16px;
+  --dail-space-5: 24px;
+  --dail-space-6: 32px;
+  --dail-space-7: 48px;
+  --dail-space-8: 72px;
+  --dail-section-tight: 88px;
+  --dail-section-regular: 112px;
+  --dail-section-generous: 136px;
+
+  --dail-radius-control: 9px;
+  --dail-radius-card: 14px;
+  --dail-radius-dialog: 16px;
+  --dail-shadow-raised: 0 14px 40px rgba(15, 28, 46, 0.07);
+
+  --dail-z-sticky: 30;
+  --dail-z-nav: 100;
+  --dail-z-popover: 200;
+  --dail-z-modal: 300;
+  --dail-ease: cubic-bezier(.22, 1, .36, 1);
+
+  /* Compatibility aliases used by the existing functional layer. */
+  --navy: var(--dail-navy);
+  --ink: var(--dail-ink);
+  --teal: var(--dail-teal);
+  --teal-dark: var(--dail-teal-strong);
+  --accent: var(--dail-teal);
+  --mint: var(--dail-teal-soft);
+  --muted: var(--dail-ink-muted);
+  --line: var(--dail-rule);
+  --white: var(--dail-surface);
+  --bg: var(--dail-paper);
+  --paper: var(--dail-paper);
+  --red: var(--dail-error);
+  --amber: var(--dail-warning);
+}
+
+html {
+  background: var(--dail-paper);
+  color: var(--dail-ink);
+  scroll-padding-top: 88px;
+}
+
+body {
+  background: var(--dail-paper);
+  color: var(--dail-ink);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--dail-focus) 30%, transparent);
+  outline-offset: 2px;
+}
+
+/* Shared navigation: contained, edge-aligned, and brand-led. */
+.site-header {
+  width: min(1180px, calc(100% - 32px));
+  height: 64px;
+  margin: 12px auto 0;
+  padding: 0 var(--dail-space-3) 0 var(--dail-space-4);
+  top: 12px;
+  z-index: var(--dail-z-nav);
+  gap: var(--dail-space-4);
+  border: 1px solid color-mix(in srgb, var(--dail-rule) 88%, transparent);
+  border-radius: var(--dail-radius-dialog);
+  background: color-mix(in srgb, var(--dail-paper-raised) 94%, transparent);
+  box-shadow: 0 8px 28px rgba(15, 28, 46, .06);
+}
+
+.site-header .main-nav {
+  margin-left: auto;
+  margin-right: 0;
+  justify-content: flex-end;
+  color: var(--dail-ink-secondary);
+}
+
+.site-header .main-nav > a,
+.site-header .nav-dropdown > a {
+  border-radius: var(--dail-radius-control);
+}
+
+.site-header .main-nav > a:hover,
+.site-header .main-nav > a:focus-visible,
+.site-header .nav-dropdown > a:hover,
+.site-header .nav-dropdown > a:focus-visible {
+  background: var(--dail-surface-soft);
+  color: var(--dail-navy);
+}
+
+.site-header .main-nav > a.is-current,
+.site-header .nav-dropdown > a.is-current,
+.site-header .main-nav > a.is-active {
+  background: var(--dail-navy);
+  color: var(--dail-paper-raised);
+  box-shadow: none;
+}
+
+.site-header .nav-submenu {
+  z-index: var(--dail-z-popover);
+  border-color: var(--dail-rule);
+  border-radius: var(--dail-radius-card);
+  background: var(--dail-paper-raised);
+  box-shadow: var(--dail-shadow-raised);
+}
+
+.site-header .button.primary.small,
+.site-header .header-find-link {
+  border-color: var(--dail-teal);
+  border-radius: var(--dail-radius-control);
+  background: var(--dail-teal);
+  color: var(--dail-paper-raised);
+}
+
+.site-header .button.primary.small:hover,
+.site-header .header-find-link:hover {
+  border-color: var(--dail-teal-strong);
+  background: var(--dail-teal-strong);
+}
+
+@media (min-width: 901px) {
+  .site-header.is-scrolled {
+    height: 58px;
+    top: 8px;
+    border-color: color-mix(in srgb, var(--dail-rule) 80%, transparent);
+    background: color-mix(in srgb, var(--dail-paper-raised) 90%, transparent);
+    box-shadow: 0 10px 32px rgba(15, 28, 46, .08);
+  }
+
+  .site-header.is-scrolled .main-nav {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+@media (max-width: 900px) {
+  html { scroll-padding-top: 78px; }
+
+  .site-header {
+    width: calc(100% - 20px);
+    height: 60px;
+    margin-top: 8px;
+    padding: 0 var(--dail-space-3);
+    top: 8px;
+    gap: var(--dail-space-2);
+  }
+
+  .site-header .main-nav {
+    left: 0;
+    right: 0;
+    top: calc(100% + 8px);
+    border-radius: var(--dail-radius-card);
+    background: var(--dail-paper-raised);
+    box-shadow: var(--dail-shadow-raised);
+  }
+
+  .site-header .main-nav > a,
+  .site-header .nav-dropdown > a {
+    border-radius: var(--dail-radius-control);
+  }
+}
+
+/* Public home: restore DAIL color leadership without visual noise. */
+body:not(.brand-story-page):not(.collaboration-page) .hero {
+  background: var(--dail-navy);
+  color: var(--dail-paper-raised);
+}
+
+body:not(.brand-story-page):not(.collaboration-page) .hero-description,
+body:not(.brand-story-page):not(.collaboration-page) .hero-copy > p,
+body:not(.brand-story-page):not(.collaboration-page) .proof > div > p:not(.kicker),
+body:not(.brand-story-page):not(.collaboration-page) .proof li {
+  color: var(--dail-on-dark-muted);
+}
+
+body:not(.brand-story-page):not(.collaboration-page) .hero-search-copy small {
+  color: var(--dail-ink-secondary);
+}
+
+body:not(.brand-story-page):not(.collaboration-page) .hero h1 em,
+body:not(.brand-story-page):not(.collaboration-page) .hero h1 strong,
+body:not(.brand-story-page):not(.collaboration-page) .proof h2 em {
+  color: color-mix(in srgb, var(--dail-teal) 70%, var(--dail-paper-raised));
+}
+
+body:not(.brand-story-page):not(.collaboration-page) .hero h1 span {
+  color: var(--dail-paper-raised);
+}
+
+.button.primary,
+.search-button,
+.hero-search-submit,
+.booking-submit {
+  border-color: var(--dail-teal);
+  background: var(--dail-teal);
+  color: var(--dail-paper-raised);
+}
+
+.button.primary:hover,
+.search-button:hover,
+.hero-search-submit:hover,
+.booking-submit:hover:not(:disabled) {
+  background: var(--dail-teal-strong);
+}
+
+.center-card,
+.map-shell,
+.detail-panel,
+.route-panel,
+.auth-modal {
+  border-color: var(--dail-rule);
+  background: var(--dail-surface);
+}
+
+/* App promo: flat product preview, not simulated iOS hardware. */
+.app-promo {
+  background: var(--dail-navy);
+}
+
+.app-promo-copy h2 {
+  color: var(--dail-on-dark);
+}
+
+.app-promo-copy > p:not(.kicker):not(.app-download-message) {
+  color: var(--dail-on-dark-muted);
+}
+
+.app-interface-preview {
+  width: min(390px, 100%);
+  margin: 0 auto;
+  position: relative;
+  flex: 0 1 390px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 246, 245, .22);
+  border-radius: var(--dail-radius-dialog);
+  background: var(--dail-paper-raised);
+  box-shadow: 0 24px 64px rgba(5, 13, 23, .24);
+}
+
+.app-interface-preview .phone-app-home {
+  min-height: 470px;
+  padding: 52px 28px 112px;
+  background: linear-gradient(180deg, var(--dail-paper-raised), var(--dail-paper));
+}
+
+.app-interface-preview .phone-tab-bar {
+  border-top: 1px solid var(--dail-rule);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--dail-paper-raised) 94%, transparent);
+}
+
+/* Partner application: one surface, no orb, no italic display type. */
+.partner-apply-page {
+  --partner-paper: var(--dail-paper);
+  --partner-black: var(--dail-navy);
+  --partner-navy: var(--dail-navy);
+  --partner-teal: var(--dail-teal);
+  --partner-teal-dark: var(--dail-teal-strong);
+  --partner-accent: color-mix(in srgb, var(--dail-teal) 70%, var(--dail-paper-raised));
+  background: var(--dail-paper);
+}
+
+.partner-hero {
+  background: var(--dail-navy);
+}
+
+.partner-hero::before {
+  display: none;
+}
+
+.partner-hero h1,
+.partner-hero h1 strong {
+  color: var(--dail-paper-raised);
+  font-style: normal;
+}
+
+.partner-hero-copy > p,
+.collaboration-hero-grid > p {
+  color: var(--dail-on-dark-muted);
+}
+
+.partner-hero .collaboration-eyebrow,
+.collaboration-hero .collaboration-eyebrow {
+  color: color-mix(in srgb, var(--dail-teal) 62%, var(--dail-on-dark));
+}
+
+.partner-form-card {
+  border-color: var(--dail-rule);
+  border-radius: var(--dail-radius-dialog);
+  background: var(--dail-surface);
+  box-shadow: var(--dail-shadow-raised);
+}
+
+.partner-auth-gate {
+  margin: 0 42px;
+  padding: 34px 0 40px;
+  justify-items: start;
+  border: 0;
+  border-bottom: 1px solid var(--dail-rule);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.partner-auth-gate > span {
+  max-width: 590px;
+  color: var(--dail-ink-secondary);
+}
+
+.partner-guide h2,
+.partner-section-heading h3,
+.partner-auth-gate h3,
+.partner-form-card .form-heading h2 {
+  color: var(--dail-ink);
+}
+
+.partner-steps span,
+.partner-principle p,
+.partner-section-heading p,
+.partner-form-card .form-heading p,
+.partner-address-field > p,
+.partner-auth-gate > small {
+  color: var(--dail-ink-muted);
+}
+
+.partner-steps strong,
+.partner-principle span,
+.partner-address-field > label,
+.partner-form-card .form-field > span:first-child {
+  color: var(--dail-ink-secondary);
+}
+
+.partner-auth-symbol,
+.partner-selected-address > i {
+  background: var(--dail-teal);
+}
+
+.partner-social-buttons {
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.partner-social {
+  min-width: 0;
+}
+
+.partner-form-card .form-field input,
+.partner-form-card .form-field select,
+.partner-form-card .form-field textarea,
+.partner-address-search > span,
+.partner-address-detail input {
+  border-color: var(--dail-rule);
+  background: var(--dail-paper-raised);
+  color: var(--dail-ink);
+}
+
+.partner-address-search button,
+.partner-form-card .form-submit button {
+  background: var(--dail-teal);
+}
+
+.partner-address-search button:hover,
+.partner-form-card .form-submit button:not(:disabled):hover,
+.partner-form-card .form-submit button:not(:disabled):focus-visible {
+  background: var(--dail-teal-strong);
+}
+
+/* Brand story: varied editorial rhythm and one chapter marker only. */
+.brand-story-page {
+  --brand-black: var(--dail-navy);
+  --brand-paper: var(--dail-paper);
+  --brand-warm: var(--dail-paper-raised);
+  --brand-teal: var(--dail-teal);
+  --brand-teal-dark: var(--dail-teal-strong);
+  background: var(--dail-paper);
+  color: var(--dail-ink);
+}
+
+.brand-story-page .brand-manifesto { padding-top: var(--dail-section-generous); padding-bottom: var(--dail-section-regular); }
+.brand-story-page .brand-meaning { padding-top: var(--dail-section-tight); padding-bottom: var(--dail-section-regular); }
+.brand-story-page .brand-role { padding-top: var(--dail-section-generous); padding-bottom: var(--dail-section-generous); }
+.brand-story-page .brand-daily-life { padding-top: var(--dail-section-regular); padding-bottom: var(--dail-section-tight); }
+.brand-story-page .brand-journey { padding-top: var(--dail-section-generous); padding-bottom: var(--dail-section-generous); }
+.brand-story-page .brand-symbol { padding-top: var(--dail-section-regular); padding-bottom: var(--dail-section-generous); }
+.brand-story-page .brand-colors { padding-top: var(--dail-section-tight); padding-bottom: var(--dail-section-regular); }
+.brand-story-page .brand-standard { padding-top: var(--dail-section-generous); padding-bottom: var(--dail-section-regular); }
+
+/* Workbench data clarity. */
+.overview-kpi strong,
+.discovery-metrics strong,
+.summary-grid strong,
+.system-metrics strong,
+.booking-calendar,
+.booking-week-label,
+.booking-date-picker,
+.calendar-day,
+.log-table-wrap,
+.directory-list,
+.period,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-overlay,
+.client-modal {
+  z-index: var(--dail-z-modal);
+}
+
+.booking-date-popover,
+.section-nav {
+  z-index: var(--dail-z-popover);
+}
+
+.toast {
+  z-index: var(--dail-z-modal);
+}
+
+/* Owner and admin share the operational palette but keep their functional layout. */
+body:has(#dashboard .dashboard-shell),
+body:has(#dashboard) {
+  background: var(--dail-paper);
+  color: var(--dail-ink);
+}
+
+body:has(#dashboard) :where(.login-copy > p:not(.eyebrow), .login-card > p, .support),
+body:has(#dashboard .dashboard-shell) :where(.section-heading p, .workspace-heading p, .privacy-notice, .overview-intro > div > p) {
+  color: var(--dail-ink-muted);
+}
+
+body:has(#dashboard) :where(.login-copy li, label),
+body:has(#dashboard .dashboard-shell) :where(.client-list-copy small, .booking-list-heading span) {
+  color: var(--dail-ink-secondary);
+}
+
+body:has(#dashboard) :where(.summary-grid p, .compact-event small, .application-summary > p, .center-identity small, .center-account small, .center-performance small, .center-recent small, th),
+body:has(#dashboard .dashboard-shell) :where(.overview-kpi small, .discovery-metrics small, .client-form-grid label > small) {
+  color: var(--dail-ink-muted);
+}
+
+body:has(#dashboard .dashboard-shell) .topbar,
+body:has(#dashboard) .topbar {
+  background: var(--dail-navy);
+  color: var(--dail-paper-raised);
+}
+
+body:has(#dashboard) .top-actions a,
+body:has(#dashboard) .brand small {
+  color: var(--dail-on-dark-muted);
+}
+
+body:has(#dashboard) .login-card label small {
+  color: var(--dail-ink-muted);
+  font-size: 11px;
+}
+
+body:has(#dashboard) .support {
+  color: var(--dail-ink-muted);
+  font-size: 11px;
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav {
+  border-color: var(--dail-rule);
+  background: var(--dail-surface);
+  box-shadow: var(--dail-shadow-raised);
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav a {
+  color: var(--dail-ink-secondary);
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav a:hover {
+  background: var(--dail-surface-soft);
+  color: var(--dail-teal-strong);
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav a.active {
+  border-color: color-mix(in srgb, var(--dail-teal) 30%, var(--dail-rule));
+  background: var(--dail-teal-soft);
+  color: var(--dail-teal-strong);
+  box-shadow: none;
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav-title {
+  border-color: var(--dail-rule);
+}
+
+body:has(#dashboard .dashboard-shell) .section-nav-title strong {
+  color: var(--dail-ink);
+}
+
+body:has(#dashboard) .section-nav {
+  border-color: var(--dail-rule);
+  background: color-mix(in srgb, var(--dail-surface) 94%, transparent);
+  box-shadow: var(--dail-shadow-raised);
+}
+
+body:has(#dashboard) .section-nav a.active,
+body:has(#dashboard) .section-nav a:hover {
+  background: var(--dail-teal-soft);
+  color: var(--dail-teal-strong);
+}
+
+body:has(#dashboard .dashboard-shell) :where(.panel, .workspace, .overview-kpi, .client-editor, .booking-calendar-card),
+body:has(#dashboard) :where(.panel, .workspace, .summary-grid article, .operations-card, .login-card) {
+  border-color: var(--dail-rule);
+  background: var(--dail-surface);
+}
+
+body:has(#dashboard .dashboard-shell) :where(.primary-button, .overview-kpi.is-primary),
+body:has(#dashboard) :where(.primary-button, .approve-button) {
+  border-color: var(--dail-teal);
+  background: var(--dail-teal);
+  color: var(--dail-paper-raised);
+}
+
+body:has(#dashboard .dashboard-shell) :where(.secondary-button, .overview-text-action),
+body:has(#dashboard) :where(.secondary-button, .text-link) {
+  color: var(--dail-teal-strong);
+}
+
+body:has(#dashboard .dashboard-shell) :where(input, textarea, select),
+body:has(#dashboard) :where(input, textarea, select) {
+  border-color: var(--dail-rule);
+  background: var(--dail-paper-raised);
+  color: var(--dail-ink);
+}
+
+body:has(#dashboard .dashboard-shell) :where(.period, .segmented-control, .client-filters),
+body:has(#dashboard) :where(.period, .segmented-control, .health-badge) {
+  background: var(--dail-surface-soft);
+  color: var(--dail-ink-secondary);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --dail-section-tight: 60px;
+    --dail-section-regular: 76px;
+    --dail-section-generous: 92px;
+  }
+
+  .partner-auth-gate {
+    margin: 0 20px;
+    padding: 28px 0 32px;
+  }
+
+  .partner-social-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .app-interface-preview .phone-app-home {
+    min-height: 430px;
+    padding: 44px 22px 104px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

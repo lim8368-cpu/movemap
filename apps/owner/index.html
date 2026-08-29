@@ -8,6 +8,7 @@
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
   <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260829-owner-assessments1" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
+  <link rel="stylesheet" href="/assets/dail-design-system.css?v=20260829-hallmark4" />
 </head>
 <body>
   <header class="topbar">
@@ -22,7 +23,7 @@
     <section id="loginPanel" class="login-layout">
       <div class="login-copy"><p class="eyebrow">DAIL FOR CENTER</p><h1>센터의 좋은 정보를<br />이용자에게 더 선명하게</h1><p>등록 정보를 관리하고, 이용자가 센터를 확인한 흐름을 한곳에서 살펴보세요.</p><ul><li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>내 센터 정보만 안전하게 관리</li><li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>지도 상세 조회와 상담 클릭 확인</li><li><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#check"></use></svg>등록 후기와 프로필 상태 점검</li></ul></div>
       <div class="login-card">
-        <p class="eyebrow">PARTNER SIGN IN</p><h2>센터 관리자 로그인</h2>
+        <h2>센터 관리자 로그인</h2>
         <p>센터 등록을 신청한 DAIL 계정으로 로그인하세요. 승인된 계정은 바로 대시보드로 연결됩니다.</p>
         <div class="owner-social-buttons">
           <button class="owner-social kakao" type="button" data-owner-auth-provider="kakao"><b><img class="auth-provider-icon kakao-icon" src="/assets/auth-kakao.png?v=20260820" alt="" aria-hidden="true" /></b><span>카카오로 계속하기</span></button>
@@ -40,7 +41,7 @@
     </section>
 
     <section id="dashboard" class="dashboard" hidden>
-      <div class="welcome"><div><p class="eyebrow">PARTNER OVERVIEW</p><h1 id="centerHeading">센터 운영 현황</h1><p><span class="status-dot"></span> 지도에 정상 노출 중 · <span id="updatedAt">최근 수정 -</span></p><label id="centerSwitcherWrap" class="center-switcher" hidden>관리 지점<select id="centerSwitcher"></select></label></div><div class="welcome-actions"><a class="secondary-button icon-label" href="/#search" target="_blank">공개 페이지 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a><button class="primary-button" type="button" data-jump-profile>센터 정보 수정</button></div></div>
+      <div class="welcome"><div><h1 id="centerHeading">센터 운영 현황</h1><p><span class="status-dot"></span> 지도에 정상 노출 중 · <span id="updatedAt">최근 수정 -</span></p><label id="centerSwitcherWrap" class="center-switcher" hidden>관리 지점<select id="centerSwitcher"></select></label></div><div class="welcome-actions"><a class="secondary-button icon-label" href="/#search" target="_blank">공개 페이지 보기<svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#external-link"></use></svg></a><button class="primary-button" type="button" data-jump-profile>센터 정보 수정</button></div></div>
 
       <div class="dashboard-shell">
         <button id="ownerMenuReveal" class="owner-menu-reveal" type="button" aria-label="센터 관리 메뉴 펼치기" aria-hidden="true" tabindex="-1"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button>
@@ -61,7 +62,7 @@
         <div class="dashboard-panels">
       <section id="overview" class="dashboard-view" data-dashboard-panel="overview">
         <header class="overview-intro">
-          <div><p class="eyebrow">OPERATION OVERVIEW</p><h2>오늘 운영에 필요한 내용부터 확인하세요</h2><p id="overviewDateLabel">오늘의 예약과 확인할 일을 불러오는 중입니다.</p></div>
+          <div><h2>오늘 운영에 필요한 내용부터 확인하세요</h2><p id="overviewDateLabel">오늘의 예약과 확인할 일을 불러오는 중입니다.</p></div>
           <span class="overview-live"><i></i> 최신 정보</span>
         </header>
 
@@ -82,18 +83,18 @@
 
         <div class="overview-operations-grid">
           <section class="overview-agenda panel">
-            <div class="section-heading"><div><p class="eyebrow">TODAY'S SCHEDULE</p><h2>오늘 예약</h2><p>시간 순서대로 표시합니다. 예약을 누르면 바로 관리할 수 있습니다.</p></div><button type="button" class="overview-text-action" data-overview-jump="bookings">전체 일정</button></div>
+            <div class="section-heading"><div><h2>오늘 예약</h2><p>시간 순서대로 표시합니다. 예약을 누르면 바로 관리할 수 있습니다.</p></div><button type="button" class="overview-text-action" data-overview-jump="bookings">전체 일정</button></div>
             <div id="overviewTodayAgenda" class="overview-agenda-list"><p class="empty">오늘 예약을 불러오는 중입니다.</p></div>
           </section>
           <aside class="overview-tasks panel">
-            <div class="section-heading"><div><p class="eyebrow">TO DO</p><h2>지금 확인할 일</h2><p>운영에 필요한 항목만 우선순위대로 정리했습니다.</p></div></div>
+            <div class="section-heading"><div><h2>지금 확인할 일</h2><p>운영에 필요한 항목만 우선순위대로 정리했습니다.</p></div></div>
             <div id="overviewTaskList" class="overview-task-list"><p class="empty">확인할 항목을 정리하는 중입니다.</p></div>
           </aside>
         </div>
 
         <div class="overview-insights-grid">
           <section class="overview-discovery panel">
-            <div class="section-heading"><div><p class="eyebrow">CENTER DISCOVERY</p><h2>최근 30일 센터 반응</h2><p>DAIL 지도와 센터 상세 페이지에서 발생한 활동입니다.</p></div><span class="period">이전 30일과 비교</span></div>
+            <div class="section-heading"><div><h2>최근 30일 센터 반응</h2><p>DAIL 지도와 센터 상세 페이지에서 발생한 활동입니다.</p></div><span class="period">이전 30일과 비교</span></div>
             <div class="discovery-metrics">
               <article><span>센터 상세 조회</span><strong id="last30Views">0회</strong><div class="comparison-bars" data-comparison-bars="views" aria-hidden="true"><i class="previous"></i><i class="current"></i></div><small id="viewsComparison">비교 데이터를 불러오는 중</small></article>
               <article><span>상담 연결 클릭</span><strong id="last30Contacts">0회</strong><div class="comparison-bars" data-comparison-bars="contacts" aria-hidden="true"><i class="previous"></i><i class="current"></i></div><small id="contactsComparison">비교 데이터를 불러오는 중</small></article>
@@ -101,7 +102,7 @@
             </div>
           </section>
           <aside class="overview-reputation panel">
-            <div class="section-heading"><div><p class="eyebrow">REVIEWS</p><h2>센터 후기</h2></div><button type="button" class="overview-text-action" data-overview-jump="activity">후기 보기</button></div>
+            <div class="section-heading"><div><h2>센터 후기</h2></div><button type="button" class="overview-text-action" data-overview-jump="activity">후기 보기</button></div>
             <dl><div><dt>평균 평점</dt><dd id="rating">-</dd></div><div><dt>승인된 후기</dt><dd id="reviews">0건</dd></div></dl>
             <p>운영시간·전문 분야·가격을 구체적으로 관리하면 이용자가 문의 전에 필요한 내용을 확인할 수 있습니다.</p>
           </aside>
@@ -109,7 +110,7 @@
       </section>
 
       <section id="bookingsSection" class="workspace booking-workspace dashboard-view" data-dashboard-panel="bookings" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">BOOKING CALENDAR</p><h2>예약 관리</h2><p>주간 일정에서 예약 시간을 빠르게 확인하고, 예약을 눌러 상세 정보를 관리하세요.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
+        <div class="section-heading workspace-heading"><div><h2>예약 관리</h2><p>주간 일정에서 예약 시간을 빠르게 확인하고, 예약을 눌러 상세 정보를 관리하세요.</p></div><span id="bookingCount" class="period">예정 예약 0건</span></div>
         <div class="booking-commandbar">
           <div class="booking-week-nav" role="group" aria-label="예약 날짜 선택"><div class="booking-date-control"><button id="bookingDatePickerButton" class="booking-date-picker" type="button" aria-expanded="false" aria-controls="bookingDatePopover"><span class="booking-date-picker-content"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg><strong id="bookingWeekLabel">이번 주</strong></span></button><div id="bookingDatePopover" class="booking-date-popover" hidden><div class="booking-month-head"><button type="button" data-booking-month="prev" aria-label="이전 달"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-left"></use></svg></button><strong id="bookingMonthLabel"></strong><button type="button" data-booking-month="next" aria-label="다음 달"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button></div><div class="booking-month-weekdays" aria-hidden="true"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div><div id="bookingMonthGrid" class="booking-month-grid" role="grid" aria-label="예약 날짜 선택"></div></div></div></div>
           <div class="booking-toolbar" role="group" aria-label="예약 상태 필터"><button type="button" class="active" data-booking-filter="upcoming">예정</button><button type="button" data-booking-filter="all">전체</button><button type="button" data-booking-filter="completed">완료</button><button type="button" data-booking-filter="cancelled">취소</button></div>
@@ -121,7 +122,7 @@
       </section>
 
       <section id="clientsSection" class="workspace clients-workspace dashboard-view" data-dashboard-panel="clients" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">CLIENT DIRECTORY</p><h2>고객 관리</h2><p>고객 명단을 한 명씩 등록하고 필요한 연락 정보와 이용 목적을 안전하게 관리합니다.</p></div><span id="clientCount" class="period">활성 고객 0명</span></div>
+        <div class="section-heading workspace-heading"><div><h2>고객 관리</h2><p>고객 명단을 한 명씩 등록하고 필요한 연락 정보와 이용 목적을 안전하게 관리합니다.</p></div><span id="clientCount" class="period">활성 고객 0명</span></div>
         <div class="clients-grid">
           <div class="client-directory">
             <div class="client-toolbar">
@@ -172,7 +173,7 @@
       </section>
 
       <section id="assessmentsSection" class="workspace assessments-workspace dashboard-view" data-dashboard-panel="assessments" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">DAIL ASSESSMENT TOOLS</p><h2>이용자 평가</h2><p>한 사람의 방문 기록을 시간순으로 쌓아 변화 흐름을 확인합니다.</p></div><span class="period">방문별 반복 기록</span></div>
+        <div class="section-heading workspace-heading"><div><h2>이용자 평가</h2><p>한 사람의 방문 기록을 시간순으로 쌓아 변화 흐름을 확인합니다.</p></div><span class="period">방문별 반복 기록</span></div>
         <div class="assessment-tools-grid">
           <article class="assessment-tool-card is-active"><span>사용 가능</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></div><h3>DAIL 방문 평가 v1</h3><p>통증 정도(VAS), 일상 기능, 움직임 자신감, 균형 자신감을 0–10점으로 기록합니다.</p><div><i>VAS</i><i>일상 기능</i><i>움직임</i><i>균형</i></div></article>
           <article class="assessment-tool-card is-planned" aria-disabled="true"><span>양식 준비 중</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></div><h3>표준 균형 평가</h3><p>Balance Scale의 적용 범위와 양식을 확정한 뒤 버전이 표시되도록 추가할 예정입니다.</p><div><i>버전 관리</i><i>점수 추이</i></div></article>
@@ -186,7 +187,7 @@
       </section>
 
       <section id="profile" class="workspace dashboard-view" data-dashboard-panel="profile" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">CENTER PROFILE</p><h2>이용자에게 보이는 센터 정보</h2><p>저장한 내용은 DAIL 센터 상세 정보에 반영됩니다.</p></div><span id="saveStatus" class="save-status"></span></div>
+        <div class="section-heading workspace-heading"><div><h2>이용자에게 보이는 센터 정보</h2><p>저장한 내용은 DAIL 센터 상세 정보에 반영됩니다.</p></div><span id="saveStatus" class="save-status"></span></div>
         <div class="workspace-grid"><form id="centerForm" class="editor-stack">
           <fieldset><legend><span>01</span><div>기본 정보<small>센터를 찾고 연락하는 데 필요한 정보</small></div></legend><div class="field-grid"><label>센터명<input name="name" required maxlength="200" /></label><label>지역<input name="area" required maxlength="200" /></label><label class="wide">상세 주소<input name="address" required maxlength="200" /></label><label>대표 전화<input name="phone" maxlength="40" placeholder="02-000-0000" /></label><label>웹사이트<input name="website" maxlength="200" placeholder="https://" /></label></div></fieldset>
           <fieldset><legend><span>02</span><div>센터 사진<small>상세보기 맨 위에 노출되는 실제 센터 사진</small></div></legend><div class="photo-manager"><div><b>센터 사진</b><small>JPG, PNG, WEBP · 장당 3MB 이하 · 최대 5장</small></div><label class="photo-upload-button">사진 추가<input id="centerPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden /></label></div><div id="centerPhotoList" class="center-photo-list"></div><p id="photoUploadMessage" class="photo-upload-message" aria-live="polite"></p></fieldset>
@@ -199,7 +200,7 @@
       </section>
 
       <section id="membersSection" class="workspace members-workspace dashboard-view" data-dashboard-panel="members" hidden>
-        <div class="section-heading workspace-heading"><div><p class="eyebrow">TEAM & ACCESS</p><h2>센터 구성원과 권한</h2><p>센터별로 소유자·매니저·직원·조회 전용 역할을 나누고 퇴사자 권한을 즉시 회수합니다.</p></div><span id="currentMemberRole" class="period">내 역할 -</span></div>
+        <div class="section-heading workspace-heading"><div><h2>센터 구성원과 권한</h2><p>센터별로 소유자·매니저·직원·조회 전용 역할을 나누고 퇴사자 권한을 즉시 회수합니다.</p></div><span id="currentMemberRole" class="period">내 역할 -</span></div>
         <div class="members-grid">
           <div>
             <form id="memberInviteForm" class="member-invite-form">
@@ -214,7 +215,7 @@
         </div>
       </section>
 
-      <section id="activitySection" class="activity-grid dashboard-view" data-dashboard-panel="activity" hidden><div class="panel"><div class="section-heading"><div><p class="eyebrow">RECENT ACTIVITY</p><h2>최근 이용자 활동</h2></div></div><div id="eventList" class="activity-list"></div></div><div id="reviewsSection" class="panel"><div class="section-heading"><div><p class="eyebrow">CUSTOMER REVIEWS</p><h2>최근 후기</h2></div><span class="period">승인된 후기</span></div><div id="reviewList" class="review-list"></div></div></section>
+      <section id="activitySection" class="activity-grid dashboard-view" data-dashboard-panel="activity" hidden><div class="panel"><div class="section-heading"><div><h2>최근 이용자 활동</h2></div></div><div id="eventList" class="activity-list"></div></div><div id="reviewsSection" class="panel"><div class="section-heading"><div><h2>최근 후기</h2></div><span class="period">승인된 후기</span></div><div id="reviewList" class="review-list"></div></div></section>
         </div>
       </div>
     </section>

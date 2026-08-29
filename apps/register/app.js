@@ -367,7 +367,7 @@ async function searchAddress() {
     return;
   }
   addressSearchButton.disabled = true;
-  addressSearchButtonLabel.textContent = "확인 중...";
+  addressSearchButtonLabel.textContent = "확인 중…";
   manualAddressMode = false;
   addressResults.hidden = true;
   addressInput.setAttribute("aria-expanded", "false");
@@ -983,7 +983,7 @@ form.addEventListener("submit", async function (event) {
   }
   message.textContent = "";
   submitButton.disabled = true;
-  submitButton.textContent = "신청 중...";
+  submitButton.textContent = "신청 중…";
   try {
     await ensureRegistrationSession();
     const photoFiles = Array.from(photoFileInput.files).slice(0, 5);

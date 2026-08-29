@@ -255,7 +255,7 @@ async function login() {
   loginMessage.textContent = "";
   const submitButton = loginForm.querySelector('button[type="submit"]');
   submitButton.disabled = true;
-  submitButton.textContent = "확인 중...";
+  submitButton.textContent = "확인 중…";
   try {
     const response = await fetch(API_BASE + "/api/login", {
       method: "POST",
@@ -286,7 +286,7 @@ async function login() {
 async function loadStats(showFeedback) {
   refreshButton.disabled = true;
   const originalLabel = refreshButton.textContent;
-  refreshButton.textContent = "불러오는 중...";
+  refreshButton.textContent = "불러오는 중…";
   try {
     const responses = await Promise.all([
       fetch(API_BASE + "/api/stats", { headers: adminHeaders() }),

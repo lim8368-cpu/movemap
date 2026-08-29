@@ -19,7 +19,7 @@ html{scroll-padding-top:82px}
   gap:24px;
   position:sticky;
   top:0;
-  z-index:100;
+  z-index:var(--dail-z-nav,100);
   border-bottom:1px solid var(--site-header-line);
   background:var(--site-header-paper);
   color:var(--site-header-ink);
@@ -156,7 +156,7 @@ html{scroll-padding-top:82px}
   position:absolute;
   top:calc(100% + 9px);
   left:50%;
-  z-index:110;
+  z-index:var(--dail-z-popover,200);
   display:grid;
   gap:2px;
   border:1px solid var(--site-header-line);
