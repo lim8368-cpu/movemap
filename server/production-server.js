@@ -55,6 +55,7 @@ const apiRoutes = new Map([
   ["/api/center-applications", require("../api/center-applications")],
   ["/api/center-invitations", require("../api/center-invitations")],
   ["/api/center-clients", require("../api/center-clients")],
+  ["/api/center-client-assessments", require("../api/center-client-assessments")],
   ["/api/center-members", require("../api/center-members")],
   ["/api/centers", require("../api/centers")],
   ["/api/collaboration-inquiries", require("../api/collaboration-inquiries")],

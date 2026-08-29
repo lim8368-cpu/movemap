@@ -37,19 +37,28 @@ let clientsLoadedCenterId = "";
 let clientListSequence = 0;
 let clientDetailSequence = 0;
 let clientMutationSequence = 0;
+let clientDetailTab = "profile";
+let assessmentCache = new Map();
+let assessmentListSequence = 0;
+let assessmentMutationSequence = 0;
+let selectedAssessmentId = "";
+let workspaceAssessmentClientId = "";
+let assessmentDraftScores = { painVas: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
 let activeDashboardView = "overview";
 let ownerMenuAutoCloseTimer = 0;
 let currentSchedule = {};
 let currentSlotMinutes = 60;
 let publicConfig = { auth: { supabaseUrl: "", supabaseAnonKey: "", providers: {} } };
 
-const DASHBOARD_VIEWS = new Set(["overview", "bookings", "clients", "profile", "activity", "members"]);
+const DASHBOARD_VIEWS = new Set(["overview", "bookings", "clients", "assessments", "profile", "activity", "members"]);
 const DASHBOARD_HASH_ALIASES = {
   overview: "overview",
   bookings: "bookings",
   bookingsSection: "bookings",
   clients: "clients",
   clientsSection: "clients",
+  assessments: "assessments",
+  assessmentsSection: "assessments",
   profile: "profile",
   activity: "activity",
   activitySection: "activity",
@@ -83,6 +92,12 @@ const BOOKING_STATUS_LABELS = {
   cancelled: "예약 취소",
   no_show: "노쇼",
 };
+const ASSESSMENT_SCORE_FIELDS = [
+  { key: "painVas", label: "통증 정도 (VAS)", low: "통증 없음", high: "매우 심함", direction: "lower" },
+  { key: "dailyFunction", label: "일상 기능", low: "매우 어려움", high: "충분히 가능", direction: "higher" },
+  { key: "movementConfidence", label: "움직임 자신감", low: "자신 없음", high: "매우 자신 있음", direction: "higher" },
+  { key: "balanceConfidence", label: "균형 자신감", low: "매우 불안함", high: "매우 안정적", direction: "higher" },
+];
 
 const ownerOnboardingMessage = invitationToken
   ? "초대받은 DAIL 계정으로 로그인하면 센터 구성원 합류가 완료됩니다."
@@ -155,7 +170,7 @@ function updateDashboardViewUrl(view, replace = false) {
 
 function activateDashboardView(view, { updateUrl = true, replaceUrl = false, scroll = true } = {}) {
   const requestedView = DASHBOARD_VIEWS.has(view) ? view : "overview";
-  const nextView = requestedView === "clients" && currentRole && !canManageClientRecords()
+  const nextView = ["clients", "assessments"].includes(requestedView) && currentRole && !canManageClientRecords()
     ? "overview"
     : requestedView;
   const viewChanged = nextView !== activeDashboardView;
@@ -171,8 +186,9 @@ function activateDashboardView(view, { updateUrl = true, replaceUrl = false, scr
   });
   document.querySelector("#dashboardMobileMenu").value = nextView;
   if (updateUrl && (viewChanged || replaceUrl)) updateDashboardViewUrl(nextView, replaceUrl);
-  if (nextView === "clients" && currentCenterId && clientsLoadedCenterId !== currentCenterId) {
-    loadClients().catch(() => {});
+  if (["clients", "assessments"].includes(nextView) && currentCenterId) {
+    if (clientsLoadedCenterId !== currentCenterId) loadClients().catch(() => {});
+    else if (nextView === "assessments") renderAssessmentWorkspace();
   }
   if (viewChanged) setOwnerMenuCollapsed(nextView === "bookings");
   if (scroll && !dashboard.hidden) {
@@ -761,11 +777,13 @@ function setFormAccess(role) {
     document.querySelector("#changeStatus").textContent = "조회 전용 권한입니다";
   }
   document.querySelector("#newClientButton").hidden = !canManageClients;
-  const clientsLink = document.querySelector('[data-dashboard-view="clients"]');
-  const clientsOption = document.querySelector('#dashboardMobileMenu option[value="clients"]');
-  clientsLink.hidden = !canManageClients;
-  clientsOption.hidden = !canManageClients;
-  clientsOption.disabled = !canManageClients;
+  ["clients", "assessments"].forEach((view) => {
+    const link = document.querySelector(`[data-dashboard-view="${view}"]`);
+    const option = document.querySelector(`#dashboardMobileMenu option[value="${view}"]`);
+    link.hidden = !canManageClients;
+    option.hidden = !canManageClients;
+    option.disabled = !canManageClients;
+  });
 }
 
 function renderCenterSwitcher(centers) {
@@ -830,7 +848,7 @@ function fillDashboard(data) {
   ).join("") || '<p class="empty">아직 승인된 후기가 없습니다.</p>';
   setDirtyState(false);
   const requestedView = dashboardViewFromHash();
-  const allowedView = requestedView === "clients" && !canManageClientRecords() ? "overview" : requestedView;
+  const allowedView = ["clients", "assessments"].includes(requestedView) && !canManageClientRecords() ? "overview" : requestedView;
   activateDashboardView(allowedView, {
     updateUrl: allowedView !== requestedView,
     replaceUrl: true,
@@ -976,10 +994,17 @@ function clearClientState() {
   clientListSequence += 1;
   clientDetailSequence += 1;
   clientMutationSequence += 1;
+  assessmentListSequence += 1;
+  assessmentMutationSequence += 1;
   currentClients = [];
   clientFilter = "active";
   selectedClientId = "";
   clientsLoadedCenterId = "";
+  clientDetailTab = "profile";
+  assessmentCache = new Map();
+  selectedAssessmentId = "";
+  workspaceAssessmentClientId = "";
+  assessmentDraftScores = emptyAssessmentScores();
   const form = document.querySelector("#clientForm");
   form.reset();
   form.querySelectorAll("input, textarea, button").forEach((element) => { element.disabled = false; });
@@ -996,6 +1021,12 @@ function clearClientState() {
   document.querySelector("#clientFormMessage").textContent = "";
   document.querySelector("#archiveClientButton").hidden = true;
   document.querySelector("#clientConsentRow").hidden = false;
+  document.querySelector("#clientDetailTabs").hidden = true;
+  document.querySelector("#clientProfilePanel").hidden = false;
+  document.querySelector("#clientAssessmentPanel").hidden = true;
+  document.querySelector("#assessmentEditor").hidden = true;
+  document.querySelector("#clientAssessmentHistory").innerHTML = '<p class="empty">평가 기록을 불러오는 중입니다.</p>';
+  document.querySelector("#clientAssessmentCount").textContent = "0";
   document.querySelector("#clientSearch").value = "";
   renderClients();
 }
@@ -1046,6 +1077,7 @@ function renderClients() {
         <span class="client-list-meta"><i class="client-status status-${escapeHtml(client.status || "active")}">${(client.status || "active") === "archived" ? "보관됨" : "이용 중"}</i><small>${formatDate(client.updated_at || client.created_at, false)}</small></span>
       </button>`).join("")
     : `<div class="client-list-empty"><span>${uiIcon("search")}</span><strong>${currentClients.length ? "검색 결과가 없습니다" : "등록된 고객이 없습니다"}</strong><p>${currentClients.length ? "검색어나 상태 조건을 바꿔보세요." : "고객 등록을 눌러 한 명씩 명단을 만들어 보세요."}</p></div>`;
+  renderAssessmentWorkspace();
 }
 
 function setClientFormOpen(open) {
@@ -1073,6 +1105,7 @@ function showClientDetailState(title, message, { retry = false } = {}) {
   form.hidden = true;
   document.querySelector("#clientEditorTitle").textContent = "고객 정보";
   document.querySelector("#clientFormMessage").textContent = "";
+  document.querySelector("#clientDetailTabs").hidden = true;
   emptyState.hidden = false;
   emptyState.querySelector("strong").textContent = title;
   emptyState.querySelector("p").textContent = message;
@@ -1095,6 +1128,7 @@ function fillClientEditor(client = null) {
   form.elements.notes.value = client?.notes || "";
   document.querySelector("#clientEditorEyebrow").textContent = creating ? "NEW CLIENT" : "CLIENT PROFILE";
   document.querySelector("#clientEditorTitle").textContent = creating ? "새 고객 등록" : client.full_name;
+  document.querySelector("#clientDetailTabs").hidden = creating;
   document.querySelector("#clientConsentRow").hidden = !creating;
   form.elements.consentConfirmed.required = creating;
   const archiveButton = document.querySelector("#archiveClientButton");
@@ -1109,6 +1143,7 @@ function fillClientEditor(client = null) {
   document.querySelector("#clientFormMessage").textContent = "";
   document.querySelector("#clientDetailRetry").hidden = true;
   setClientFormOpen(true);
+  setClientDetailTab("profile", { load: false });
   renderClients();
   revealClientEditor(document.querySelector("#clientEditorTitle"));
 }
@@ -1154,9 +1189,12 @@ function closeClientEditor() {
   clientDetailSequence += 1;
   const previousClientId = selectedClientId;
   selectedClientId = "";
+  selectedAssessmentId = "";
+  clientDetailTab = "profile";
   document.querySelector("#clientForm").reset();
   document.querySelector("#clientDetailRetry").hidden = true;
   document.querySelector("#clientEditorTitle").textContent = "새 고객 등록";
+  document.querySelector("#assessmentEditor").hidden = true;
   setClientFormOpen(false);
   setClientModalOpen(false);
   renderClients();
@@ -1230,6 +1268,9 @@ async function loadClients(force = false) {
   }
   currentClients = data.clients || [];
   clientsLoadedCenterId = requestedCenterId;
+  if (workspaceAssessmentClientId && !currentClients.some((client) => client.id === workspaceAssessmentClientId)) {
+    workspaceAssessmentClientId = "";
+  }
   if (selectedClientId && !currentClients.some((client) => client.id === selectedClientId)) closeClientEditor();
   else renderClients();
 }
@@ -1334,6 +1375,227 @@ async function toggleClientArchive() {
     openClientEditor(client.id, data.client);
     document.querySelector("#clientFormMessage").textContent = nextStatus === "archived" ? "고객을 보관했습니다." : "고객을 다시 이용 중으로 표시했습니다.";
   }
+}
+
+function emptyAssessmentScores() {
+  return { painVas: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
+}
+
+function assessmentVisitLabel(value) {
+  return ({ initial: "첫 방문", follow_up: "재방문", discharge: "마지막 방문" })[value] || "방문 평가";
+}
+
+function assessmentScoreValue(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 && number <= 10 ? number : null;
+}
+
+function renderAssessmentScales() {
+  document.querySelector("#assessmentScoreScales").innerHTML = ASSESSMENT_SCORE_FIELDS.map((field) => {
+    const selected = assessmentScoreValue(assessmentDraftScores[field.key]);
+    const options = Array.from({ length: 11 }, (_, value) =>
+      `<button type="button" class="${selected === value ? "selected" : ""}" data-assessment-score-key="${field.key}" data-assessment-score-value="${value}" aria-pressed="${selected === value}">${value}</button>`
+    ).join("");
+    return `<div class="assessment-scale"><div class="assessment-scale-head"><div><strong>${escapeHtml(field.label)}</strong><small>${escapeHtml(field.low)} → ${escapeHtml(field.high)}</small></div><span>${selected === null ? "미기록" : `${selected}점`}</span></div><div class="assessment-scale-options" role="group" aria-label="${escapeHtml(field.label)} 점수">${options}</div><button class="assessment-score-clear" type="button" data-assessment-score-clear="${field.key}" ${selected === null ? "disabled" : ""}>기록 안 함</button></div>`;
+  }).join("");
+}
+
+function renderAssessmentHistory(target, assessments, clientId) {
+  if (!target) return;
+  if (!assessments.length) {
+    target.innerHTML = `<div class="assessment-empty"><span>${uiIcon("activity")}</span><strong>아직 평가 기록이 없습니다</strong><p>첫 평가를 저장하면 방문할 때마다 점수와 변화가 시간순으로 쌓입니다.</p></div>`;
+    return;
+  }
+  target.innerHTML = assessments.map((assessment, index) => {
+    const previous = assessments[index + 1];
+    const scoreItems = ASSESSMENT_SCORE_FIELDS.map((field) => {
+      const value = assessmentScoreValue(assessment.scores?.[field.key]);
+      if (value === null) return "";
+      const previousValue = assessmentScoreValue(previous?.scores?.[field.key]);
+      const difference = previousValue === null ? "" : value === previousValue ? "변화 없음" : `${value > previousValue ? "+" : ""}${value - previousValue}`;
+      return `<span><small>${escapeHtml(field.label.replace(" (VAS)", ""))}</small><b>${value}</b><i>${escapeHtml(difference)}</i></span>`;
+    }).join("");
+    return `<button type="button" class="assessment-record" data-assessment-open="${escapeHtml(assessment.id)}" data-assessment-client="${escapeHtml(clientId)}"><span class="assessment-record-date"><b>${escapeHtml(formatDate(`${assessment.assessed_on}T12:00:00+09:00`, false))}</b><i>${escapeHtml(assessmentVisitLabel(assessment.visit_kind))}</i></span><span class="assessment-record-scores">${scoreItems}</span><span class="assessment-record-note"><b>${escapeHtml(assessment.main_concern || "주요 변화 미입력")}</b><small>${escapeHtml(assessment.next_plan || assessment.notes || "기록을 눌러 상세 내용을 확인하세요.")}</small></span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button>`;
+  }).join("");
+}
+
+function renderAssessmentWorkspace() {
+  const select = document.querySelector("#assessmentClientSelect");
+  if (!select) return;
+  const clients = currentClients.filter((client) => (client.status || "active") === "active");
+  select.innerHTML = '<option value="">이용자를 선택하세요</option>' + clients.map((client) =>
+    `<option value="${escapeHtml(client.id)}">${escapeHtml(client.full_name)} · ${escapeHtml(formatPhone(client.phone))}</option>`
+  ).join("");
+  if (clients.some((client) => client.id === workspaceAssessmentClientId)) select.value = workspaceAssessmentClientId;
+  else workspaceAssessmentClientId = "";
+  const client = clients.find((item) => item.id === workspaceAssessmentClientId);
+  document.querySelector("#startAssessmentButton").disabled = !client;
+  const summary = document.querySelector("#assessmentWorkspaceSummary");
+  const history = document.querySelector("#assessmentWorkspaceHistory");
+  if (!client) {
+    summary.innerHTML = `<div class="assessment-empty"><span>${uiIcon("user-cog")}</span><strong>${clients.length ? "이용자를 먼저 선택해 주세요" : "등록된 이용자가 없습니다"}</strong><p>${clients.length ? "평가 이력과 점수 변화를 이 화면에서 확인할 수 있습니다." : "고객 관리에서 이용자를 등록한 뒤 평가를 시작할 수 있습니다."}</p></div>`;
+    history.innerHTML = "";
+    return;
+  }
+  const assessments = assessmentCache.get(client.id);
+  const latest = assessments?.[0];
+  summary.innerHTML = `<div class="assessment-selected-client"><span class="client-avatar" aria-hidden="true">${escapeHtml(String(client.full_name || "?").slice(0, 1))}</span><div><strong>${escapeHtml(client.full_name)}</strong><small>${escapeHtml(formatPhone(client.phone))}</small></div><dl><div><dt>누적 평가</dt><dd>${assessments ? assessments.length : "-"}회</dd></div><div><dt>최근 평가</dt><dd>${latest ? escapeHtml(formatDate(`${latest.assessed_on}T12:00:00+09:00`, false)) : "-"}</dd></div></dl></div>`;
+  if (assessments) renderAssessmentHistory(history, assessments, client.id);
+  else history.innerHTML = '<p class="empty">평가 기록을 불러오는 중입니다.</p>';
+}
+
+function renderSelectedClientAssessments() {
+  const assessments = selectedClientId ? (assessmentCache.get(selectedClientId) || []) : [];
+  document.querySelector("#clientAssessmentCount").textContent = String(assessments.length);
+  renderAssessmentHistory(document.querySelector("#clientAssessmentHistory"), assessments, selectedClientId);
+  renderAssessmentWorkspace();
+}
+
+async function loadAssessments(clientId, { force = false } = {}) {
+  if (!clientId || !currentCenterId) return [];
+  if (!force && assessmentCache.has(clientId)) {
+    renderSelectedClientAssessments();
+    return assessmentCache.get(clientId);
+  }
+  const sequence = ++assessmentListSequence;
+  const requestedCenterId = currentCenterId;
+  if (selectedClientId === clientId) document.querySelector("#clientAssessmentHistory").innerHTML = '<p class="empty">평가 기록을 불러오는 중입니다.</p>';
+  if (workspaceAssessmentClientId === clientId) document.querySelector("#assessmentWorkspaceHistory").innerHTML = '<p class="empty">평가 기록을 불러오는 중입니다.</p>';
+  let response;
+  try {
+    response = await fetch(`/api/center-client-assessments?centerId=${encodeURIComponent(requestedCenterId)}&clientId=${encodeURIComponent(clientId)}`);
+  } catch {
+    if (sequence !== assessmentListSequence || requestedCenterId !== currentCenterId) return [];
+    const message = '<div class="assessment-empty error"><span>' + uiIcon("circle-alert") + '</span><strong>평가 기록을 불러오지 못했습니다</strong><p>네트워크 상태를 확인한 뒤 다시 시도해 주세요.</p></div>';
+    if (selectedClientId === clientId) document.querySelector("#clientAssessmentHistory").innerHTML = message;
+    if (workspaceAssessmentClientId === clientId) document.querySelector("#assessmentWorkspaceHistory").innerHTML = message;
+    return [];
+  }
+  const data = await response.json().catch(() => ({}));
+  if (sequence !== assessmentListSequence || requestedCenterId !== currentCenterId) return [];
+  if (response.status === 401 || response.status === 403) {
+    showLogin(data.error || "평가 기록을 확인할 권한이 없거나 로그인 시간이 만료되었습니다.");
+    return [];
+  }
+  if (!response.ok) {
+    const message = `<div class="assessment-empty error"><span>${uiIcon("circle-alert")}</span><strong>평가 기록을 불러오지 못했습니다</strong><p>${escapeHtml(data.error || "잠시 후 다시 시도해 주세요.")}</p></div>`;
+    if (selectedClientId === clientId) document.querySelector("#clientAssessmentHistory").innerHTML = message;
+    if (workspaceAssessmentClientId === clientId) document.querySelector("#assessmentWorkspaceHistory").innerHTML = message;
+    return [];
+  }
+  assessmentCache.set(clientId, data.assessments || []);
+  renderSelectedClientAssessments();
+  return assessmentCache.get(clientId);
+}
+
+async function setClientDetailTab(tab, { load = true } = {}) {
+  const next = tab === "assessments" && selectedClientId ? "assessments" : "profile";
+  clientDetailTab = next;
+  document.querySelectorAll("[data-client-detail-tab]").forEach((button) => {
+    const active = button.dataset.clientDetailTab === next;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelector("#clientProfilePanel").hidden = next !== "profile";
+  document.querySelector("#clientAssessmentPanel").hidden = next !== "assessments";
+  if (next === "assessments") {
+    document.querySelector("#assessmentEditor").hidden = true;
+    if (load) await loadAssessments(selectedClientId);
+  }
+}
+
+function openAssessmentEditor(assessment = null) {
+  selectedAssessmentId = assessment?.id || "";
+  const existing = selectedClientId ? (assessmentCache.get(selectedClientId) || []) : [];
+  assessmentDraftScores = { ...emptyAssessmentScores(), ...(assessment?.scores || {}) };
+  document.querySelector("#assessmentEditorTitle").textContent = assessment ? "방문 평가 수정" : "새 방문 평가";
+  document.querySelector("#assessmentDate").value = assessment?.assessed_on || currentBookingDate();
+  document.querySelector("#assessmentVisitKind").value = assessment?.visit_kind || (existing.length ? "follow_up" : "initial");
+  document.querySelector("#assessmentMainConcern").value = assessment?.main_concern || "";
+  document.querySelector("#assessmentNotes").value = assessment?.notes || "";
+  document.querySelector("#assessmentNextPlan").value = assessment?.next_plan || "";
+  document.querySelector("#assessmentConsent").checked = false;
+  document.querySelector("#assessmentConsentRow").hidden = Boolean(assessment);
+  document.querySelector("#assessmentFormMessage").textContent = "";
+  renderAssessmentScales();
+  const editor = document.querySelector("#assessmentEditor");
+  editor.hidden = false;
+  requestAnimationFrame(() => editor.scrollIntoView({ block: "start", behavior: preferredScrollBehavior() }));
+}
+
+async function saveAssessment() {
+  if (!selectedClientId) return;
+  const scores = Object.fromEntries(ASSESSMENT_SCORE_FIELDS.map((field) => [field.key, assessmentScoreValue(assessmentDraftScores[field.key])]));
+  const message = document.querySelector("#assessmentFormMessage");
+  if (Object.values(scores).every((value) => value === null)) {
+    message.textContent = "평가 점수를 하나 이상 선택해 주세요.";
+    return;
+  }
+  if (!selectedAssessmentId && !document.querySelector("#assessmentConsent").checked) {
+    message.textContent = "이용자에게 저장 목적을 안내하고 민감정보 기록 동의를 확인해 주세요.";
+    return;
+  }
+  const requestedCenterId = currentCenterId;
+  const requestedClientId = selectedClientId;
+  const requestedAssessmentId = selectedAssessmentId;
+  const sequence = ++assessmentMutationSequence;
+  const button = document.querySelector("#saveAssessmentButton");
+  button.disabled = true;
+  message.textContent = "평가 기록을 저장하는 중…";
+  let response;
+  try {
+    response = await fetch("/api/center-client-assessments", {
+      method: requestedAssessmentId ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        centerId: requestedCenterId,
+        clientId: requestedClientId,
+        assessmentId: requestedAssessmentId || undefined,
+        assessedOn: document.querySelector("#assessmentDate").value,
+        visitKind: document.querySelector("#assessmentVisitKind").value,
+        templateKey: "dail_visit_v1",
+        scores,
+        mainConcern: document.querySelector("#assessmentMainConcern").value.trim(),
+        notes: document.querySelector("#assessmentNotes").value.trim(),
+        nextPlan: document.querySelector("#assessmentNextPlan").value.trim(),
+        consentConfirmed: document.querySelector("#assessmentConsent").checked,
+      }),
+    });
+  } catch {
+    if (sequence !== assessmentMutationSequence || requestedCenterId !== currentCenterId || requestedClientId !== selectedClientId) return;
+    button.disabled = false;
+    message.textContent = "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    return;
+  }
+  const data = await response.json().catch(() => ({}));
+  if (sequence !== assessmentMutationSequence || requestedCenterId !== currentCenterId || requestedClientId !== selectedClientId) return;
+  button.disabled = false;
+  if (response.status === 401 || response.status === 403) return showLogin(data.error || "평가 기록을 저장할 권한이 없거나 로그인 시간이 만료되었습니다.");
+  if (!response.ok || !data.assessment) {
+    message.textContent = data.error || "평가 기록을 저장하지 못했습니다.";
+    return;
+  }
+  const assessments = assessmentCache.get(requestedClientId) || [];
+  const index = assessments.findIndex((item) => item.id === data.assessment.id);
+  if (index >= 0) assessments.splice(index, 1, data.assessment);
+  else assessments.push(data.assessment);
+  assessments.sort((left, right) => `${right.assessed_on}${right.created_at}`.localeCompare(`${left.assessed_on}${left.created_at}`));
+  assessmentCache.set(requestedClientId, assessments);
+  selectedAssessmentId = data.assessment.id;
+  renderSelectedClientAssessments();
+  document.querySelector("#assessmentEditorTitle").textContent = "방문 평가 수정";
+  document.querySelector("#assessmentConsentRow").hidden = true;
+  message.textContent = requestedAssessmentId ? "평가 기록을 수정했습니다." : "새 방문 평가를 저장했습니다.";
+}
+
+async function openClientAssessment(clientId, { startNew = false, assessmentId = "" } = {}) {
+  await openClientEditor(clientId);
+  if (selectedClientId !== clientId || document.querySelector("#clientForm").hidden) return;
+  await setClientDetailTab("assessments");
+  if (assessmentId) {
+    const assessment = (assessmentCache.get(clientId) || []).find((item) => item.id === assessmentId);
+    if (assessment) openAssessmentEditor(assessment);
+  } else if (startNew) openAssessmentEditor();
 }
 
 async function updateBooking(card) {
@@ -1530,11 +1792,54 @@ document.querySelector("#clientList").addEventListener("click", async (event) =>
   const item = event.target.closest("[data-client-id]");
   if (item) openClientEditor(item.dataset.clientId);
 });
+document.querySelector("#clientDetailTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-client-detail-tab]");
+  if (button) setClientDetailTab(button.dataset.clientDetailTab);
+});
+document.querySelector("#newAssessmentButton").addEventListener("click", () => openAssessmentEditor());
+document.querySelector("#cancelAssessmentButton").addEventListener("click", () => {
+  selectedAssessmentId = "";
+  document.querySelector("#assessmentEditor").hidden = true;
+  document.querySelector("#assessmentFormMessage").textContent = "";
+});
+document.querySelector("#assessmentScoreScales").addEventListener("click", (event) => {
+  const score = event.target.closest("[data-assessment-score-key]");
+  if (score) {
+    assessmentDraftScores[score.dataset.assessmentScoreKey] = Number(score.dataset.assessmentScoreValue);
+    renderAssessmentScales();
+    return;
+  }
+  const clear = event.target.closest("[data-assessment-score-clear]");
+  if (clear) {
+    assessmentDraftScores[clear.dataset.assessmentScoreClear] = null;
+    renderAssessmentScales();
+  }
+});
+document.querySelector("#saveAssessmentButton").addEventListener("click", saveAssessment);
+document.querySelector("#clientAssessmentHistory").addEventListener("click", (event) => {
+  const record = event.target.closest("[data-assessment-open]");
+  if (!record) return;
+  const assessment = (assessmentCache.get(selectedClientId) || []).find((item) => item.id === record.dataset.assessmentOpen);
+  if (assessment) openAssessmentEditor(assessment);
+});
+document.querySelector("#assessmentClientSelect").addEventListener("change", async (event) => {
+  workspaceAssessmentClientId = event.target.value;
+  renderAssessmentWorkspace();
+  if (workspaceAssessmentClientId) await loadAssessments(workspaceAssessmentClientId);
+});
+document.querySelector("#startAssessmentButton").addEventListener("click", () => {
+  if (workspaceAssessmentClientId) openClientAssessment(workspaceAssessmentClientId, { startNew: true });
+});
+document.querySelector("#assessmentWorkspaceHistory").addEventListener("click", (event) => {
+  const record = event.target.closest("[data-assessment-open]");
+  if (record) openClientAssessment(record.dataset.assessmentClient, { assessmentId: record.dataset.assessmentOpen });
+});
 document.querySelector('#clientForm [name="phone"]').addEventListener("input", (event) => {
   event.target.value = formatPhone(event.target.value);
 });
 document.querySelector("#clientForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (clientDetailTab === "assessments") return;
   await saveClient();
 });
 document.querySelector("#archiveClientButton").addEventListener("click", toggleClientArchive);

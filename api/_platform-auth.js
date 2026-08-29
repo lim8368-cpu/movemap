@@ -67,7 +67,7 @@ async function membershipsForUser(userId) {
 }
 
 function roleAllows(role, action, permissions = []) {
-  if (["read_clients", "manage_clients"].includes(action)) {
+  if (["read_clients", "manage_clients", "read_assessments", "manage_assessments"].includes(action)) {
     return role === "owner" || role === "manager";
   }
   if (role === "owner") return true;

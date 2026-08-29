@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>DAIL 파트너 센터</title>
   <link rel="icon" type="image/png" href="/assets/dail-logo-primary.png?v=20260812-logo-alpha" />
-  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260828-owner-dail-brand1" />
+  <link rel="stylesheet" href="/center-dashboard/styles.css?v=20260829-owner-assessments1" />
   <link rel="stylesheet" href="/assets/ui-icons.css?v=20260812-logo-alpha" />
 </head>
 <body>
@@ -50,11 +50,12 @@
             <a href="#overview" class="active icon-label" data-dashboard-view="overview"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg><span>운영 요약</span></a>
             <a href="#bookings" class="icon-label" data-dashboard-view="bookings"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#calendar"></use></svg><span>예약 관리</span></a>
             <a href="#clients" class="icon-label" data-dashboard-view="clients"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg><span>고객 관리</span></a>
+            <a href="#assessments" class="icon-label" data-dashboard-view="assessments"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg><span>이용자 평가</span></a>
             <a href="#profile" class="icon-label" data-dashboard-view="profile"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#building"></use></svg><span>센터 정보</span></a>
             <a href="#activity" class="icon-label" data-dashboard-view="activity"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg><span>활동·후기</span></a>
             <a href="#members" class="icon-label" data-dashboard-view="members"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#lock"></use></svg><span>구성원·권한</span></a>
           </div>
-          <label class="section-nav-mobile">관리 메뉴<select id="dashboardMobileMenu"><option value="overview">운영 요약</option><option value="bookings">예약 관리</option><option value="clients">고객 관리</option><option value="profile">센터 정보</option><option value="activity">활동·후기</option><option value="members">구성원·권한</option></select></label>
+          <label class="section-nav-mobile">관리 메뉴<select id="dashboardMobileMenu"><option value="overview">운영 요약</option><option value="bookings">예약 관리</option><option value="clients">고객 관리</option><option value="assessments">이용자 평가</option><option value="profile">센터 정보</option><option value="activity">활동·후기</option><option value="members">구성원·권한</option></select></label>
         </nav>
 
         <div class="dashboard-panels">
@@ -138,20 +139,50 @@
             <div id="clientEmptyState" class="client-empty-state" tabindex="-1"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><strong>고객을 선택해 주세요</strong><p>왼쪽 명단에서 고객을 선택하거나 새 고객을 한 명씩 등록할 수 있습니다.</p><button id="clientDetailRetry" type="button" hidden>다시 시도</button></div>
             <form id="clientForm" autocomplete="off" hidden>
               <div class="client-editor-head"><div><small id="clientEditorEyebrow">NEW CLIENT</small><h3 id="clientEditorTitle" tabindex="-1">새 고객 등록</h3></div><button id="closeClientEditor" type="button" aria-label="고객 정보 닫기"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#x"></use></svg></button></div>
-              <div class="client-form-grid">
-                <label>이름<input name="fullName" required maxlength="50" autocomplete="off" placeholder="홍길동" /></label>
-                <label>전화번호<input name="phone" type="tel" required maxlength="20" inputmode="tel" autocomplete="off" placeholder="010-0000-0000" /></label>
-                <label class="wide">주요 불편 분야<input name="primaryConcern" maxlength="160" autocomplete="off" placeholder="예: 허리·골반, 스포츠 복귀" /></label>
-                <label class="wide">이용 목표<textarea name="goal" rows="2" maxlength="500" autocomplete="off" placeholder="센터 이용을 통해 원하는 목표를 적어주세요."></textarea></label>
-                <label class="wide">관리 메모<textarea name="notes" rows="3" maxlength="1000" autocomplete="off" placeholder="센터 운영에 필요한 내용만 기록해 주세요."></textarea><small>진단명이나 상세 의료기록은 입력하지 마세요.</small></label>
+              <div id="clientDetailTabs" class="client-detail-tabs" hidden role="tablist" aria-label="고객 정보 메뉴"><button type="button" class="active" role="tab" aria-selected="true" data-client-detail-tab="profile">기본 정보</button><button type="button" role="tab" aria-selected="false" data-client-detail-tab="assessments">평가 기록 <span id="clientAssessmentCount">0</span></button></div>
+              <div id="clientProfilePanel">
+                <div class="client-form-grid">
+                  <label>이름<input name="fullName" required maxlength="50" autocomplete="off" placeholder="홍길동" /></label>
+                  <label>전화번호<input name="phone" type="tel" required maxlength="20" inputmode="tel" autocomplete="off" placeholder="010-0000-0000" /></label>
+                  <label class="wide">주요 불편 분야<input name="primaryConcern" maxlength="160" autocomplete="off" placeholder="예: 허리·골반, 스포츠 복귀" /></label>
+                  <label class="wide">이용 목표<textarea name="goal" rows="2" maxlength="500" autocomplete="off" placeholder="센터 이용을 통해 원하는 목표를 적어주세요."></textarea></label>
+                  <label class="wide">관리 메모<textarea name="notes" rows="3" maxlength="1000" autocomplete="off" placeholder="센터 운영에 필요한 내용만 기록해 주세요."></textarea><small>진단명이나 상세 의료기록은 입력하지 마세요.</small></label>
+                </div>
+                <label id="clientConsentRow" class="client-consent"><input name="consentConfirmed" type="checkbox" /><span><b>개인정보 저장 동의를 확인했습니다.</b><small>이름·전화번호·주요 불편 분야·이용 목표·관리 메모를 연락과 일정 관리 목적으로 저장한다는 점을 안내한 뒤 등록해 주세요.</small></span></label>
+                <p id="clientFormMessage" class="client-form-message" aria-live="polite"></p>
+                <div class="client-form-actions"><button id="archiveClientButton" class="client-archive-button" type="button" hidden>보관하기</button><button class="primary-button" type="submit">고객 정보 저장</button></div>
               </div>
-              <label id="clientConsentRow" class="client-consent"><input name="consentConfirmed" type="checkbox" /><span><b>개인정보 저장 동의를 확인했습니다.</b><small>이름·전화번호·주요 불편 분야·이용 목표·관리 메모를 연락과 일정 관리 목적으로 저장한다는 점을 안내한 뒤 등록해 주세요.</small></span></label>
-              <p id="clientFormMessage" class="client-form-message" aria-live="polite"></p>
-              <div class="client-form-actions"><button id="archiveClientButton" class="client-archive-button" type="button" hidden>보관하기</button><button class="primary-button" type="submit">고객 정보 저장</button></div>
+              <section id="clientAssessmentPanel" class="client-assessment-panel" hidden role="tabpanel">
+                <div class="assessment-panel-head"><div><strong>방문별 평가 기록</strong><small>평가할 때마다 새 기록으로 저장되어 이전 점수와 함께 남습니다.</small></div><button id="newAssessmentButton" class="primary-button icon-label" type="button"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#plus"></use></svg>새 평가</button></div>
+                <div id="clientAssessmentHistory" class="assessment-history"><p class="empty">평가 기록을 불러오는 중입니다.</p></div>
+                <div id="assessmentEditor" class="assessment-editor" hidden>
+                  <div class="assessment-editor-title"><div><small>DAIL VISIT ASSESSMENT V1</small><strong id="assessmentEditorTitle">새 방문 평가</strong></div><button id="cancelAssessmentButton" type="button">닫기</button></div>
+                  <div class="assessment-meta-grid"><label>평가 날짜<input id="assessmentDate" type="date" /></label><label>방문 구분<select id="assessmentVisitKind"><option value="initial">첫 방문</option><option value="follow_up" selected>재방문</option><option value="discharge">마지막 방문</option></select></label></div>
+                  <div id="assessmentScoreScales" class="assessment-score-scales"></div>
+                  <div class="assessment-narrative-grid"><label>오늘 확인한 주요 변화<textarea id="assessmentMainConcern" rows="2" maxlength="300" placeholder="이전 방문과 비교해 달라진 점을 기록하세요."></textarea></label><label>평가 메모<textarea id="assessmentNotes" rows="3" maxlength="1200" placeholder="측정 상황과 관찰 내용을 간단히 기록하세요."></textarea></label><label>다음 방문 계획<textarea id="assessmentNextPlan" rows="2" maxlength="600" placeholder="다음 방문에서 다시 확인할 내용을 기록하세요."></textarea></label></div>
+                  <label id="assessmentConsentRow" class="client-consent"><input id="assessmentConsent" type="checkbox" /><span><b>민감정보 기록 동의를 확인했습니다.</b><small>점수와 서술형 평가 내용이 센터 관리 목적으로 암호화 저장된다는 점을 이용자에게 안내해 주세요.</small></span></label>
+                  <p id="assessmentFormMessage" class="client-form-message" aria-live="polite"></p>
+                  <div class="assessment-form-actions"><button id="saveAssessmentButton" class="primary-button" type="button">평가 기록 저장</button></div>
+                </div>
+              </section>
             </form>
           </aside>
         </div>
         <p class="privacy-notice"><b>개인정보 보호</b> 이 명단은 연락과 일정 관리 용도입니다. 진단·치료 기록은 저장하지 말고, 이용이 끝난 고객은 보관 상태로 전환해 주세요.</p>
+      </section>
+
+      <section id="assessmentsSection" class="workspace assessments-workspace dashboard-view" data-dashboard-panel="assessments" hidden>
+        <div class="section-heading workspace-heading"><div><p class="eyebrow">DAIL ASSESSMENT TOOLS</p><h2>이용자 평가</h2><p>한 사람의 방문 기록을 시간순으로 쌓아 변화 흐름을 확인합니다.</p></div><span class="period">방문별 반복 기록</span></div>
+        <div class="assessment-tools-grid">
+          <article class="assessment-tool-card is-active"><span>사용 가능</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#activity"></use></svg></div><h3>DAIL 방문 평가 v1</h3><p>통증 정도(VAS), 일상 기능, 움직임 자신감, 균형 자신감을 0–10점으로 기록합니다.</p><div><i>VAS</i><i>일상 기능</i><i>움직임</i><i>균형</i></div></article>
+          <article class="assessment-tool-card is-planned" aria-disabled="true"><span>양식 준비 중</span><div class="assessment-tool-icon"><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#list-checks"></use></svg></div><h3>표준 균형 평가</h3><p>Balance Scale의 적용 범위와 양식을 확정한 뒤 버전이 표시되도록 추가할 예정입니다.</p><div><i>버전 관리</i><i>점수 추이</i></div></article>
+        </div>
+        <section class="assessment-client-workspace">
+          <div class="assessment-client-toolbar"><div><strong>평가할 이용자</strong><small>고객을 선택하면 지금까지의 방문별 평가가 표시됩니다.</small></div><label><select id="assessmentClientSelect" aria-label="평가할 이용자 선택"><option value="">이용자를 선택하세요</option></select></label><button id="startAssessmentButton" class="primary-button" type="button" disabled>새 평가 시작</button></div>
+          <div id="assessmentWorkspaceSummary" class="assessment-workspace-summary"><div class="assessment-empty"><span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#user-cog"></use></svg></span><strong>이용자를 먼저 선택해 주세요</strong><p>평가 이력과 점수 변화를 이 화면에서 확인할 수 있습니다.</p></div></div>
+          <div id="assessmentWorkspaceHistory" class="assessment-history assessment-history-wide"></div>
+        </section>
+        <p class="privacy-notice"><b>기록 범위 안내</b> 이 도구는 센터 운영을 위한 반복 평가 기록입니다. 진단서나 치료기록을 대체하지 않으며, 민감정보 동의를 확인한 뒤 필요한 내용만 기록하세요.</p>
       </section>
 
       <section id="profile" class="workspace dashboard-view" data-dashboard-panel="profile" hidden>
@@ -188,6 +219,6 @@
       </div>
     </section>
   </main>
-  <script src="/center-dashboard/app.js?v=20260828-owner-warm-premium1"></script>
+  <script src="/center-dashboard/app.js?v=20260829-owner-assessments1"></script>
 </body>
 </html>
