@@ -43,9 +43,10 @@ let assessmentListSequence = 0;
 let assessmentMutationSequence = 0;
 let selectedAssessmentId = "";
 let workspaceAssessmentClientId = "";
-let assessmentDraftScores = { painVas: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
+let assessmentDraftScores = { painVas: null, painAtRest: null, painWithActivity: null, painWorst24h: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
 let assessmentDraftRom = [];
 let assessmentDraftMmt = [];
+let assessmentDraftFunctionalTests = [];
 let activeDashboardView = "overview";
 let ownerMenuAutoCloseTimer = 0;
 let currentSchedule = {};
@@ -95,10 +96,15 @@ const BOOKING_STATUS_LABELS = {
   no_show: "노쇼",
 };
 const ASSESSMENT_SCORE_FIELDS = [
-  { key: "painVas", label: "통증 정도 (VAS)", low: "통증 없음", high: "매우 심함", direction: "lower", required: true },
+  { key: "painVas", label: "현재 통증 (VAS)", low: "통증 없음", high: "매우 심함", direction: "lower", required: true },
   { key: "dailyFunction", label: "일상 기능", low: "매우 어려움", high: "충분히 가능", direction: "higher" },
   { key: "movementConfidence", label: "움직임 자신감", low: "자신 없음", high: "매우 자신 있음", direction: "higher" },
   { key: "balanceConfidence", label: "균형 자신감", low: "매우 불안함", high: "매우 안정적", direction: "higher" },
+];
+const ASSESSMENT_PAIN_CONTEXT_FIELDS = [
+  { key: "painAtRest", label: "안정 시", help: "가만히 있을 때" },
+  { key: "painWithActivity", label: "활동 시", help: "주요 불편 동작 중" },
+  { key: "painWorst24h", label: "최근 최고", help: "지난 24시간" },
 ];
 const ASSESSMENT_SIDE_OPTIONS = [
   ["not_applicable", "해당 없음"],
@@ -1015,6 +1021,7 @@ function clearClientState() {
   assessmentDraftScores = emptyAssessmentScores();
   assessmentDraftRom = [];
   assessmentDraftMmt = [];
+  assessmentDraftFunctionalTests = [];
   const form = document.querySelector("#clientForm");
   form.reset();
   form.querySelectorAll("input, textarea, button").forEach((element) => { element.disabled = false; });
@@ -1388,7 +1395,7 @@ async function toggleClientArchive() {
 }
 
 function emptyAssessmentScores() {
-  return { painVas: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
+  return { painVas: null, painAtRest: null, painWithActivity: null, painWorst24h: null, dailyFunction: null, movementConfidence: null, balanceConfidence: null };
 }
 
 function assessmentVisitLabel(value) {
@@ -1402,11 +1409,15 @@ function assessmentScoreValue(value) {
 }
 
 function emptyRomMeasurement() {
-  return { joint: "", movement: "", side: "not_applicable", active: "", passive: "", reference: "", note: "" };
+  return { joint: "", movement: "", side: "not_applicable", active: "", passive: "", reference: "", endFeel: "", pain: "", note: "" };
 }
 
 function emptyMmtMeasurement() {
-  return { movement: "", side: "not_applicable", grade: "", note: "" };
+  return { movement: "", side: "not_applicable", grade: "", pain: "", note: "" };
+}
+
+function emptyFunctionalTest() {
+  return { name: "", condition: "", result: "", unit: "", note: "" };
 }
 
 function assessmentSideOptions(selected) {
@@ -1430,6 +1441,8 @@ function renderAssessmentMeasurementRows() {
       <label><span>AROM</span><input data-rom-field="active" type="number" inputmode="numeric" min="-90" max="360" step="1" value="${escapeHtml(row.active ?? "")}" placeholder="°" /></label>
       <label><span>PROM</span><input data-rom-field="passive" type="number" inputmode="numeric" min="-90" max="360" step="1" value="${escapeHtml(row.passive ?? "")}" placeholder="°" /></label>
       <label><span>참고</span><input data-rom-field="reference" maxlength="40" value="${escapeHtml(row.reference || "")}" placeholder="예: 135°" /></label>
+      <label><span>종말감</span><input data-rom-field="endFeel" maxlength="40" value="${escapeHtml(row.endFeel || "")}" placeholder="예: 단단함" /></label>
+      <label><span>통증</span><input data-rom-field="pain" type="number" inputmode="numeric" min="0" max="10" step="1" value="${escapeHtml(row.pain ?? "")}" placeholder="0–10" /></label>
       <label><span>비고</span><input data-rom-field="note" maxlength="160" value="${escapeHtml(row.note || "")}" placeholder="측정 메모" /></label>
       <button type="button" data-remove-rom="${index}" aria-label="ROM ${index + 1}번 항목 삭제" ${assessmentDraftRom.length === 1 ? "disabled" : ""}>×</button>
     </div>`).join("");
@@ -1439,8 +1452,19 @@ function renderAssessmentMeasurementRows() {
       <label><span>근육·동작</span><input data-mmt-field="movement" maxlength="80" value="${escapeHtml(row.movement || "")}" placeholder="예: 무릎 폄" /></label>
       <label><span>좌우</span><select data-mmt-field="side">${assessmentSideOptions(row.side || "not_applicable")}</select></label>
       <label><span>등급</span><select data-mmt-field="grade">${assessmentGradeOptions(row.grade)}</select></label>
+      <label><span>통증</span><input data-mmt-field="pain" type="number" inputmode="numeric" min="0" max="10" step="1" value="${escapeHtml(row.pain ?? "")}" placeholder="0–10" /></label>
       <label><span>비고</span><input data-mmt-field="note" maxlength="160" value="${escapeHtml(row.note || "")}" placeholder="저항·보상 움직임" /></label>
       <button type="button" data-remove-mmt="${index}" aria-label="MMT ${index + 1}번 항목 삭제" ${assessmentDraftMmt.length === 1 ? "disabled" : ""}>×</button>
+    </div>`).join("");
+
+  document.querySelector("#assessmentFunctionalTestRows").innerHTML = assessmentDraftFunctionalTests.map((row, index) => `
+    <div class="measurement-row" data-functional-test-row="${index}">
+      <label><span>검사명</span><input data-functional-test-field="name" maxlength="100" value="${escapeHtml(row.name || "")}" placeholder="예: 30초 의자 일어서기" /></label>
+      <label><span>측정 조건</span><input data-functional-test-field="condition" maxlength="120" value="${escapeHtml(row.condition || "")}" placeholder="예: 팔짱" /></label>
+      <label><span>결과</span><input data-functional-test-field="result" maxlength="100" value="${escapeHtml(row.result || "")}" placeholder="예: 10" /></label>
+      <label><span>단위</span><input data-functional-test-field="unit" maxlength="30" value="${escapeHtml(row.unit || "")}" placeholder="회·초·m" /></label>
+      <label><span>비고</span><input data-functional-test-field="note" maxlength="200" value="${escapeHtml(row.note || "")}" placeholder="보조·중단 사유" /></label>
+      <button type="button" data-remove-functional-test="${index}" aria-label="기능검사 ${index + 1}번 항목 삭제">×</button>
     </div>`).join("");
 }
 
@@ -1454,6 +1478,8 @@ function readRomMeasurements() {
       active: value("active") === "" ? null : Number(value("active")),
       passive: value("passive") === "" ? null : Number(value("passive")),
       reference: value("reference"),
+      endFeel: value("endFeel"),
+      pain: value("pain") === "" ? null : Number(value("pain")),
       note: value("note"),
     };
   });
@@ -1466,9 +1492,27 @@ function readMmtMeasurements() {
       movement: value("movement"),
       side: value("side"),
       grade: value("grade") === "" ? null : Number(value("grade")),
+      pain: value("pain") === "" ? null : Number(value("pain")),
       note: value("note"),
     };
   });
+}
+
+function readFunctionalTests() {
+  return [...document.querySelectorAll("[data-functional-test-row]")].map((row) => {
+    const value = (field) => row.querySelector(`[data-functional-test-field="${field}"]`).value.trim();
+    return { name: value("name"), condition: value("condition"), result: value("result"), unit: value("unit"), note: value("note") };
+  }).filter((row) => Object.values(row).some(Boolean));
+}
+
+function renderAssessmentPainContext() {
+  const options = (selected) => '<option value="">미기록</option>' + Array.from({ length: 11 }, (_, value) =>
+    `<option value="${value}" ${selected === value ? "selected" : ""}>${value}</option>`
+  ).join("");
+  document.querySelector("#assessmentPainContext").innerHTML = ASSESSMENT_PAIN_CONTEXT_FIELDS.map((field) => {
+    const selected = assessmentScoreValue(assessmentDraftScores[field.key]);
+    return `<label><span><b>${escapeHtml(field.label)}</b><small>${escapeHtml(field.help)}</small></span><select data-pain-context-key="${field.key}" aria-label="${escapeHtml(field.label)} 통증 점수">${options(selected)}</select><em>/10</em></label>`;
+  }).join("");
 }
 
 function renderAssessmentScales() {
@@ -1591,17 +1635,39 @@ function openAssessmentEditor(assessment = null) {
   assessmentDraftScores = { ...emptyAssessmentScores(), ...(assessment?.scores || {}) };
   assessmentDraftRom = assessment?.rom?.length ? assessment.rom.map((row) => ({ ...row })) : [emptyRomMeasurement()];
   assessmentDraftMmt = assessment?.mmt?.length ? assessment.mmt.map((row) => ({ ...row })) : [emptyMmtMeasurement()];
+  assessmentDraftFunctionalTests = assessment?.functional_tests?.length ? assessment.functional_tests.map((row) => ({ ...row })) : [];
+  const intake = assessment?.intake || {};
+  const goals = assessment?.goals || {};
+  const evaluator = assessment?.evaluator || {};
+  const selectedClient = currentClients.find((item) => item.id === selectedClientId);
+  const centerManager = currentOverviewData?.center?.therapist || "";
   document.querySelector("#assessmentEditorTitle").textContent = assessment ? "기능 평가 수정" : "새 기능 평가";
   document.querySelector("#assessmentDate").value = assessment?.assessed_on || currentBookingDate();
   document.querySelector("#assessmentVisitKind").value = assessment?.visit_kind || (existing.length ? "follow_up" : "initial");
+  document.querySelector("#assessmentEvaluatorName").value = evaluator.name || centerManager;
+  document.querySelector("#assessmentEvaluatorCredential").value = evaluator.credential || "";
+  document.querySelector("#assessmentIntakeArea").value = intake.primaryArea || selectedClient?.primary_concern || "";
+  document.querySelector("#assessmentOnsetDate").value = intake.onsetDate || "";
+  document.querySelector("#assessmentOnsetMechanism").value = intake.onsetMechanism || "";
+  document.querySelector("#assessmentAggravatingFactors").value = intake.aggravatingFactors || "";
+  document.querySelector("#assessmentEasingFactors").value = intake.easingFactors || "";
+  document.querySelector("#assessmentActivityLimitation").value = intake.activityLimitation || "";
+  document.querySelector("#assessmentPatientGoal").value = intake.patientGoal || selectedClient?.goal || "";
+  document.querySelector("#assessmentPrecautions").value = intake.precautions || "";
+  document.querySelector("#assessmentReferralStatus").value = intake.referralStatus || "none";
   document.querySelector("#assessmentSoapSubjective").value = assessment?.soap?.subjective || assessment?.main_concern || "";
   document.querySelector("#assessmentSoapObjective").value = assessment?.soap?.objective || "";
   document.querySelector("#assessmentSoapAssessment").value = assessment?.soap?.assessment || assessment?.notes || "";
   document.querySelector("#assessmentSoapPlan").value = assessment?.soap?.plan || assessment?.next_plan || "";
+  document.querySelector("#assessmentShortTermGoal").value = goals.shortTerm || "";
+  document.querySelector("#assessmentLongTermGoal").value = goals.longTerm || "";
+  document.querySelector("#assessmentReviewDate").value = goals.reviewOn || "";
+  document.querySelector("#assessmentFrequency").value = goals.frequency || "";
   document.querySelector("#assessmentConsent").checked = false;
   document.querySelector("#assessmentConsentRow").hidden = Boolean(assessment);
   document.querySelector("#printAssessmentButton").disabled = !assessment;
   document.querySelector("#assessmentFormMessage").textContent = "";
+  renderAssessmentPainContext();
   renderAssessmentScales();
   renderAssessmentMeasurementRows();
   const editor = document.querySelector("#assessmentEditor");
@@ -1611,7 +1677,8 @@ function openAssessmentEditor(assessment = null) {
 
 async function saveAssessment() {
   if (!selectedClientId) return;
-  const scores = Object.fromEntries(ASSESSMENT_SCORE_FIELDS.map((field) => [field.key, assessmentScoreValue(assessmentDraftScores[field.key])]));
+  const scoreFields = [...ASSESSMENT_SCORE_FIELDS, ...ASSESSMENT_PAIN_CONTEXT_FIELDS];
+  const scores = Object.fromEntries(scoreFields.map((field) => [field.key, assessmentScoreValue(assessmentDraftScores[field.key])]));
   const message = document.querySelector("#assessmentFormMessage");
   if (scores.painVas === null) {
     message.textContent = "통증 정도(VAS)를 선택해 주세요.";
@@ -1619,12 +1686,50 @@ async function saveAssessment() {
   }
   const rom = readRomMeasurements();
   const mmt = readMmtMeasurements();
+  const functionalTests = readFunctionalTests();
   if (!rom.length || rom.some((row) => !row.joint || !row.movement || (row.active === null && row.passive === null))) {
     message.textContent = "ROM 항목의 관절·부위, 동작, AROM 또는 PROM을 확인해 주세요.";
     return;
   }
   if (!mmt.length || mmt.some((row) => !row.movement || row.grade === null)) {
     message.textContent = "MMT 항목의 근육·동작과 등급을 확인해 주세요.";
+    return;
+  }
+  if (functionalTests.some((row) => !row.name || !row.result)) {
+    message.textContent = "기능검사 항목의 검사명과 결과를 확인해 주세요.";
+    return;
+  }
+  const intake = {
+    primaryArea: document.querySelector("#assessmentIntakeArea").value.trim(),
+    onsetDate: document.querySelector("#assessmentOnsetDate").value,
+    onsetMechanism: document.querySelector("#assessmentOnsetMechanism").value.trim(),
+    aggravatingFactors: document.querySelector("#assessmentAggravatingFactors").value.trim(),
+    easingFactors: document.querySelector("#assessmentEasingFactors").value.trim(),
+    activityLimitation: document.querySelector("#assessmentActivityLimitation").value.trim(),
+    patientGoal: document.querySelector("#assessmentPatientGoal").value.trim(),
+    precautions: document.querySelector("#assessmentPrecautions").value.trim(),
+    referralStatus: document.querySelector("#assessmentReferralStatus").value,
+  };
+  if (!intake.primaryArea || !intake.activityLimitation || !intake.patientGoal) {
+    message.textContent = "주요 평가 부위, 일상·운동 제한, 이용자 목표를 입력해 주세요.";
+    return;
+  }
+  const goals = {
+    shortTerm: document.querySelector("#assessmentShortTermGoal").value.trim(),
+    longTerm: document.querySelector("#assessmentLongTermGoal").value.trim(),
+    reviewOn: document.querySelector("#assessmentReviewDate").value,
+    frequency: document.querySelector("#assessmentFrequency").value.trim(),
+  };
+  if (!goals.shortTerm || !goals.longTerm) {
+    message.textContent = "단기 목표와 장기 목표를 입력해 주세요.";
+    return;
+  }
+  const evaluator = {
+    name: document.querySelector("#assessmentEvaluatorName").value.trim(),
+    credential: document.querySelector("#assessmentEvaluatorCredential").value.trim(),
+  };
+  if (!evaluator.name) {
+    message.textContent = "평가 담당자 이름을 입력해 주세요.";
     return;
   }
   const soap = {
@@ -1663,6 +1768,10 @@ async function saveAssessment() {
         scores,
         rom,
         mmt,
+        functionalTests,
+        intake,
+        goals,
+        evaluator,
         soap,
         consentConfirmed: document.querySelector("#assessmentConsent").checked,
       }),
@@ -1691,6 +1800,7 @@ async function saveAssessment() {
   renderSelectedClientAssessments();
   assessmentDraftRom = data.assessment.rom?.map((row) => ({ ...row })) || rom;
   assessmentDraftMmt = data.assessment.mmt?.map((row) => ({ ...row })) || mmt;
+  assessmentDraftFunctionalTests = data.assessment.functional_tests?.map((row) => ({ ...row })) || functionalTests;
   document.querySelector("#assessmentEditorTitle").textContent = "기능 평가 수정";
   document.querySelector("#assessmentConsentRow").hidden = true;
   document.querySelector("#printAssessmentButton").disabled = false;
@@ -1698,7 +1808,10 @@ async function saveAssessment() {
 }
 
 function printSelectedAssessment() {
-  const assessment = (assessmentCache.get(selectedClientId) || []).find((item) => item.id === selectedAssessmentId);
+  const clientAssessments = assessmentCache.get(selectedClientId) || [];
+  const assessmentIndex = clientAssessments.findIndex((item) => item.id === selectedAssessmentId);
+  const assessment = clientAssessments[assessmentIndex];
+  const previousAssessment = assessmentIndex >= 0 ? clientAssessments[assessmentIndex + 1] || null : null;
   const client = currentClients.find((item) => item.id === selectedClientId);
   const center = currentOverviewData?.center;
   if (!assessment || !client || !center) {
@@ -1708,7 +1821,7 @@ function printSelectedAssessment() {
   const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const storageKey = `dail_assessment_print:${token}`;
   const payload = {
-    version: "dail_function_soap_v1",
+    version: "dail_function_professional_v2",
     generatedAt: new Date().toISOString(),
     center: {
       name: center.name || "DAIL 등록 센터",
@@ -1723,6 +1836,7 @@ function printSelectedAssessment() {
       goal: client.goal || "",
     },
     assessment,
+    previousAssessment,
   };
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(payload));
@@ -1966,6 +2080,11 @@ document.querySelector("#assessmentScoreScales").addEventListener("click", (even
     renderAssessmentScales();
   }
 });
+document.querySelector("#assessmentPainContext").addEventListener("change", (event) => {
+  const select = event.target.closest("[data-pain-context-key]");
+  if (!select) return;
+  assessmentDraftScores[select.dataset.painContextKey] = select.value === "" ? null : Number(select.value);
+});
 document.querySelector("#addRomRowButton").addEventListener("click", () => {
   assessmentDraftRom = readRomMeasurements();
   if (assessmentDraftRom.length >= 12) {
@@ -1998,6 +2117,25 @@ document.querySelector("#assessmentMmtRows").addEventListener("click", (event) =
   assessmentDraftMmt = readMmtMeasurements();
   assessmentDraftMmt.splice(Number(button.dataset.removeMmt), 1);
   if (!assessmentDraftMmt.length) assessmentDraftMmt.push(emptyMmtMeasurement());
+  renderAssessmentMeasurementRows();
+});
+document.querySelector("#addFunctionalTestButton").addEventListener("click", () => {
+  assessmentDraftFunctionalTests = readFunctionalTests();
+  if (assessmentDraftFunctionalTests.length >= 8) {
+    document.querySelector("#assessmentFormMessage").textContent = "기능검사는 최대 8개까지 기록할 수 있습니다.";
+    return;
+  }
+  assessmentDraftFunctionalTests.push(emptyFunctionalTest());
+  renderAssessmentMeasurementRows();
+});
+document.querySelector("#assessmentFunctionalTestRows").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-functional-test]");
+  if (!button) return;
+  assessmentDraftFunctionalTests = [...document.querySelectorAll("[data-functional-test-row]")].map((row) => {
+    const value = (field) => row.querySelector(`[data-functional-test-field="${field}"]`).value.trim();
+    return { name: value("name"), condition: value("condition"), result: value("result"), unit: value("unit"), note: value("note") };
+  });
+  assessmentDraftFunctionalTests.splice(Number(button.dataset.removeFunctionalTest), 1);
   renderAssessmentMeasurementRows();
 });
 document.querySelector("#saveAssessmentButton").addEventListener("click", saveAssessment);

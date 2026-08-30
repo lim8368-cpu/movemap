@@ -25,13 +25,18 @@ const ASSESSMENT_SELECT = [
 
 const SCORE_FIELDS = {
   painVas: "통증 정도",
+  painAtRest: "안정 시 통증",
+  painWithActivity: "활동 시 통증",
+  painWorst24h: "최근 24시간 최고 통증",
   dailyFunction: "일상 기능",
   movementConfidence: "움직임 자신감",
   balanceConfidence: "균형 자신감",
 };
 
 const ASSESSMENT_SIDES = new Set(["left", "right", "bilateral", "not_applicable"]);
+const REFERRAL_STATUSES = new Set(["none", "monitor", "recommended"]);
 const MAX_MEASUREMENT_ROWS = 12;
+const MAX_FUNCTION_TEST_ROWS = 8;
 
 function bodyValue(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -107,6 +112,19 @@ function degreeValue(value, label) {
   return degree;
 }
 
+function optionalDate(value, label, { min = "2000-01-01", max = "2100-12-31" } = {}) {
+  const date = String(value || "");
+  if (!date) return "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw Object.assign(new Error(`${label}을(를) 확인해 주세요.`), { statusCode: 400 });
+  }
+  const marker = new Date(`${date}T12:00:00+09:00`);
+  if (Number.isNaN(marker.getTime()) || date < min || date > max) {
+    throw Object.assign(new Error(`${label}을(를) 확인해 주세요.`), { statusCode: 400 });
+  }
+  return date;
+}
+
 function normalizedRom(value) {
   if (!Array.isArray(value)) {
     throw Object.assign(new Error("ROM 측정값을 입력해 주세요."), { statusCode: 400 });
@@ -132,6 +150,8 @@ function normalizedRom(value) {
       active,
       passive,
       reference: cleanText(item.reference, 40, `ROM ${index + 1}번 참고 범위`),
+      endFeel: cleanText(item.endFeel, 40, `ROM ${index + 1}번 종말감`),
+      pain: scoreValue(item.pain, `ROM ${index + 1}번 통증 반응`),
       note: cleanText(item.note, 160, `ROM ${index + 1}번 비고`),
     };
   });
@@ -163,6 +183,7 @@ function normalizedMmt(value) {
       movement: requiredText(item.movement, 80, `MMT ${index + 1}번 근육·동작`),
       side: sideValue(item.side, `MMT ${index + 1}번 항목`),
       grade,
+      pain: scoreValue(item.pain, `MMT ${index + 1}번 통증 반응`),
       note: cleanText(item.note, 160, `MMT ${index + 1}번 비고`),
     };
   });
@@ -170,6 +191,62 @@ function normalizedMmt(value) {
     throw Object.assign(new Error("MMT 측정값을 하나 이상 입력해 주세요."), { statusCode: 400 });
   }
   return rows;
+}
+
+function normalizedFunctionalTests(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw Object.assign(new Error("기능검사 결과를 확인해 주세요."), { statusCode: 400 });
+  }
+  if (value.length > MAX_FUNCTION_TEST_ROWS) {
+    throw Object.assign(new Error(`기능검사는 최대 ${MAX_FUNCTION_TEST_ROWS}개까지 기록할 수 있습니다.`), { statusCode: 400 });
+  }
+  return value.filter((item) => item && typeof item === "object" && !Array.isArray(item)
+    && Object.values(item).some((entry) => String(entry ?? "").trim()))
+    .map((item, index) => ({
+      name: requiredText(item.name, 100, `기능검사 ${index + 1}번 검사명`),
+      result: requiredText(item.result, 100, `기능검사 ${index + 1}번 결과`),
+      unit: cleanText(item.unit, 30, `기능검사 ${index + 1}번 단위`),
+      condition: cleanText(item.condition, 120, `기능검사 ${index + 1}번 측정 조건`),
+      note: cleanText(item.note, 200, `기능검사 ${index + 1}번 비고`),
+    }));
+}
+
+function normalizedIntake(value, assessedOn) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const referralStatus = String(source.referralStatus || "none");
+  if (!REFERRAL_STATUSES.has(referralStatus)) {
+    throw Object.assign(new Error("전문 의료기관 상담 안내 상태를 확인해 주세요."), { statusCode: 400 });
+  }
+  return {
+    primaryArea: requiredText(source.primaryArea, 100, "주요 평가 부위"),
+    onsetDate: optionalDate(source.onsetDate, "불편 시작일", { max: assessedOn }),
+    onsetMechanism: cleanText(source.onsetMechanism, 400, "발생 계기"),
+    aggravatingFactors: cleanText(source.aggravatingFactors, 500, "불편이 심해지는 상황"),
+    easingFactors: cleanText(source.easingFactors, 500, "불편이 줄어드는 상황"),
+    activityLimitation: requiredText(source.activityLimitation, 1000, "일상·운동 제한"),
+    patientGoal: requiredText(source.patientGoal, 1000, "이용자 목표"),
+    precautions: cleanText(source.precautions, 1000, "운동 전 확인사항"),
+    referralStatus,
+  };
+}
+
+function normalizedGoals(value, assessedOn) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    shortTerm: requiredText(source.shortTerm, 1000, "단기 목표"),
+    longTerm: requiredText(source.longTerm, 1000, "장기 목표"),
+    reviewOn: optionalDate(source.reviewOn, "재평가 예정일", { min: assessedOn }),
+    frequency: cleanText(source.frequency, 120, "권장 빈도"),
+  };
+}
+
+function normalizedEvaluator(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    name: requiredText(source.name, 60, "평가 담당자"),
+    credential: cleanText(source.credential, 100, "평가 담당자 자격"),
+  };
 }
 
 function normalizedInput(body) {
@@ -202,13 +279,22 @@ function normalizedInput(body) {
   };
   const rom = normalizedRom(body.rom);
   const mmt = normalizedMmt(body.mmt);
+  const functionalTests = normalizedFunctionalTests(body.functionalTests);
+  const intake = normalizedIntake(body.intake, assessedOn);
+  const goals = normalizedGoals(body.goals, assessedOn);
+  const evaluator = normalizedEvaluator(body.evaluator);
   const narrative = {
+    formVersion: 2,
     mainConcern: soap.subjective,
     notes: soap.assessment,
     nextPlan: soap.plan,
     soap,
     rom,
     mmt,
+    functionalTests,
+    intake,
+    goals,
+    evaluator,
   };
   return { assessedOn, visitKind, templateKey, scores, narrative };
 }
@@ -251,6 +337,10 @@ function decryptRow(row) {
     scores,
     rom: Array.isArray(narrative.rom) ? narrative.rom : [],
     mmt: Array.isArray(narrative.mmt) ? narrative.mmt : [],
+    functional_tests: Array.isArray(narrative.functionalTests) ? narrative.functionalTests : [],
+    intake: narrative.intake && typeof narrative.intake === "object" && !Array.isArray(narrative.intake) ? narrative.intake : {},
+    goals: narrative.goals && typeof narrative.goals === "object" && !Array.isArray(narrative.goals) ? narrative.goals : {},
+    evaluator: narrative.evaluator && typeof narrative.evaluator === "object" && !Array.isArray(narrative.evaluator) ? narrative.evaluator : {},
     soap,
     main_concern: soap.subjective,
     notes: soap.assessment,

@@ -62,6 +62,31 @@ function request({ method = "GET", userId = OWNER_USER, centerId = CENTER_A, cli
   };
 }
 
+function professionalDetails(overrides = {}) {
+  return {
+    intake: {
+      primaryArea: "오른쪽 무릎",
+      onsetDate: "2026-08-01",
+      onsetMechanism: "러닝 이후 시작",
+      aggravatingFactors: "계단 내려가기",
+      easingFactors: "휴식",
+      activityLimitation: "계단과 20분 이상 걷기 어려움",
+      patientGoal: "통증 걱정 없이 출퇴근하기",
+      precautions: "최근 수술 없음",
+      referralStatus: "none",
+    },
+    goals: {
+      shortTerm: "2주 이내 활동 시 통증을 4 이하로 낮춘다.",
+      longTerm: "6주 이내 계단을 불편 없이 이용한다.",
+      reviewOn: "2026-09-11",
+      frequency: "주 2회, 6주",
+    },
+    evaluator: { name: "김다일", credential: "물리치료사" },
+    functionalTests: [{ name: "30초 의자 일어서기", result: "10", unit: "회", condition: "팔짱", note: "마지막 2회 속도 저하" }],
+    ...overrides,
+  };
+}
+
 global.fetch = async function fetchMock(rawUrl, init = {}) {
   const url = new URL(rawUrl);
   const table = url.pathname.split("/").pop();
@@ -144,15 +169,16 @@ async function call(req) {
     body: {
       assessedOn: "2026-08-28",
       visitKind: "follow_up",
-      scores: { painVas: 6, dailyFunction: 4, movementConfidence: 3, balanceConfidence: null },
-      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 115, passive: 125, reference: "135", note: "말기 범위 불편" }],
-      mmt: [{ movement: "무릎 폄", side: "right", grade: 4, note: "저항 시 흔들림" }],
+      scores: { painVas: 6, painAtRest: 2, painWithActivity: 6, painWorst24h: 7, dailyFunction: 4, movementConfidence: 3, balanceConfidence: null },
+      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 115, passive: 125, reference: "135", endFeel: "단단함", pain: 6, note: "말기 범위 불편" }],
+      mmt: [{ movement: "무릎 폄", side: "right", grade: 4, pain: 3, note: "저항 시 흔들림" }],
       soap: {
         subjective: "계단에서 통증 증가",
         objective: "우측 무릎 굴곡 범위 감소",
         assessment: "VAS 재평가",
         plan: "다음 방문에 균형 항목 추가",
       },
+      ...professionalDetails(),
       consentConfirmed: true,
     },
   }));
@@ -161,6 +187,10 @@ async function call(req) {
   assert.equal(created.body.assessment.main_concern, "계단에서 통증 증가");
   assert.equal(created.body.assessment.rom[0].active, 115);
   assert.equal(created.body.assessment.mmt[0].grade, 4);
+  assert.equal(created.body.assessment.functional_tests[0].unit, "회");
+  assert.equal(created.body.assessment.intake.primaryArea, "오른쪽 무릎");
+  assert.equal(created.body.assessment.goals.frequency, "주 2회, 6주");
+  assert.equal(created.body.assessment.evaluator.credential, "물리치료사");
   assert.equal(created.body.assessment.soap.objective, "우측 무릎 굴곡 범위 감소");
   const storedText = JSON.stringify(assessments[0]);
   for (const plaintext of ["계단에서 통증 증가", "우측 무릎 굴곡 범위 감소", "VAS 재평가", "다음 방문에 균형 항목 추가", "무릎 폄"]) {
@@ -179,14 +209,18 @@ async function call(req) {
       assessedOn: "2026-08-28",
       visitKind: "discharge",
       scores: { painVas: 2, dailyFunction: 8 },
-      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 130, passive: 135, reference: "135", note: "" }],
-      mmt: [{ movement: "무릎 폄", side: "right", grade: 5, note: "" }],
+      rom: [{ joint: "무릎", movement: "굴곡", side: "right", active: 130, passive: 135, reference: "135", endFeel: "정상", pain: 1, note: "" }],
+      mmt: [{ movement: "무릎 폄", side: "right", grade: 5, pain: 0, note: "" }],
       soap: {
         subjective: "일상 활동 개선",
         objective: "계단 오르기 독립 수행",
         assessment: "목표 범위에 도달",
         plan: "자율 관리",
       },
+      ...professionalDetails({
+        intake: { ...professionalDetails().intake, activityLimitation: "계단 이용 가능, 장거리 보행 시 피로" },
+        goals: { ...professionalDetails().goals, reviewOn: "2026-10-01" },
+      }),
     },
   }));
   assert.equal(updated.statusCode, 200);
