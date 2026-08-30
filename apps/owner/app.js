@@ -1538,10 +1538,26 @@ function renderAssessmentHistory(target, assessments, clientId) {
       if (value === null) return "";
       const previousValue = assessmentScoreValue(previous?.scores?.[field.key]);
       const difference = previousValue === null ? "" : value === previousValue ? "변화 없음" : `${value > previousValue ? "+" : ""}${value - previousValue}`;
-      return `<span><small>${escapeHtml(field.label.replace(" (VAS)", ""))}</small><b>${value}</b><i>${escapeHtml(difference)}</i></span>`;
+      return `<span><small>${escapeHtml(field.label.replace(" (VAS)", ""))}</small><b>${value}<em>/10</em></b><span class="assessment-score-bar" aria-hidden="true"><i style="--assessment-score:${value * 10}%"></i></span><u>${escapeHtml(difference || "첫 측정")}</u></span>`;
     }).join("");
     return `<button type="button" class="assessment-record" data-assessment-open="${escapeHtml(assessment.id)}" data-assessment-client="${escapeHtml(clientId)}"><span class="assessment-record-date"><b>${escapeHtml(formatDate(`${assessment.assessed_on}T12:00:00+09:00`, false))}</b><i>${escapeHtml(assessmentVisitLabel(assessment.visit_kind))}</i></span><span class="assessment-record-scores">${scoreItems}</span><span class="assessment-record-note"><b>${escapeHtml(assessment.main_concern || "주요 변화 미입력")}</b><small>${escapeHtml(assessment.next_plan || assessment.notes || "기록을 눌러 상세 내용을 확인하세요.")}</small></span><svg class="ui-icon" aria-hidden="true"><use href="/assets/ui-icons.svg#arrow-right"></use></svg></button>`;
   }).join("");
+}
+
+function renderAssessmentProgress(assessments) {
+  const latest = assessments?.[0];
+  if (!latest) return "";
+  const previous = assessments?.[1];
+  const metrics = ASSESSMENT_SCORE_FIELDS.filter((field) => ["painVas", "dailyFunction", "movementConfidence", "balanceConfidence"].includes(field.key));
+  const rows = metrics.map((field) => {
+    const current = assessmentScoreValue(latest.scores?.[field.key]);
+    const before = assessmentScoreValue(previous?.scores?.[field.key]);
+    if (current === null) return "";
+    const change = before === null ? "첫 측정" : current === before ? "변화 없음" : `${current > before ? "+" : ""}${current - before}`;
+    return `<div class="assessment-progress-row"><strong>${escapeHtml(field.label.replace(" (VAS)", ""))}</strong><div class="assessment-progress-bars"><span><small>이전</small><i><b style="--assessment-score:${(before ?? 0) * 10}%"></b></i><em>${before ?? "—"}</em></span><span class="current"><small>현재</small><i><b style="--assessment-score:${current * 10}%"></b></i><em>${current}</em></span></div><u>${escapeHtml(change)}</u></div>`;
+  }).join("");
+  if (!rows) return "";
+  return `<section class="assessment-progress-panel" aria-label="최근 평가 변화"><header><div><strong>최근 평가 변화</strong><small>${previous ? `${escapeHtml(formatDate(`${previous.assessed_on}T12:00:00+09:00`, false))}과 비교` : "첫 평가 기준값"}</small></div><span>0</span><i aria-hidden="true"></i><span>10</span></header>${rows}</section>`;
 }
 
 function renderAssessmentWorkspace() {
@@ -1564,7 +1580,7 @@ function renderAssessmentWorkspace() {
   }
   const assessments = assessmentCache.get(client.id);
   const latest = assessments?.[0];
-  summary.innerHTML = `<div class="assessment-selected-client"><span class="client-avatar" aria-hidden="true">${escapeHtml(String(client.full_name || "?").slice(0, 1))}</span><div><strong>${escapeHtml(client.full_name)}</strong><small>${escapeHtml(formatPhone(client.phone))}</small></div><dl><div><dt>누적 평가</dt><dd>${assessments ? assessments.length : "-"}회</dd></div><div><dt>최근 평가</dt><dd>${latest ? escapeHtml(formatDate(`${latest.assessed_on}T12:00:00+09:00`, false)) : "-"}</dd></div></dl></div>`;
+  summary.innerHTML = `<div class="assessment-selected-client"><span class="client-avatar" aria-hidden="true">${escapeHtml(String(client.full_name || "?").slice(0, 1))}</span><div><strong>${escapeHtml(client.full_name)}</strong><small>${escapeHtml(formatPhone(client.phone))}</small></div><dl><div><dt>누적 평가</dt><dd>${assessments ? assessments.length : "-"}회</dd></div><div><dt>최근 평가</dt><dd>${latest ? escapeHtml(formatDate(`${latest.assessed_on}T12:00:00+09:00`, false)) : "-"}</dd></div></dl></div>${renderAssessmentProgress(assessments)}`;
   if (assessments) renderAssessmentHistory(history, assessments, client.id);
   else history.innerHTML = '<p class="empty">평가 기록을 불러오는 중입니다.</p>';
 }
